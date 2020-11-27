@@ -1,0 +1,303 @@
+
+
+* {
+    outline: none;
+    color: %(active)s;
+    border-color: %(active)s;
+    font-family: "Open Sans";
+}
+
+
+QWidget:disabled {
+    border: none;
+    color: %(inactive)s;
+}
+
+QMenu, QLabel {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    /*font-weight: bold;*/
+}
+
+.QFrame {
+    color: %(dimmest)s;
+}
+
+QCheckBox
+{
+    spacing: 5px;
+    margin-bottom: 2px;
+}
+
+QCheckBox::indicator,
+QGroupBox::indicator {
+    width: 15px;
+    height: 15px;
+}
+
+QGroupBox::indicator {
+    margin-left: 2px;
+}
+
+QAbstractItemView::indicator:unchecked,
+QCheckBox::indicator:unchecked,
+QGroupBox::indicator:unchecked {
+    image: url(%(res)s/checkbox_unchecked.png);
+}
+
+QAbstractItemView::indicator:unchecked:disabled,
+QCheckBox::indicator:unchecked:disabled,
+QGroupBox::indicator:unchecked:disabled {
+    image: url(%(res)s/checkbox_unchecked_dim.png);
+}
+
+QAbstractItemView::indicator:checked,
+QCheckBox::indicator:checked,
+QGroupBox::indicator:checked {
+    image: url(%(res)s/checkbox_checked.png);
+}
+
+QAbstractItemView::indicator:checked:disabled,
+QCheckBox::indicator:checked:disabled,
+QGroupBox::indicator:checked:disabled {
+    image: url(%(res)s/checkbox_checked_dim.png);
+}
+
+QAbstractItemView::indicator:indeterminate,
+QCheckBox::indicator:indeterminate,
+QGroupBox::indicator:indeterminate {
+    image: url(%(res)s/checkbox_indeterminate.png);
+}
+
+QAbstractItemView::indicator:indeterminate:disabled,
+QCheckBox::indicator:indeterminate:disabled,
+QGroupBox::indicator:indeterminate:disabled {
+    image: url(%(res)s/checkbox_indeterminate_dim.png);
+}
+
+QCheckBox::indicator {
+    background: %(bright)s;
+}
+
+QPushButton {
+    border: 1px solid %(dim)s;
+    background: %(bright)s;
+    padding: 5px;
+}
+
+QPushButton:hover {
+    border: 1px solid %(highlight)s;
+}
+
+QPushButton:pressed {
+    background: %(highlight)s;
+    color: %(highlighted)s;
+}
+
+QAbstractScrollArea {
+    background: %(base)s;
+    border: 1px solid %(dim)s;
+}
+
+QToolTip, QTextEdit, QLineEdit {
+    border: 1px solid %(dim)s;
+    background: %(brightest)s;
+}
+
+#PackageBook {
+    background: %(prim)s;
+}
+
+#PackageTab::tab:left {
+    background-color: %(prim)s;
+    border: 1px solid %(dimmest)s;
+    border-bottom: none;
+    padding: 8px;
+}
+
+#PackageTab::tab:left:next-selected {
+    border-top: 1px solid %(dimmest)s;
+}
+
+#PackageTab::tab:left:selected {
+    background: %(prim)s;
+    border: 1px solid %(outline)s;
+    border-right: none;
+}
+
+#PackageTab::tab:left:previous-selected {
+    border-top: none;
+}
+
+#PackageTab::tab:left:!selected {
+    color: %(inactive)s;
+    background-color: %(dim)s;
+    border-right: 1px solid %(outline)s;
+    margin-left: 3px;
+    padding-left: 5px;
+}
+
+#PackageTab::tab:left:last:!selected {
+    border-bottom: 1px solid %(dimmest)s;
+}
+
+#PackageTab::tab:left:last:selected {
+    border-bottom: 1px solid %(outline)s;
+}
+
+#PackageTab::tab:left:!selected:hover {
+    color: %(active)s;
+    background-color: %(hover)s;
+}
+
+#PackageTab::scroller {
+    width: 24px;
+}
+
+#PackageTab QToolButton {
+    border: 1px solid %(dim)s;
+    background-color: %(base)s;
+}
+
+#BookPage {
+    background: %(prim)s;
+    border: 1px solid %(outline)s;
+    border-left: none;
+}
+
+#BookSide {
+    border: none;
+    border-right: 1px solid %(outline)s;
+}
+
+QHeaderView {
+    border: none;
+    font-weight: bold;
+    qproperty-defaultAlignment: AlignLeft;
+}
+
+QHeaderView::section {
+    padding: 0px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 5px;
+    background: %(base)s;
+    border: none;
+    border-top: none;
+    border-bottom: 1px solid %(dim)s;
+    border-left: none;
+    border-right: 1px solid %(dim)s;
+}
+
+QMenu {
+    background: %(dim)s;
+}
+
+QAbstractItemView {
+    show-decoration-selected: 1;  /* highlight the decoration (branch) ! */
+    background: %(bright)s;
+}
+
+QAbstractItemView, QMenu {
+    border: 1px solid %(dim)s;
+    selection-background-color: %(highlight)s;
+    selection-color: %(highlighted)s;
+}
+
+QAbstractItemView::item:selected:active,
+QAbstractItemView::item:selected:!focus {
+    background: %(highlight)s;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+    image: url(%(res)s/branch_closed.png);
+}
+
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings  {
+    image: url(%(res)s/branch_open.png);
+}
+
+
+QTreeView::branch:has-children:!has-siblings:closed:hover,
+QTreeView::branch:closed:has-children:has-siblings:hover {
+    image: url(%(res)s/branch_closed-on.png);
+}
+
+
+QTreeView::branch:open:has-children:!has-siblings:hover,
+QTreeView::branch:open:has-children:has-siblings:hover  {
+    image: url(%(res)s/branch_open-on.png);
+}
+
+QTreeView::branch::selected {
+    background: %(highlight)s;
+}
+
+QTreeView::branch::hover {
+    background: %(hover)s;
+}
+
+QAbstractItemView::item::hover {
+    background: %(hover)s;
+}
+
+QScrollBar:horizontal {
+    background-color: %(dim)s;
+    height: 15px;
+    border: none;
+    border-top: 1px solid %(dimmest)s;
+}
+
+#PackageTreeView::item{
+    padding: 5px 1px;
+    border: 0px;
+}
+
+#PackageTreeView::item:selected{
+    padding: 5px 1px;
+    border: 0px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: %(bright)s;
+    min-width: 20px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    margin: 0px;
+    height: 0px;
+    width: 0px;
+}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+QScrollBar:vertical {
+    background-color: %(dim)s;
+    width: 15px;
+    border: none;
+    border-left: 1px solid %(dimmest)s;
+}
+
+QScrollBar::handle:vertical {
+    background-color: %(bright)s;
+    min-height: 20px;
+    margin-left: 1px;
+    margin-right: 1px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    margin: 0px;
+    height: 0px;
+    width: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
