@@ -121,66 +121,53 @@ class PackageModel(AbstractTreeModel):
             if index.column() == 0:
                 parent = index.parent()
                 item = index.internalPointer()
-                first = None
-                last = None
+                item["_isChecked"] = value
 
                 if parent.isValid():
-                    # Was ticking on version, update family state
-                    item["_isChecked"] = value
+                    # Was ticking on version, update versions and family
                     first = parent
 
-                    p_item = parent.internalPointer()
-                    children = p_item.children()
+                    family = parent.internalPointer()
+                    versions = family.children()
+                    is_any = (len(versions) - 1) == index.row()
 
-                    if (len(children) - 1) == index.row():
+                    if is_any:
                         # version *any* ticked, un-tick all other versions
-                        for c in children[:-1]:
+                        for c in versions[:-1]:
                             c["_isChecked"] = QtCheckState.Unchecked
-                        last = parent.child(len(children) - 2, 0)
+                        last = parent.child(len(versions) - 2, 0)
                     else:
                         # other version ticked, un-tick version *any*
-                        children[-1]["_isChecked"] = QtCheckState.Unchecked
-                        last = parent.child(len(children) - 1, 0)
+                        versions[-1]["_isChecked"] = QtCheckState.Unchecked
+                        last = parent.child(len(versions) - 1, 0)
 
                     states = set([
-                        c.get("_isChecked", QtCheckState.Unchecked)
-                        for c in p_item.children()
+                        version.get("_isChecked", QtCheckState.Unchecked)
+                        for version in versions
                     ])
-                    if len(states) > 1:
-                        p_item["_isChecked"] = QtCheckState.PartiallyChecked
+                    if is_any:
+                        family["_isChecked"] = value
+                    elif len(states) > 1:
+                        family["_isChecked"] = QtCheckState.PartiallyChecked
                     else:
-                        p_item["_isChecked"] = states.pop()
+                        family["_isChecked"] = QtCheckState.Unchecked
 
                 else:
-                    # Was ticking on family, update version state
-                    children = item.children()
-                    current = item.get("_isChecked", QtCheckState.Unchecked)
+                    # Was ticking on family, update versions
+                    versions = item.children()
 
-                    if (value == QtCheckState.Checked
-                            and current == QtCheckState.Unchecked):
-                        # tick only version *any*
-                        children[-1]["_isChecked"] = QtCheckState.Checked
-                        value = QtCheckState.PartiallyChecked
+                    # un-tick all versions
+                    for version in versions:
+                        version["_isChecked"] = QtCheckState.Unchecked
 
-                        first = index.child(len(children) - 1, 0)
+                    if value == QtCheckState.Checked:
+                        # family activated, tick version *any*
+                        versions[-1]["_isChecked"] = QtCheckState.Checked
 
-                    else:
-                        # operate on all versions
-                        c_item = None
-                        for c_item in children:
-                            c_item["_isChecked"] = value
+                    first = index.child(0, 0)
+                    last = index.child(len(versions) - 1, 0)
 
-                        if c_item and value == QtCheckState.Checked:
-                            # uncheck version *any* if ticking all versions
-                            c_item["_isChecked"] = QtCheckState.Unchecked
-
-                        first = index.child(0, 0)
-                        last = index.child(len(children) - 1, 0)
-
-                    item["_isChecked"] = value
-
-                if first:
-                    self.dataChanged.emit(first, last or first)
+                self.dataChanged.emit(first, last)
                 return True
 
         return super(PackageModel, self).setData(index, value, role)
