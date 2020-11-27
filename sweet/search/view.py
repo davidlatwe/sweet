@@ -19,6 +19,11 @@ class PackageView(QtWidgets.QWidget):
             "tab": common.view.VerticalDocTabBar(),
         }
 
+        # TODO:
+        # * parse request into model item check state
+        # * add reset button
+        # * log model reset time
+
         self.setObjectName("PackageBook")
         widgets["view"].setObjectName("PackageTreeView")
         widgets["tab"].setObjectName("PackageTab")
