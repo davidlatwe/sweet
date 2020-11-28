@@ -59,9 +59,13 @@ class PackageView(QtWidgets.QWidget):
         widgets["view"].sortByColumn(0, QtCore.Qt.AscendingOrder)
         widgets["search"].setPlaceholderText(" Search by family or tool..")
 
+        # Signals..
+        header = widgets["view"].header()
+        scroll = widgets["view"].verticalScrollBar()
+
         widgets["tab"].currentChanged.connect(self.on_tab_clicked)
         widgets["search"].textChanged.connect(self.on_searched)
-        scroll = widgets["view"].verticalScrollBar()
+        header.sortIndicatorChanged.connect(self.on_sort_changed)
         scroll.valueChanged.connect(self.on_scrolled)
 
         self._widgets = widgets
@@ -102,6 +106,9 @@ class PackageView(QtWidgets.QWidget):
                 return
 
     def on_scrolled(self, value):
+        if not self._widgets["tab"].isEnabled():
+            return
+
         tab = self._widgets["tab"]
         view = self._widgets["view"]
         proxy = self.proxy()
@@ -116,6 +123,9 @@ class PackageView(QtWidgets.QWidget):
             tab.blockSignals(True)
             tab.setCurrentIndex(index)
             tab.blockSignals(False)
+
+    def on_sort_changed(self, index, order):
+        self._widgets["tab"].setEnabled(index == 0)
 
     def on_model_reset(self):
         tab = self._widgets["tab"]

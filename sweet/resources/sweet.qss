@@ -169,6 +169,25 @@ QToolTip, QTextEdit, QLineEdit {
     background-color: %(primary.focus)s;
 }
 
+#PackageTab::tab:left:disabled,
+#PackageTab::tab:left:disabled:selected {
+    color: %(on.dim.background)s;
+    background-color: %(background.dim)s;
+    border: 1px solid %(border.dim)s;
+    border-right: 1px solid %(border.bright)s;
+    border-bottom: 1px solid transparent;
+    margin-left: 3px;
+    padding-left: 5px;
+}
+
+#PackageTab::tab:left:disabled:previous-selected {
+    border-top: 1px solid %(border.dim)s;
+}
+
+#PackageTab::tab:left:disabled:last {
+    border-bottom: 1px solid %(border.dim)s;
+}
+
 #PackageTab::scroller {
     width: 24px;
 }
