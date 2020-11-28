@@ -125,7 +125,14 @@ class PackageView(QtWidgets.QWidget):
             tab.blockSignals(False)
 
     def on_sort_changed(self, index, order):
-        self._widgets["tab"].setEnabled(index == 0)
+        is_sort_name = index == 0
+        tab = self._widgets["tab"]
+
+        tab.setEnabled(is_sort_name)
+        if is_sort_name:
+            self._groups.reverse()
+            for i, group in enumerate(self._groups):
+                tab.setTabText(i, group)
 
     def on_model_reset(self):
         tab = self._widgets["tab"]
