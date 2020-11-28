@@ -43,12 +43,12 @@ class PackageModel(AbstractTreeModel):
             #   (shouldn't need using time delegate)
             return str(datetime.fromtimestamp(timestamp))
 
-        def complete_last_family():
+        def cover_previous_family():
             if family:
                 family["tools"] = ", ".join(sorted(family["tools"]))
                 family["timestamp"] = sorted(family["timestamp"])[-1]
                 family["date"] = get_date(family["timestamp"])
-                all_versions = PackageItem({
+                version_any = PackageItem({
                     "_type": "version",
                     "name": family["name"] + " [any]",
                     "family": family["family"],
@@ -56,7 +56,7 @@ class PackageModel(AbstractTreeModel):
                     "tools": "",
                     "date": "",
                 })
-                family.add_child(all_versions)
+                family.add_child(version_any)
 
         for item in sorted(items or [], key=lambda i: i["family"].lower()):
             family_name = item["family"]
@@ -73,7 +73,7 @@ class PackageModel(AbstractTreeModel):
             item = PackageItem(item)
 
             if family_name not in families:
-                complete_last_family()
+                cover_previous_family()
 
                 family = PackageItem({
                     "_type": "family",
@@ -93,7 +93,7 @@ class PackageModel(AbstractTreeModel):
             family["timestamp"].add(item["timestamp"])
             family.add_child(item)
 
-        complete_last_family()
+        cover_previous_family()
 
         self.endResetModel()
 
