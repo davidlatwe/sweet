@@ -37,9 +37,8 @@ class PackageView(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         layout = QtWidgets.QVBoxLayout(widgets["page"])
-        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setContentsMargins(2, 2, 2, 2)
         layout.addWidget(widgets["view"])
-        layout.setSpacing(0)
 
         layout = QtWidgets.QHBoxLayout(widgets["book"])
         layout.setContentsMargins(0, 0, 0, 0)

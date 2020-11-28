@@ -61,21 +61,41 @@ def default_themes():
     res_root = os.path.join(dirname, "resources", "images").replace("\\", "/")
     return [
         {
-            "name": "default-dark",
-            "source": find("style.qss"),
+            "name": "sweet",
+            "source": find("sweet.qss"),
             "keywords": {
-                "prim": "#2E2C2C",
-                "brightest": "#403E3D",
-                "bright": "#383635",
-                "base": "#2E2C2C",
-                "dim": "#21201F",
-                "dimmest": "#141413",
-                "hover": "rgba(104, 182, 237, 60)",
-                "highlight": "rgb(110, 191, 245)",
-                "highlighted": "#111111",
-                "outline": "rgba(10, 10, 10, 140)",
-                "active": "silver",
-                "inactive": "dimGray",
+                "primary.focus": "#907855",
+                "primary.bright": "#826138",
+                "primary.dim": "#63503F",
+
+                "secondary.focus": "#CCFF90",
+                "secondary.bright": "#76FF03",
+                "secondary.dim": "#558B2F",
+
+                "surface.bright": "#262626",
+                "surface.dim": "#212121",
+
+                "background.bright": "#1F1F1F",
+                "background.dim": "#1D1D1D",
+
+                "border.bright": "#191919",
+                "border.dim": "#242424",
+
+                "error.bright": "#C62828",
+                "error.dim": "#891B1B",
+
+                "on.bright.primary": "#212121",
+                "on.bright.secondary": "#212121",
+                "on.bright.surface": "#A49884",
+                "on.bright.background": "#6F6350",
+                "on.bright.error": "#FFFFFF",
+
+                "on.dim.primary": "#4E3C37",
+                "on.dim.secondary": "#294B28",
+                "on.dim.surface": "#4D4D4D",
+                "on.dim.background": "#3F3F3F",
+                "on.dim.error": "#9E9E9E",
+
                 "res": res_root,
             }
         },
