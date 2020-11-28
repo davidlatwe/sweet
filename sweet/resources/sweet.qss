@@ -123,13 +123,13 @@ QToolTip, QTextEdit, QLineEdit {
 
 #PackageBook {
     background-color: %(background.bright)s;
-}
-
+}/*note: "border: none" does not equal to "border: 1px solid trasnparent",
+         there still 1px difference and may affect text position in tab*/
 #PackageTab::tab:left {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border: 1px solid %(border.dim)s;
-    border-bottom: none;
+    border-bottom: 1px solid transparent;
     padding: 8px;
 }
 
@@ -141,11 +141,11 @@ QToolTip, QTextEdit, QLineEdit {
     color: %(on.bright.surface)s;
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
-    border-right: none;
+    border-right: 1px solid transparent;
 }
 
 #PackageTab::tab:left:previous-selected {
-    border-top: none;
+    border-top: 1px solid transparent;
 }
 
 #PackageTab::tab:left:!selected {
