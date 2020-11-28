@@ -1,4 +1,5 @@
 
+import os
 import sys
 from Qt5 import QtWidgets
 from .view import PackageView
@@ -23,4 +24,5 @@ def show():
     return app.exec_()
 
 
+os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
 sys.exit(show())
