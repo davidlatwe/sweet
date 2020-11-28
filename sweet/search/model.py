@@ -7,7 +7,9 @@ QtCheckState = QtCore.Qt.CheckState
 
 
 class PackageItem(TreeItem):
-    pass
+    def __init__(self, data=None):
+        super(PackageItem, self).__init__(data or {})
+        self["_isChecked"] = QtCheckState.Unchecked
 
 
 class PackageModel(AbstractTreeModel):
@@ -114,7 +116,7 @@ class PackageModel(AbstractTreeModel):
         if role == QtCore.Qt.CheckStateRole:
             if index.column() == 0:
                 item = index.internalPointer()
-                return item.get("_isChecked", QtCheckState.Unchecked)
+                return item["_isChecked"]
 
         if role == self.FilterRole:
             item = index.internalPointer()
@@ -142,7 +144,7 @@ class PackageModel(AbstractTreeModel):
                         versions[-1]["_isChecked"] = QtCheckState.Unchecked
 
                     states = set([
-                        version.get("_isChecked", QtCheckState.Unchecked)
+                        version["_isChecked"]
                         for version in versions
                     ])
                     if is_any:
