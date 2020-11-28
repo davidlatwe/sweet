@@ -1,5 +1,5 @@
 
-from Qt5 import QtWidgets
+from Qt5 import QtCore, QtWidgets
 from .. import common
 from .model import PackageProxyModel
 
@@ -54,6 +54,9 @@ class PackageView(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         widgets["tab"].setMinimumHeight(120)
+        widgets["view"].setAlternatingRowColors(True)
+        widgets["view"].setSortingEnabled(True)
+        widgets["view"].sortByColumn(0, QtCore.Qt.AscendingOrder)
         widgets["search"].setPlaceholderText(" Search by family or tool..")
 
         widgets["tab"].currentChanged.connect(self.on_tab_clicked)

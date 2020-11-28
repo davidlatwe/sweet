@@ -310,6 +310,7 @@ QHeaderView::section:last {
 QAbstractItemView {
     show-decoration-selected: 1;  /* highlight the decoration (branch) ! */
     background-color: %(surface.bright)s;
+    alternate-background-color: %(surface.dim)s;
     border: none;
     selection-color: %(on.bright.primary)s;
     selection-background-color: %(primary.bright)s;

@@ -191,4 +191,6 @@ class PackageProxyModel(QtCore.QSortFilterProxyModel):
 
     def __init__(self, parent=None):
         super(PackageProxyModel, self).__init__(parent=parent)
+        self.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setFilterRole(PackageModel.FilterRole)
