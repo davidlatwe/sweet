@@ -297,6 +297,20 @@ QHeaderView::section:last {
     border-right: none;
 }
 
+QHeaderView::down-arrow {
+    image: url(%(res)s/chevron_down.svg);
+    subcontrol-position: top center;
+    height: 8px;
+    width: 8px;
+}
+
+QHeaderView::up-arrow {
+    image: url(%(res)s/chevron_up.svg);
+    subcontrol-position: top center;
+    height: 8px;
+    width: 8px;
+}
+
 #PackageTreeView::item{
     padding: 5px 1px;
     border: 0px;
