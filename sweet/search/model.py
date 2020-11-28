@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from Qt5 import QtCore, QtGui
 from ..common.model import AbstractTreeModel, TreeItem
 
@@ -6,16 +7,7 @@ QtCheckState = QtCore.Qt.CheckState
 
 
 class PackageItem(TreeItem):
-
-    def add_child(self, child):
-        child._parent = self
-        for sibling in self._children:
-            if sibling["version"] == child["version"]:
-                # merge
-                sibling["uri"] += child["uri"]
-                break
-        else:
-            self._children.append(child)
+    pass
 
 
 class PackageModel(AbstractTreeModel):
@@ -23,6 +15,7 @@ class PackageModel(AbstractTreeModel):
     Headers = [
         "name",
         "tools",
+        "date",
     ]
 
     def __init__(self, parent=None):
@@ -42,15 +35,24 @@ class PackageModel(AbstractTreeModel):
         family = None
         families = set()
 
+        def get_date(timestamp):
+            # TODO: Convert date into much readable format, e.g.:
+            #   "A month ago", "X weeks ago", "Today 3:05 PM", "Just now"
+            #   (shouldn't need using time delegate)
+            return str(datetime.fromtimestamp(timestamp))
+
         def complete_last_family():
             if family:
                 family["tools"] = ", ".join(sorted(family["tools"]))
+                family["timestamp"] = sorted(family["timestamp"])[-1]
+                family["date"] = get_date(family["timestamp"])
                 all_versions = PackageItem({
                     "_type": "version",
                     "name": family["name"] + " [any]",
                     "family": family["family"],
                     "version": "*",
                     "tools": "",
+                    "date": "",
                 })
                 family.add_child(all_versions)
 
@@ -64,7 +66,7 @@ class PackageModel(AbstractTreeModel):
                 "_group": initial,
                 "name": item["qualified_name"],
                 "tools": ", ".join(sorted(tools)),
-                "uri": [item["uri"]]
+                "date": get_date(item["timestamp"])
             })
             item = PackageItem(item)
 
@@ -77,7 +79,8 @@ class PackageModel(AbstractTreeModel):
                     "name": family_name,
                     "family": family_name,
                     "version": "",
-                    "tools": set(),
+                    "tools": set(),  # later be formatted from all versions
+                    "timestamp": set(),  # later be sorted and get latest
                 })
 
                 families.add(family_name)
@@ -85,6 +88,7 @@ class PackageModel(AbstractTreeModel):
                 self.add_child(family)
 
             family["tools"].update(tools)
+            family["timestamp"].add(item["timestamp"])
             family.add_child(item)
 
         complete_last_family()

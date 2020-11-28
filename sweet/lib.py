@@ -1,27 +1,35 @@
 
 from rez.packages import iter_package_families, iter_packages
+from rez.config import config
 
 
-def scan():
-    results = list()
+def scan(no_local=False):
+    paths = None
+    seen = dict()
 
-    for family in iter_package_families():
+    if no_local:
+        paths = config.nonlocal_packages_path
+
+    for family in iter_package_families(paths=paths):
         name = family.name
         path = family.resource.location
 
         for package in iter_packages(name, paths=[path]):
             qualified_name = package.qualified_name
-            version = str(package.version)
-            tools = package.tools or []
-            uri = package.uri
+
+            if qualified_name in seen:
+                seen[qualified_name]["locations"].append(path)
+                continue
 
             doc = {
                 "family": name,
-                "version": version,
-                "uri": uri,
-                "tools": tools,
+                "version": str(package.version),
+                "uri": package.uri,
+                "tools": package.tools or [],
                 "qualified_name": qualified_name,
+                "timestamp": package.timestamp,
+                "locations": [path],
             }
-            results.append(doc)
+            seen[qualified_name] = doc
 
-    return results
+            yield doc

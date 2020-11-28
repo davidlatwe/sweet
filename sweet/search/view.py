@@ -23,6 +23,7 @@ class PackageView(QtWidgets.QWidget):
         # * parse request into model item check state
         # * add reset button
         # * log model reset time
+        # * no-local-package checkBox
 
         self.setObjectName("PackageBook")
         widgets["view"].setObjectName("PackageTreeView")
