@@ -68,9 +68,9 @@ def default_themes():
                 "primary.bright": "#826138",
                 "primary.dim": "#63503F",
 
-                "secondary.focus": "#CCFF90",
-                "secondary.bright": "#76FF03",
-                "secondary.dim": "#558B2F",
+                "secondary.focus": "#795548",
+                "secondary.bright": "#5D4037",
+                "secondary.dim": "#3F3533",
 
                 "surface.bright": "#262626",
                 "surface.dim": "#212121",
@@ -90,8 +90,8 @@ def default_themes():
                 "on.bright.background": "#6F6350",
                 "on.bright.error": "#FFFFFF",
 
-                "on.dim.primary": "#4E3C37",
-                "on.dim.secondary": "#294B28",
+                "on.dim.primary": "#39322D",
+                "on.dim.secondary": "#4B403E",
                 "on.dim.surface": "#4D4D4D",
                 "on.dim.background": "#3F3F3F",
                 "on.dim.error": "#9E9E9E",
