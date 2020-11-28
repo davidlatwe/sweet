@@ -1,5 +1,5 @@
 
-from rez.packages_ import iter_package_families, iter_packages
+from rez.packages import iter_package_families, iter_packages
 
 
 def scan():
