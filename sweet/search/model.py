@@ -125,8 +125,6 @@ class PackageModel(AbstractTreeModel):
 
                 if parent.isValid():
                     # Was ticking on version, update versions and family
-                    first = parent
-
                     family = parent.internalPointer()
                     versions = family.children()
                     is_any = (len(versions) - 1) == index.row()
@@ -135,11 +133,9 @@ class PackageModel(AbstractTreeModel):
                         # version *any* ticked, un-tick all other versions
                         for c in versions[:-1]:
                             c["_isChecked"] = QtCheckState.Unchecked
-                        last = parent.child(len(versions) - 2, 0)
                     else:
                         # other version ticked, un-tick version *any*
                         versions[-1]["_isChecked"] = QtCheckState.Unchecked
-                        last = parent.child(len(versions) - 1, 0)
 
                     states = set([
                         version.get("_isChecked", QtCheckState.Unchecked)
@@ -151,6 +147,11 @@ class PackageModel(AbstractTreeModel):
                         family["_isChecked"] = QtCheckState.PartiallyChecked
                     else:
                         family["_isChecked"] = QtCheckState.Unchecked
+
+                    first = parent.child(0, 0)
+                    last = parent.child(len(versions) - 1, 0)
+                    self.dataChanged.emit(first, last)
+                    self.dataChanged.emit(parent, parent)
 
                 else:
                     # Was ticking on family, update versions
@@ -166,9 +167,8 @@ class PackageModel(AbstractTreeModel):
 
                     first = index.child(0, 0)
                     last = index.child(len(versions) - 1, 0)
-
-                self.dataChanged.emit(first, last)
-                return True
+                    self.dataChanged.emit(first, last)
+                    self.dataChanged.emit(index, index)
 
         return super(PackageModel, self).setData(index, value, role)
 
