@@ -1,6 +1,7 @@
 
-from datetime import datetime
 from Qt5 import QtCore, QtGui
+from datetime import datetime
+from rez.utils.formatting import PackageRequest
 from ..common.model import AbstractTreeModel, TreeItem
 
 QtCheckState = QtCore.Qt.CheckState
@@ -31,6 +32,35 @@ class PackageModel(AbstractTreeModel):
         for item in self.root.children():
             yield item
 
+    def iter_requests(self):
+        for family in self.iter_items():
+            name = family["family"]
+
+            if family["_isChecked"] == QtCheckState.Unchecked:
+                continue
+            if family["_isChecked"] == QtCheckState.Checked:
+                yield PackageRequest(name)  # version any
+                continue
+
+            excluded = list()
+            for version in family.children():
+                if version["_isChecked"] == QtCheckState.Unchecked:
+
+                    exclusion = "!%s-%s" % (name, version["version"])
+                    excluded.append(PackageRequest(exclusion))
+
+            print(family["range"])
+            oldest, latest = family["range"]
+            all_versions = "%s-%s+<=%s" % (name, oldest, latest)
+            request = PackageRequest(all_versions)
+            for exclusion in excluded:
+                request = request.merged(exclusion)
+
+            yield request
+
+    def parse_requests(self, requests):
+        pass
+
     def reset(self, items=None):
         self.beginResetModel()
         self._groups.clear()
@@ -45,6 +75,10 @@ class PackageModel(AbstractTreeModel):
 
         def cover_previous_family():
             if family:
+                versions = family.children()
+                oldest = versions[0]
+                latest = versions[-1]
+                family["range"] = (oldest["version"], latest["version"])  # version not sorted
                 family["tools"] = ", ".join(sorted(family["tools"]))
                 family["timestamp"] = sorted(family["timestamp"])[-1]
                 family["date"] = get_date(family["timestamp"])

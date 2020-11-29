@@ -17,6 +17,8 @@ class PackageView(QtWidgets.QWidget):
             "side": QtWidgets.QWidget(),
             "view": common.view.VerticalExtendedTreeView(),
             "tab": common.view.VerticalDocTabBar(),
+
+            "kick": QtWidgets.QPushButton(),
         }
 
         # TODO:
@@ -24,6 +26,7 @@ class PackageView(QtWidgets.QWidget):
         # * add reset button
         # * log model reset time
         # * no-local-package checkBox
+        # * multi-select and right click to tick/un-tick
 
         self.setObjectName("PackageBook")
         widgets["view"].setObjectName("PackageTreeView")
@@ -51,6 +54,8 @@ class PackageView(QtWidgets.QWidget):
         layout.addWidget(widgets["search"])
         layout.addSpacing(6)
         layout.addWidget(widgets["book"])
+        layout.addSpacing(4)
+        layout.addWidget(widgets["kick"])
         layout.setSpacing(0)
 
         widgets["tab"].setMinimumHeight(120)
@@ -65,6 +70,7 @@ class PackageView(QtWidgets.QWidget):
 
         widgets["tab"].currentChanged.connect(self.on_tab_clicked)
         widgets["search"].textChanged.connect(self.on_searched)
+        widgets["kick"].clicked.connect(self.on_kicked)
         header.sortIndicatorChanged.connect(self.on_sort_changed)
         scroll.valueChanged.connect(self.on_scrolled)
 
@@ -84,6 +90,11 @@ class PackageView(QtWidgets.QWidget):
 
     def proxy(self):
         return self._widgets["view"].model()
+
+    def on_kicked(self):
+        model = self.model()
+        for request in model.iter_requests():
+            print(request)
 
     def on_searched(self, text):
         view = self._widgets["view"]
