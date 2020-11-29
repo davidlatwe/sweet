@@ -48,15 +48,6 @@ class PackageModel(AbstractTreeModel):
                 family["tools"] = ", ".join(sorted(family["tools"]))
                 family["timestamp"] = sorted(family["timestamp"])[-1]
                 family["date"] = get_date(family["timestamp"])
-                version_any = PackageItem({
-                    "_type": "version",
-                    "name": family["name"] + " [any]",
-                    "family": family["family"],
-                    "version": "*",
-                    "tools": "",
-                    "date": "",
-                })
-                family.add_child(version_any)
 
         for item in sorted(items or [], key=lambda i: i["family"].lower()):
             family_name = item["family"]
@@ -130,46 +121,26 @@ class PackageModel(AbstractTreeModel):
                 item["_isChecked"] = value
 
                 if parent.isValid():
-                    # Was ticking on version, update versions and family
+                    # Was ticking on version, update version and family
                     family = parent.internalPointer()
                     versions = family.children()
-                    is_any = (len(versions) - 1) == index.row()
 
-                    if is_any:
-                        # version *any* ticked, un-tick all other versions
-                        for c in versions[:-1]:
-                            c["_isChecked"] = QtCheckState.Unchecked
-                    else:
-                        # other version ticked, un-tick version *any*
-                        versions[-1]["_isChecked"] = QtCheckState.Unchecked
-
-                    states = set([
-                        version["_isChecked"]
-                        for version in versions
-                    ])
-                    if is_any:
-                        family["_isChecked"] = value
-                    elif len(states) > 1:
+                    if any(v["_isChecked"] == QtCheckState.Checked
+                           for v in versions):
                         family["_isChecked"] = QtCheckState.PartiallyChecked
                     else:
                         family["_isChecked"] = QtCheckState.Unchecked
 
-                    first = parent.child(0, 0)
-                    last = parent.child(len(versions) - 1, 0)
-                    self.dataChanged.emit(first, last)
+                    self.dataChanged.emit(index, index)
                     self.dataChanged.emit(parent, parent)
 
                 else:
-                    # Was ticking on family, update versions
+                    # Was ticking on family, means *any* version
                     versions = item.children()
 
                     # un-tick all versions
                     for version in versions:
                         version["_isChecked"] = QtCheckState.Unchecked
-
-                    if value == QtCheckState.Checked:
-                        # family activated, tick version *any*
-                        versions[-1]["_isChecked"] = QtCheckState.Checked
 
                     first = index.child(0, 0)
                     last = index.child(len(versions) - 1, 0)
