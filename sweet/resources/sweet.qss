@@ -7,10 +7,15 @@
     font-family: "Open Sans";
 }
 
+QWidget {
+    background-color: %(surface.bright)s;
+}
+
 
 QWidget:disabled {
     border: none;
     color: %(on.dim.surface)s;
+    background-color: %(surface.dim)s;
 }
 
 QMenu, QLabel {
