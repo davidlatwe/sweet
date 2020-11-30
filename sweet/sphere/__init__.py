@@ -1,7 +1,7 @@
 
 import sys
-from .view import PackageView
-from .model import PackageModel
+from .view import SphereView
+# from .model import PackageModel
 from .. import lib, resources
 
 
@@ -13,10 +13,10 @@ def show():
     resources.load_themes()
     qss = resources.load_theme()
 
-    view_ = PackageView()
-    model_ = PackageModel()
-    view_.setModel(model_)
-    view_.reset(lib.scan())
+    view_ = SphereView()
+    # model_ = PackageModel()
+    # view_.setModel(model_)
+    # view_.reset(lib.scan())
 
     view_.setStyleSheet(qss)
     view_.show()
