@@ -130,6 +130,14 @@ class PackageView(QtWidgets.QWidget):
 
         tab.setEnabled(is_sort_name)
         if is_sort_name:
+            if len(self._groups) <= 1:
+                return
+
+            first, second = self._groups[:2]
+            is_ascending = int(first > second)
+            if is_ascending == int(order):
+                return
+
             self._groups.reverse()
             for i, group in enumerate(self._groups):
                 tab.setTabText(i, group)
