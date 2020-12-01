@@ -229,8 +229,8 @@ class SpoilerHead(QtWidgets.QWidget):
         self.setObjectName("SpoilerHead")
 
         widgets = {
-            "separator": QtWidgets.QFrame(),
             "toggle": QtWidgets.QToolButton(),
+            "separator": QtWidgets.QFrame(),
         }
         widgets["separator"].setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
