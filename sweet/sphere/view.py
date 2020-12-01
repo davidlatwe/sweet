@@ -3,6 +3,7 @@ import os
 from Qt5 import QtCore, QtWidgets
 from rez.resolved_context import ResolvedContext
 from rez.suite import Suite, SuiteError
+from ..common.view import Spoiler
 
 
 class SphereView(QtWidgets.QWidget):
@@ -16,13 +17,32 @@ class SphereView(QtWidgets.QWidget):
             "create": QtWidgets.QPushButton("Create"),
             "add": QtWidgets.QPushButton("+"),
             "conflict": QtWidgets.QPushButton("Conflict"),
+
+            "scroll": QtWidgets.QScrollArea(),
+            "wrap": QtWidgets.QWidget(),
+            "context": QtWidgets.QWidget(),
         }
+
+        widgets["scroll"].setWidget(widgets["wrap"])
+        widgets["scroll"].setWidgetResizable(True)
+
+        layout = QtWidgets.QVBoxLayout(widgets["wrap"])
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["context"])
+        layout.addStretch(20)  # so context views can shrink back to top
+        layout.setSpacing(0)
+
+        layout = QtWidgets.QFormLayout(widgets["context"])
+        layout.setFieldGrowthPolicy(layout.ExpandingFieldsGrow)
+        layout.setFormAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+        layout.setSpacing(0)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["create"])
         layout.addWidget(widgets["add"])
         layout.addWidget(widgets["conflict"])
+        layout.addWidget(widgets["scroll"])
 
         widgets["create"].clicked.connect(self.on_create_clicked)
         widgets["add"].clicked.connect(self.on_add_clicked)
@@ -45,12 +65,18 @@ class SphereView(QtWidgets.QWidget):
         self._data["suite"].save(os.path.expanduser("~/%s" % name))
 
     def on_add_clicked(self):
-        context = ContextView()
-        self.layout().addWidget(context)
-        self._contexts[context.id()] = context
+        context_w = ContextView()
+        spoiler = Spoiler()
+        spoiler.set_content(context_w)
+        spoiler.set_expanded(True)
 
-        context.resolved.connect(self.on_context_resolved)
-        context.removed.connect(self.on_context_removed)
+        layout = self._widgets["context"].layout()
+        layout.insertRow(0, spoiler)  # new added context has higher priority
+
+        self._contexts[context_w.id()] = context_w
+
+        context_w.resolved.connect(self.on_context_resolved)
+        context_w.removed.connect(self.on_context_removed)
 
     def on_conflict_clicked(self):
         print(self._data["suite"].get_conflicting_aliases())
@@ -68,8 +94,8 @@ class SphereView(QtWidgets.QWidget):
 
     def on_context_removed(self, id_):
         self._remove_context_by_id(id_)
-        widget = self._contexts.pop(id_)
-        widget.deleteLater()
+        context_w = self._contexts.pop(id_)
+        context_w.deleteLater()
 
 
 class ContextView(QtWidgets.QWidget):
@@ -91,6 +117,7 @@ class ContextView(QtWidgets.QWidget):
         widgets["request"].setPlaceholderText("requests..")
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["request"])
         layout.addWidget(widgets["resolve"])
@@ -99,6 +126,8 @@ class ContextView(QtWidgets.QWidget):
 
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
         widgets["remove"].clicked.connect(self.on_remove_clicked)
+
+        # self.setMaximumHeight(200)
 
         self._widgets = widgets
         self._id = str(id(self))
@@ -160,14 +189,17 @@ class ToolsView(QtWidgets.QWidget):
         widgets["suffix"].setPlaceholderText("Tool suffix..")
 
         layout = QtWidgets.QVBoxLayout(widgets["editor"])
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["prefix"])
         layout.addWidget(widgets["suffix"])
 
         layout = QtWidgets.QHBoxLayout(widgets["views"])
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["native"])
         layout.addWidget(widgets["expose"])
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["editor"])
         layout.addWidget(widgets["views"])
 

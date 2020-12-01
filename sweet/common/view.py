@@ -145,3 +145,151 @@ class VerticalExtendedTreeView(QtWidgets.QTreeView):
         row_unit = self.uniformed_row_height()
         value = (value - self.verticalOffset()) / row_unit
         return self.indexAt(QtCore.QPoint(0, value))
+
+
+class Spoiler(QtWidgets.QWidget):
+    """
+    Referenced from https://stackoverflow.com/a/37927256
+    """
+    def __init__(self, parent=None, title="", duration=100):
+        super(Spoiler, self).__init__(parent=parent)
+        self.setObjectName("Spoiler")
+
+        widgets = {
+            "head": SpoilerHead(title=title),
+            "body": QtWidgets.QScrollArea(),
+        }
+        widgets["body"].setWidgetResizable(True)
+
+        # start out collapsed
+        widgets["body"].setMaximumHeight(0)
+        widgets["body"].setMinimumHeight(0)
+        # let the entire widget grow and shrink with its content
+        anim = QtCore.QParallelAnimationGroup()
+        for q_obj, property_ in [(self, b"minimumHeight"),
+                                 (self, b"maximumHeight"),
+                                 (widgets["body"], b"maximumHeight")]:
+            anim.addAnimation(QtCore.QPropertyAnimation(q_obj, property_))
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["head"])
+        layout.addWidget(widgets["body"], stretch=True)
+        layout.setSpacing(0)
+
+        def start_animation(checked):
+            direction = (QtCore.QAbstractAnimation.Forward if checked
+                         else QtCore.QAbstractAnimation.Backward)
+            anim.setDirection(direction)
+            anim.start()
+
+        widgets["head"].clicked.connect(start_animation)
+
+        self._widgets = widgets
+        self._anim = anim
+        self._duration = duration
+
+    def set_content(self, widget):
+        body = self._widgets["body"]
+        anim = self._anim
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(widget)
+
+        body.destroy()
+        body.setLayout(layout)
+        collapsed_height = self.sizeHint().height() - body.maximumHeight()
+        content_height = layout.sizeHint().height() + 20
+
+        for i in range(anim.animationCount() - 1):
+            spoiler_anim = anim.animationAt(i)
+            spoiler_anim.setDuration(self._duration)
+            spoiler_anim.setStartValue(collapsed_height)
+            spoiler_anim.setEndValue(collapsed_height + content_height)
+
+        content_anim = anim.animationAt(anim.animationCount() - 1)
+        content_anim.setDuration(self._duration)
+        content_anim.setStartValue(0)
+        content_anim.setEndValue(content_height)
+
+        widget.destroyed.connect(self.deleteLater)
+
+    def set_expanded(self, expand):
+        self._widgets["head"].set_opened(expand)
+
+
+class SpoilerHead(QtWidgets.QWidget):
+    """
+    |> title --------------------
+    """
+    clicked = QtCore.Signal(bool)
+
+    def __init__(self, parent=None, title=""):
+        super(SpoilerHead, self).__init__(parent=parent)
+        self.setObjectName("SpoilerHead")
+
+        widgets = {
+            "separator": QtWidgets.QFrame(),
+            "toggle": QtWidgets.QToolButton(),
+        }
+        widgets["separator"].setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
+        widgets["toggle"].setToolButtonStyle(
+            QtCore.Qt.ToolButtonTextBesideIcon)
+
+        widgets["separator"].setFrameShape(QtWidgets.QFrame.HLine)
+        widgets["separator"].setFrameShadow(QtWidgets.QFrame.Sunken)
+        widgets["toggle"].setArrowType(QtCore.Qt.RightArrow)
+        widgets["toggle"].setText(str(title))
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["toggle"])
+        layout.addWidget(widgets["separator"], stretch=True)
+        layout.setSpacing(0)
+
+        self._widgets = widgets
+        self._opened = False
+        self._hovered = False
+        self._widgets["toggle"].installEventFilter(self)
+
+    def set_opened(self, checked):
+        toggle = self._widgets["toggle"]
+        arrow_type = QtCore.Qt.DownArrow if checked else QtCore.Qt.RightArrow
+
+        toggle.setArrowType(arrow_type)
+        state = "open" if checked else "close"
+        state += ".on" if self._hovered else ""
+        toggle.setProperty("state", state)
+        self.style().unpolish(toggle)
+        self.style().polish(toggle)
+
+        self._opened = checked
+        self.clicked.emit(checked)
+
+    def mouseReleaseEvent(self, event):
+        self.set_opened(not self._opened)
+        return super(SpoilerHead, self).mouseReleaseEvent(event)
+
+    def enterEvent(self, event):
+        toggle = self._widgets["toggle"]
+        toggle.setProperty("state", "open.on" if self._opened else "close.on")
+        self.style().unpolish(toggle)
+        self.style().polish(toggle)
+        self._hovered = True
+        return super(SpoilerHead, self).enterEvent(event)
+
+    def leaveEvent(self, event):
+        toggle = self._widgets["toggle"]
+        toggle.setProperty("state", "open" if self._opened else "close")
+        self.style().unpolish(toggle)
+        self.style().polish(toggle)
+        self._hovered = False
+        return super(SpoilerHead, self).leaveEvent(event)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.MouseButtonRelease:
+            self.set_opened(not self._opened)
+            return True
+
+        return super(SpoilerHead, self).eventFilter(obj, event)

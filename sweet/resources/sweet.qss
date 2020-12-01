@@ -392,3 +392,29 @@ QTreeView::branch:selected {
 QTreeView::branch:hover {
     background-color: %(primary.focus)s;
 }
+
+#Spoiler QScrollArea,
+#SpoilerHead QToolButton {
+    background-color: %(surface.bright)s;
+    border: none;
+}
+
+#SpoilerHead QToolButton::down-arrow:open,
+#SpoilerHead QToolButton[state="open"]::down-arrow {
+    image: url(%(res)s/branch_open.png);
+}
+
+#SpoilerHead QToolButton::right-arrow,
+#SpoilerHead QToolButton[state="close"]::right-arrow {
+    image: url(%(res)s/branch_closed.png);
+}
+
+#SpoilerHead QToolButton::down-arrow:open:hover,
+#SpoilerHead QToolButton[state="open.on"]::down-arrow{
+    image: url(%(res)s/branch_open-on.png);
+}
+
+#SpoilerHead QToolButton::right-arrow:hover,
+#SpoilerHead QToolButton[state="close.on"]::right-arrow {
+    image: url(%(res)s/branch_closed-on.png);
+}
