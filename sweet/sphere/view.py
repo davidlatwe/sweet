@@ -66,7 +66,7 @@ class SphereView(QtWidgets.QWidget):
 
     def on_add_clicked(self):
         context_w = ContextView()
-        spoiler = Spoiler()
+        spoiler = Spoiler(title="untitled..")
         spoiler.set_content(context_w)
         spoiler.set_expanded(True)
 
@@ -75,6 +75,7 @@ class SphereView(QtWidgets.QWidget):
 
         self._contexts[context_w.id()] = context_w
 
+        # context_w.named.connect(spoiler.set_title)
         context_w.resolved.connect(self.on_context_resolved)
         context_w.removed.connect(self.on_context_removed)
 
@@ -99,6 +100,7 @@ class SphereView(QtWidgets.QWidget):
 
 
 class ContextView(QtWidgets.QWidget):
+    named = QtCore.Signal(str)
     resolved = QtCore.Signal(str)
     removed = QtCore.Signal(str)
 
@@ -124,6 +126,7 @@ class ContextView(QtWidgets.QWidget):
         layout.addWidget(widgets["remove"])
         layout.addWidget(widgets["tools"])
 
+        widgets["name"].textChanged.connect(self.on_name_edited)
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
         widgets["remove"].clicked.connect(self.on_remove_clicked)
 
@@ -135,6 +138,9 @@ class ContextView(QtWidgets.QWidget):
 
     def id(self):
         return self._id
+
+    def on_name_edited(self, text):
+        self.named.emit(text)
 
     def on_resolve_clicked(self):
         tools_view = self._widgets["tools"]

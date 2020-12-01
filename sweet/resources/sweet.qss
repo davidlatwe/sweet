@@ -399,6 +399,10 @@ QTreeView::branch:hover {
     border: none;
 }
 
+#SpoilerHead QPushButton {
+    border: none;
+}
+
 #SpoilerHead QToolButton::down-arrow:open,
 #SpoilerHead QToolButton[state="open"]::down-arrow {
     image: url(%(res)s/branch_open.png);

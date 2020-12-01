@@ -14,6 +14,27 @@ def find(*paths):
     return fname.replace("\\", "/")  # Cross-platform compatibility
 
 
+def pixmap(*paths):
+    path = find(*paths)
+    basename = paths[-1]
+    name, ext = os.path.splitext(basename)
+
+    if not ext:
+        path += ".png"
+
+    try:
+        pixmap = _cache[paths]
+    except KeyError:
+        pixmap = QtGui.QPixmap(find(*paths))
+        _cache[paths] = pixmap
+
+    return pixmap
+
+
+def icon(*paths):
+    return QtGui.QIcon(pixmap(*paths))
+
+
 def load_themes():
     _themes.clear()
     for theme in default_themes():
