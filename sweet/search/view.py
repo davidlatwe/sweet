@@ -24,6 +24,7 @@ class PackageView(QtWidgets.QWidget):
         # * add reset button
         # * log model reset time
         # * no-local-package checkBox
+        # * show package paths, and able to update package list per path
 
         self.setObjectName("PackageBook")
         widgets["view"].setObjectName("PackageTreeView")
