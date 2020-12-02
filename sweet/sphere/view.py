@@ -3,13 +3,16 @@ import os
 from Qt5 import QtCore, QtWidgets
 from rez.resolved_context import ResolvedContext
 from rez.suite import Suite, SuiteError
-from ..common.view import Spoiler
+from ..common.view import Spoiler, SlimTableView
+from ..common.delegate import TableViewRowHover
+from .model import ToolsModel
 
 
 class SphereView(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(SphereView, self).__init__(parent=parent)
+        self.setObjectName("SphereView")
 
         widgets = {
             "icon": QtWidgets.QLabel(),
@@ -158,7 +161,7 @@ class ContextView(QtWidgets.QWidget):
 
         context_tools = context.get_tools(request_only=True)
         for pkg_name, (variant, tools) in context_tools.items():
-            tools_view.add_native_tools(tools)
+            tools_view.add_tools(tools)
 
         self._data["context"] = context
         self.resolved.emit(self._id)
@@ -183,39 +186,51 @@ class ToolsView(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(ToolsView, self).__init__(parent=parent)
+        self.setObjectName("ToolsView")
 
         widgets = {
+            "view": SlimTableView(),
             "editor": QtWidgets.QWidget(),
             "prefix": QtWidgets.QLineEdit(),
             "suffix": QtWidgets.QLineEdit(),
-            "views": QtWidgets.QWidget(),
-            "native": QtWidgets.QListWidget(),
-            "expose": QtWidgets.QListWidget(),
-            # double click set alias, selection link with native view
         }
+        widgets["view"].setItemDelegate(TableViewRowHover())
+        widgets["view"].setAlternatingRowColors(True)
+        widgets["view"].setModel(ToolsModel())
         widgets["prefix"].setPlaceholderText("Tool prefix..")
         widgets["suffix"].setPlaceholderText("Tool suffix..")
 
-        layout = QtWidgets.QVBoxLayout(widgets["editor"])
+        layout = QtWidgets.QHBoxLayout(widgets["editor"])
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["prefix"])
         layout.addWidget(widgets["suffix"])
 
-        layout = QtWidgets.QHBoxLayout(widgets["views"])
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["native"])
-        layout.addWidget(widgets["expose"])
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["editor"])
-        layout.addWidget(widgets["views"])
+        layout.addWidget(widgets["view"])
+
+        widgets["prefix"].textChanged.connect(self.on_prefix_changed)
+        widgets["suffix"].textChanged.connect(self.on_suffix_changed)
 
         self._widgets = widgets
 
     def clear(self):
-        self._widgets["native"].clear()
+        model = self._widgets["view"].model()
+        model.clear()
 
-    def add_native_tools(self, tools):
-        # need to check tool name is valid file name
-        self._widgets["native"].addItems(tools)
+    def add_tools(self, tools):
+        model = self._widgets["view"].model()
+        model.add_items(tools)
+
+    def on_prefix_changed(self, text):
+        view = self._widgets["view"]
+        model = view.model()
+        model.set_prefix(text)
+        view.viewport().update()
+
+    def on_suffix_changed(self, text):
+        view = self._widgets["view"]
+        model = view.model()
+        model.set_suffix(text)
+        view.viewport().update()

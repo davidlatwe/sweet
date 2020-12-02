@@ -1,6 +1,6 @@
 
 from Qt5 import QtCore, QtWidgets
-from .. import resources as res
+from . import delegate
 
 
 class VerticalDocTabBar(QtWidgets.QTabBar):
@@ -314,3 +314,24 @@ class SpoilerHead(QtWidgets.QWidget):
             return True
 
         return super(SpoilerHead, self).eventFilter(obj, event)
+
+
+class SlimTableView(QtWidgets.QTableView):
+
+    def __init__(self, parent=None):
+        super(SlimTableView, self).__init__(parent)
+        self.setShowGrid(False)
+        self.verticalHeader().hide()
+        self.setSelectionMode(self.SingleSelection)
+        self.setSelectionBehavior(self.SelectRows)
+        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
+
+        header = self.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
+    def setItemDelegate(self, delegator):
+        super(SlimTableView, self).setItemDelegate(delegator)
+        if isinstance(delegator, delegate.TableViewRowHover):
+            delegator.view = self

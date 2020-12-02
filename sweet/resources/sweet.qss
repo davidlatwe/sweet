@@ -393,6 +393,26 @@ QTreeView::branch:hover {
     background-color: %(primary.focus)s;
 }
 
+#SphereView QScrollArea {
+    border: 1px solid %(border.bright)s;
+}
+
+#ToolsView QAbstractItemView::indicator:unchecked {
+    image: url(%(res)s/eye-fill.svg);
+}
+
+#ToolsView QAbstractItemView::indicator:unchecked:disabled {
+    image: url(%(res)s/eye-fill-dim.svg);
+}
+
+#ToolsView QAbstractItemView::indicator:checked {
+    image: url(%(res)s/eye-slash-fill.svg);
+}
+
+#ToolsView QAbstractItemView::indicator:checked:disabled {
+    image: url(%(res)s/eye-slash-fill-dim.svg);
+}
+
 #Spoiler QScrollArea,
 #SpoilerHead QToolButton {
     background-color: %(surface.bright)s;
