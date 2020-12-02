@@ -21,7 +21,6 @@ QWidget {
     background-color: %(surface.bright)s;
 }
 
-
 QWidget:disabled {
     border: none;
     color: %(on.dim.surface)s;
