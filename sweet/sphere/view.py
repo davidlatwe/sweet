@@ -75,7 +75,9 @@ class SphereView(QtWidgets.QWidget):
 
         self._contexts[context_w.id()] = context_w
 
-        # context_w.named.connect(spoiler.set_title)
+        def on_context_named(text):
+            spoiler.set_title(text or "untitled..")
+        context_w.named.connect(on_context_named)
         context_w.resolved.connect(self.on_context_resolved)
         context_w.removed.connect(self.on_context_removed)
 

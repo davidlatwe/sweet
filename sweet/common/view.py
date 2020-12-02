@@ -234,8 +234,6 @@ class SpoilerHead(QtWidgets.QWidget):
 
         widgets = {
             "toggle": QtWidgets.QToolButton(),
-            "line": QtWidgets.QLineEdit(),
-            "edit": QtWidgets.QPushButton(),
             "separator": QtWidgets.QFrame(),
         }
         widgets["separator"].setSizePolicy(
@@ -247,47 +245,17 @@ class SpoilerHead(QtWidgets.QWidget):
         widgets["separator"].setFrameShadow(QtWidgets.QFrame.Sunken)
         widgets["toggle"].setArrowType(QtCore.Qt.RightArrow)
         widgets["toggle"].setText(title)
-        widgets["line"].setVisible(False)
-        widgets["edit"].setIcon(res.icon("images", "pencil.svg"))
-        widgets["edit"].setIconSize(QtCore.QSize(14, 14))
-        widgets["edit"].setFixedSize(20, 20)
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["toggle"])
-        layout.addWidget(widgets["line"])
-        layout.addWidget(widgets["edit"])
         layout.addWidget(widgets["separator"], stretch=True)
         layout.setSpacing(0)
-
-        def focusOutEvent(event):  # side-effect: trigger edited twice
-            self.on_editing_finished()
-            QtWidgets.QLineEdit.focusOutEvent(widgets["line"], event)
-        widgets["line"].focusOutEvent = focusOutEvent
-        widgets["line"].returnPressed.connect(self.on_editing_finished)
-        widgets["edit"].clicked.connect(self.on_edit_clicked)
 
         self._widgets = widgets
         self._opened = False
         self._hovered = False
         self._widgets["toggle"].installEventFilter(self)
-
-    def on_edit_clicked(self):
-        self.setEnabled(False)
-        self._widgets["toggle"].setText("")
-        self._widgets["edit"].setVisible(False)
-        self._widgets["line"].setVisible(True)
-        self.setEnabled(True)
-        self._widgets["line"].setFocus()
-
-    def on_editing_finished(self):
-        new_title = self._widgets["line"].text()
-        if new_title:
-            self._widgets["toggle"].setText(new_title)
-        else:
-            self._widgets["toggle"].setText("untitled..")
-        self._widgets["line"].setVisible(False)  # todo: this slides..
-        self._widgets["edit"].setVisible(True)
 
     def set_title(self, title):
         self._widgets["toggle"].setText(title)
@@ -311,18 +279,32 @@ class SpoilerHead(QtWidgets.QWidget):
         return super(SpoilerHead, self).mouseReleaseEvent(event)
 
     def enterEvent(self, event):
+        separator = self._widgets["separator"]
+        separator.setFrameShadow(QtWidgets.QFrame.Plain)
+        separator.setProperty("state", "on")
+        self.style().unpolish(separator)
+        self.style().polish(separator)
+
         toggle = self._widgets["toggle"]
         toggle.setProperty("state", "open.on" if self._opened else "close.on")
         self.style().unpolish(toggle)
         self.style().polish(toggle)
+
         self._hovered = True
         return super(SpoilerHead, self).enterEvent(event)
 
     def leaveEvent(self, event):
+        separator = self._widgets["separator"]
+        separator.setFrameShadow(QtWidgets.QFrame.Sunken)
+        separator.setProperty("state", "")
+        self.style().unpolish(separator)
+        self.style().polish(separator)
+
         toggle = self._widgets["toggle"]
         toggle.setProperty("state", "open" if self._opened else "close")
         self.style().unpolish(toggle)
         self.style().polish(toggle)
+
         self._hovered = False
         return super(SpoilerHead, self).leaveEvent(event)
 

@@ -399,8 +399,12 @@ QTreeView::branch:hover {
     border: none;
 }
 
-#SpoilerHead QPushButton {
-    border: none;
+#SpoilerHead QFrame {
+    color: %(surface.bright)s;
+}
+
+#SpoilerHead QFrame[state="on"] {
+    color: %(primary.dim)s;
 }
 
 #SpoilerHead QToolButton::down-arrow:open,
