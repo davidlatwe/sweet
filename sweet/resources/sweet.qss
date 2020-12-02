@@ -397,8 +397,21 @@ QTreeView::branch:hover {
     border: 1px solid %(border.bright)s;
 }
 
+#ToolsView QHeaderView::section,
+#ToolsView QAbstractItemView {
+    background-color: %(background.bright)s;
+}
+
+#ToolsView QAbstractItemView::item {
+    padding-left: 4px;
+}
+
 #ToolsView QAbstractItemView::indicator:unchecked {
     image: url(%(res)s/eye-fill.svg);
+}
+
+#ToolsView QAbstractItemView::indicator:unchecked:hover {
+    image: url(%(res)s/eye-fill-bright.svg);
 }
 
 #ToolsView QAbstractItemView::indicator:unchecked:disabled {
@@ -407,6 +420,10 @@ QTreeView::branch:hover {
 
 #ToolsView QAbstractItemView::indicator:checked {
     image: url(%(res)s/eye-slash-fill.svg);
+}
+
+#ToolsView QAbstractItemView::indicator:checked:hover {
+    image: url(%(res)s/eye-slash-fill-bright.svg);
 }
 
 #ToolsView QAbstractItemView::indicator:checked:disabled {
