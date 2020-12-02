@@ -103,6 +103,6 @@ class ToolsModel(AbstractTableModel):
             )
         if index.column() == 1:
             return (
-                    QtCore.Qt.ItemIsEnabled |
-                    QtCore.Qt.ItemIsEditable
+                QtCore.Qt.ItemIsEnabled |
+                QtCore.Qt.ItemIsEditable
             )
