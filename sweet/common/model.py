@@ -99,3 +99,37 @@ class AbstractTreeModel(QtCore.QAbstractItemModel):
             parent = self.root
 
         parent.add_child(item)
+
+
+class AbstractTableModel(QtCore.QAbstractTableModel):
+    Headers = []
+
+    def __init__(self, parent=None):
+        super(AbstractTableModel, self).__init__(parent)
+        self.items = []
+
+    def reset(self, items=None):
+        pass
+
+    def find(self, name):
+        return next(i for i in self.items if i["name"] == name)
+
+    def findIndex(self, name, column=0):
+        row = self.items.index(self.find(name))
+        return self.createIndex(row, column, QtCore.QModelIndex())
+
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+
+        return len(self.items)
+
+    def columnCount(self, parent=None):
+        return len(self.Headers)
+
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Vertical:
+            return
+
+        if role == QtCore.Qt.DisplayRole:
+            return self.Headers[section]

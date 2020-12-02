@@ -85,13 +85,13 @@ def default_themes():
             "name": "sweet",
             "source": find("sweet.qss"),
             "keywords": {
-                "primary.focus": "#907855",
-                "primary.bright": "#826138",
-                "primary.dim": "#63503F",
+                "primary.focus": "#76654B",
+                "primary.bright": "#654F3E",
+                "primary.dim": "#493D35",
 
-                "secondary.focus": "#795548",
-                "secondary.bright": "#5D4037",
-                "secondary.dim": "#3F3533",
+                "secondary.focus": "#4B6375",
+                "secondary.bright": "#3E6166",
+                "secondary.dim": "#36494A",
 
                 "surface.bright": "#262626",
                 "surface.dim": "#212121",
