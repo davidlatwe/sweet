@@ -10,16 +10,19 @@ class ToolItem(dict):
         data = {
             "name": name,
             "alias": "",
-            "hidden": False,
+            "hide": False,
         }
         super(ToolItem, self).__init__(data)
 
 
 class ToolsModel(AbstractTableModel):
+    ItemRole = QtCore.Qt.UserRole + 10
     Headers = [
         "native",
         "expose",
     ]
+    alias_changed = QtCore.Signal(str, str)
+    hide_changed = QtCore.Signal(str, bool)
 
     def __init__(self, parent=None):
         super(ToolsModel, self).__init__(parent)
@@ -54,21 +57,24 @@ class ToolsModel(AbstractTableModel):
         except IndexError:
             return None
 
+        if role == self.ItemRole:
+            return data.copy()
+
         if col == 0 and role == QtCore.Qt.CheckStateRole:
-            return (QtCheckState.Checked if data["hidden"]
+            return (QtCheckState.Checked if data["hide"]
                     else QtCheckState.Unchecked)
 
         if col == 1 and role == QtCore.Qt.FontRole:
             font = QtGui.QFont()
             font.setBold(bool(data["alias"]))
-            font.setStrikeOut(data["hidden"])
+            font.setStrikeOut(data["hide"])
             return font
 
         if col == 0 and role == QtCore.Qt.DisplayRole:
             return data["name"]
 
         if col == 1 and role == QtCore.Qt.DisplayRole:
-            if data["hidden"]:
+            if data["hide"]:
                 return ""
             elif data["alias"]:
                 return data["alias"]
@@ -85,13 +91,15 @@ class ToolsModel(AbstractTableModel):
             return False
 
         if col == 0 and role == QtCore.Qt.CheckStateRole:
-            data["hidden"] = True if value == QtCheckState.Checked else False
+            data["hide"] = True if value == QtCheckState.Checked else False
             self.dataChanged.emit(index, index.sibling(row, 1))
+            self.hide_changed.emit(data["name"], data["hide"])
 
         if col == 1 and role == QtCore.Qt.EditRole:
             value = value.strip()
             data["alias"] = "" if value == data["name"] else value
             self.dataChanged.emit(index, index)
+            self.alias_changed.emit(data["name"], data["alias"])
 
         return True
 
