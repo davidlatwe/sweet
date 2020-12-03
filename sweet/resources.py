@@ -105,6 +105,9 @@ def default_themes():
                 "error.bright": "#C62828",
                 "error.dim": "#891B1B",
 
+                "warning.bright": "#DC9029",
+                "warning.dim": "#B8843A",
+
                 "on.bright.primary": "#212121",
                 "on.bright.secondary": "#212121",
                 "on.bright.surface": "#A49884",

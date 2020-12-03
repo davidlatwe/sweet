@@ -1,6 +1,7 @@
 
 from Qt5 import QtCore, QtGui
 from ..common.model import AbstractTableModel
+from .. import resources as res
 
 QtCheckState = QtCore.Qt.CheckState
 
@@ -29,6 +30,10 @@ class ToolsModel(AbstractTableModel):
         self._prefix = ""
         self._suffix = ""
         self._conflicts = []
+        self._icons = {
+            "ok": res.icon("images", "circle-fill-ok"),
+            "conflict": res.icon("images", "exclamation-triangle-fill"),
+        }
 
     def _exposed_name(self, data):
         return data["alias"] or (self._prefix + data["name"] + self._suffix)
@@ -74,11 +79,14 @@ class ToolsModel(AbstractTableModel):
         if col == 1 and role == QtCore.Qt.FontRole:
             font = QtGui.QFont()
             font.setBold(bool(data["alias"]))
-
-            if not data["hide"]:  # TODO: change to use icon
-                font.setStrikeOut(self._exposed_name(data) in self._conflicts)
-
             return font
+
+        if col == 1 and role == QtCore.Qt.DecorationRole:
+            if not data["hide"]:
+                conflicted = self._exposed_name(data) in self._conflicts
+                if conflicted:
+                    return self._icons["conflict"]
+                return self._icons["ok"]
 
         if col == 0 and role == QtCore.Qt.DisplayRole:
             return data["name"]

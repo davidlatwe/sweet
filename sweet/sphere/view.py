@@ -155,6 +155,7 @@ class SphereView(QtWidgets.QWidget):
 
     def on_tools_updated(self):
         # TODO: block and unblock gui ?
+        # TODO: block suite save if has conflicts
         conflicts = self._data["suite"].get_conflicting_aliases()
         # update tool models
         for context_w in self._contexts.values():
