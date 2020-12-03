@@ -21,7 +21,7 @@ class SphereView(QtWidgets.QWidget):
         }
 
         widgets = {
-            "icon": QtWidgets.QLabel(),
+            "icon": QtWidgets.QLabel(),  # TODO: not added yet.. (profile)
             "name": QtWidgets.QLineEdit(),
             "create": QtWidgets.QPushButton("Create"),
             "add": QtWidgets.QPushButton(),
@@ -32,6 +32,7 @@ class SphereView(QtWidgets.QWidget):
         }
         widgets["add"].setObjectName("SphereAddContextButton")
 
+        widgets["name"].setPlaceholderText("Suite name..")
         widgets["scroll"].setWidget(widgets["wrap"])
         widgets["scroll"].setWidgetResizable(True)
 
