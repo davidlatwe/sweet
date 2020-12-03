@@ -16,12 +16,15 @@ class SphereView(QtWidgets.QWidget):
         super(SphereView, self).__init__(parent=parent)
         self.setObjectName("SphereView")
 
+        timers = {
+            "toolsUpdate": QtCore.QTimer(self),
+        }
+
         widgets = {
             "icon": QtWidgets.QLabel(),
             "name": QtWidgets.QLineEdit(),
             "create": QtWidgets.QPushButton("Create"),
             "add": QtWidgets.QPushButton(),
-            # "conflict": QtWidgets.QPushButton("Conflict"),
 
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
@@ -47,13 +50,13 @@ class SphereView(QtWidgets.QWidget):
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["create"])
         layout.addWidget(widgets["add"])
-        # layout.addWidget(widgets["conflict"])
         layout.addWidget(widgets["scroll"])
 
         widgets["create"].clicked.connect(self.on_create_clicked)
         widgets["add"].clicked.connect(self.on_add_clicked)
-        # widgets["conflict"].clicked.connect(self.on_conflict_clicked)
+        timers["toolsUpdate"].timeout.connect(self.on_tools_updated)
 
+        self._timers = timers
         self._widgets = widgets
         self._contexts = dict()
         self._data = {
@@ -62,10 +65,13 @@ class SphereView(QtWidgets.QWidget):
             "completerModel": None,
         }
 
+    def reset_tools_update_timer(self):
+        self._timers["toolsUpdate"].start(500)
+
     def set_completer_model(self, model):
         self._data["completerModel"] = model
 
-    def _remove_context_by_id(self, id_):
+    def remove_context_by_id(self, id_):
         added = self._data["addedContext"].get(id_)
         if added is not None:
             self._data["suite"].remove_context(added)
@@ -99,12 +105,9 @@ class SphereView(QtWidgets.QWidget):
         context_w.alias_changed.connect(self.on_context_tool_alias_changed)
         context_w.hide_changed.connect(self.on_context_tool_hide_changed)
 
-    def on_conflict_clicked(self):
-        print(self._data["suite"].get_conflicting_aliases())
-
     def on_context_resolved(self, id_):
         name, context = self._contexts[id_].get_context()
-        self._remove_context_by_id(id_)
+        self.remove_context_by_id(id_)
 
         try:
             self._data["suite"].add_context(name, context)
@@ -112,21 +115,25 @@ class SphereView(QtWidgets.QWidget):
             print(err)
         else:
             self._data["addedContext"][id_] = name
+            self.reset_tools_update_timer()
 
     def on_context_removed(self, id_):
-        self._remove_context_by_id(id_)
+        self.remove_context_by_id(id_)
         context_w = self._contexts.pop(id_)
         context_w.deleteLater()
+        self.reset_tools_update_timer()
 
     def on_context_prefix_changed(self, id_, prefix):
         name = self._data["addedContext"][id_]
         suite = self._data["suite"]
         suite.set_context_prefix(name, prefix)
+        self.reset_tools_update_timer()
 
     def on_context_suffix_changed(self, id_, suffix):
         name = self._data["addedContext"][id_]
         suite = self._data["suite"]
         suite.set_context_suffix(name, suffix)
+        self.reset_tools_update_timer()
 
     def on_context_tool_alias_changed(self, id_, tool, alias):
         name = self._data["addedContext"][id_]
@@ -135,6 +142,7 @@ class SphereView(QtWidgets.QWidget):
             suite.alias_tool(name, tool, alias)
         else:
             suite.unalias_tool(name, tool)
+        self.reset_tools_update_timer()
 
     def on_context_tool_hide_changed(self, id_, tool, hide):
         name = self._data["addedContext"][id_]
@@ -143,6 +151,14 @@ class SphereView(QtWidgets.QWidget):
             suite.hide_tool(name, tool)
         else:
             suite.unhide_tool(name, tool)
+        self.reset_tools_update_timer()
+
+    def on_tools_updated(self):
+        # TODO: block and unblock gui ?
+        conflicts = self._data["suite"].get_conflicting_aliases()
+        # update tool models
+        for context_w in self._contexts.values():
+            context_w.set_conflicting(conflicts)
 
 
 class ContextView(QtWidgets.QWidget):
@@ -264,6 +280,10 @@ class ContextView(QtWidgets.QWidget):
         name, context = self.get_context()
         context.save(os.path.expanduser("~/%s.rxt" % name))
 
+    def set_conflicting(self, conflicts):
+        tools_view = self._widgets["tools"]
+        tools_view.set_conflicting(conflicts)
+
     def validate(self):
         pass
 
@@ -330,3 +350,9 @@ class ToolsView(QtWidgets.QWidget):
         model.set_suffix(text)
         view.viewport().update()
         self.suffix_changed.emit(text)
+
+    def set_conflicting(self, conflicts):
+        view = self._widgets["view"]
+        model = view.model()
+        model.set_conflicting(conflicts)
+        view.viewport().update()

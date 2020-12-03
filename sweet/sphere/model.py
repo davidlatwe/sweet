@@ -28,6 +28,13 @@ class ToolsModel(AbstractTableModel):
         super(ToolsModel, self).__init__(parent)
         self._prefix = ""
         self._suffix = ""
+        self._conflicts = []
+
+    def _exposed_name(self, data):
+        return data["alias"] or (self._prefix + data["name"] + self._suffix)
+
+    def set_conflicting(self, conflicts):
+        self._conflicts = conflicts[:]
 
     def set_prefix(self, text):
         self._prefix = text
@@ -67,7 +74,10 @@ class ToolsModel(AbstractTableModel):
         if col == 1 and role == QtCore.Qt.FontRole:
             font = QtGui.QFont()
             font.setBold(bool(data["alias"]))
-            font.setStrikeOut(data["hide"])
+
+            if not data["hide"]:  # TODO: change to use icon
+                font.setStrikeOut(self._exposed_name(data) in self._conflicts)
+
             return font
 
         if col == 0 and role == QtCore.Qt.DisplayRole:
@@ -76,10 +86,7 @@ class ToolsModel(AbstractTableModel):
         if col == 1 and role == QtCore.Qt.DisplayRole:
             if data["hide"]:
                 return ""
-            elif data["alias"]:
-                return data["alias"]
-            else:
-                return "%s%s%s" % (self._prefix, data["name"], self._suffix)
+            return self._exposed_name(data)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         row = index.row()
