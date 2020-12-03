@@ -188,7 +188,7 @@ class ContextView(QtWidgets.QWidget):
         widgets["request"].setTabChangesFocus(True)
 
         widgets["request"].setMaximumHeight(80)
-        widgets["tools"].setMaximumHeight(200)
+        widgets["tools"].setMaximumHeight(170)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

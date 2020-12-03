@@ -31,7 +31,7 @@ class ToolsModel(AbstractTableModel):
         self._suffix = ""
         self._conflicts = []
         self._icons = {
-            "ok": res.icon("images", "circle-fill-ok"),
+            "ok": res.icon("images", "play-fill-ok"),
             "conflict": res.icon("images", "exclamation-triangle-fill"),
         }
 
