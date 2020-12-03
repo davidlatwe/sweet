@@ -20,7 +20,9 @@ class App(QtWidgets.QWidget):
             "sphere": SphereView(),
         }
 
-        widgets["search"].setModel(PackageModel())
+        model = PackageModel()
+        widgets["search"].setModel(model)
+        widgets["sphere"].set_completer_model(model)
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(widgets["search"])

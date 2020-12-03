@@ -21,6 +21,10 @@ QWidget {
     background-color: %(surface.bright)s;
 }
 
+QWidget:focus {
+    border: 1px solid %(secondary.focus)s;
+}
+
 QWidget:disabled {
     border: none;
     color: %(on.dim.surface)s;
@@ -75,37 +79,31 @@ QGroupBox::indicator {
     margin-left: 2px;
 }
 
-QAbstractItemView::indicator:unchecked,
 QCheckBox::indicator:unchecked,
 QGroupBox::indicator:unchecked {
     image: url(%(res)s/checkbox_unchecked.png);
 }
 
-QAbstractItemView::indicator:unchecked:disabled,
 QCheckBox::indicator:unchecked:disabled,
 QGroupBox::indicator:unchecked:disabled {
     image: url(%(res)s/checkbox_unchecked_dim.png);
 }
 
-QAbstractItemView::indicator:checked,
 QCheckBox::indicator:checked,
 QGroupBox::indicator:checked {
     image: url(%(res)s/checkbox_checked.png);
 }
 
-QAbstractItemView::indicator:checked:disabled,
 QCheckBox::indicator:checked:disabled,
 QGroupBox::indicator:checked:disabled {
     image: url(%(res)s/checkbox_checked_dim.png);
 }
 
-QAbstractItemView::indicator:indeterminate,
 QCheckBox::indicator:indeterminate,
 QGroupBox::indicator:indeterminate {
     image: url(%(res)s/checkbox_indeterminate.png);
 }
 
-QAbstractItemView::indicator:indeterminate:disabled,
 QCheckBox::indicator:indeterminate:disabled,
 QGroupBox::indicator:indeterminate:disabled {
     image: url(%(res)s/checkbox_indeterminate_dim.png);
@@ -354,6 +352,30 @@ QHeaderView::up-arrow {
     border: 0px;
 }
 
+#PackageTreeView::indicator:unchecked {
+    image: url(%(res)s/checkbox_unchecked.png);
+}
+
+#PackageTreeView::indicator:unchecked:disabled {
+    image: url(%(res)s/checkbox_unchecked_dim.png);
+}
+
+#PackageTreeView::indicator:checked {
+    image: url(%(res)s/checkbox_checked.png);
+}
+
+#PackageTreeView::indicator:checked:disabled {
+    image: url(%(res)s/checkbox_checked_dim.png);
+}
+
+#PackageTreeView::indicator:indeterminate {
+    image: url(%(res)s/checkbox_indeterminate.png);
+}
+
+#PackageTreeView::indicator:indeterminate:disabled {
+    image: url(%(res)s/checkbox_indeterminate_dim.png);
+}
+
 QAbstractItemView {
     show-decoration-selected: 1;  /* highlight the decoration (branch) ! */
     background-color: %(surface.bright)s;
@@ -361,6 +383,10 @@ QAbstractItemView {
     border: none;
     selection-color: %(on.bright.primary)s;
     selection-background-color: %(primary.bright)s;
+}
+
+QAbstractItemView:focus {
+    border: none;
 }
 
 QAbstractItemView::item:selected:active,
@@ -404,6 +430,29 @@ QTreeView::branch:hover {
 
 #SphereView QScrollArea {
     border: 1px solid %(border.bright)s;
+}
+
+#SphereAddContextButton {
+    max-width:20px;
+    max-height:20px;
+    min-width:20px;
+    min-height:20px;
+    border-radius: 16px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: %(secondary.dim)s;
+    background-color: %(secondary.bright)s;
+    image: url(%(res)s/plus.svg);
+}
+
+#SphereAddContextButton:hover {
+    border-color: %(on.bright.surface)s;
+    background-color: %(secondary.focus)s;
+    image: url(%(res)s/plus.svg);
+}
+
+#RequestTextEdit {
+    font-family: "JetBrains Mono";
 }
 
 #ToolsView QHeaderView::section,

@@ -133,3 +133,10 @@ class AbstractTableModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.DisplayRole:
             return self.Headers[section]
+
+
+class CompleterProxyModel(QtCore.QSortFilterProxyModel):
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.CheckStateRole:  # disable checkbox
+            return
+        return super(CompleterProxyModel, self).data(index, role)

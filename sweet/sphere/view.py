@@ -3,7 +3,9 @@ import os
 from Qt5 import QtCore, QtWidgets
 from rez.resolved_context import ResolvedContext
 from rez.suite import Suite, SuiteError
+from ..common.model import CompleterProxyModel
 from ..common.view import Spoiler, SlimTableView
+from ..common.view import RequestTextEdit, RequestCompleter
 from ..common.delegate import TableViewRowHover
 from .model import ToolsModel
 
@@ -18,13 +20,14 @@ class SphereView(QtWidgets.QWidget):
             "icon": QtWidgets.QLabel(),
             "name": QtWidgets.QLineEdit(),
             "create": QtWidgets.QPushButton("Create"),
-            "add": QtWidgets.QPushButton("+"),
-            "conflict": QtWidgets.QPushButton("Conflict"),
+            "add": QtWidgets.QPushButton(),
+            # "conflict": QtWidgets.QPushButton("Conflict"),
 
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
             "context": QtWidgets.QWidget(),
         }
+        widgets["add"].setObjectName("SphereAddContextButton")
 
         widgets["scroll"].setWidget(widgets["wrap"])
         widgets["scroll"].setWidgetResizable(True)
@@ -44,19 +47,23 @@ class SphereView(QtWidgets.QWidget):
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["create"])
         layout.addWidget(widgets["add"])
-        layout.addWidget(widgets["conflict"])
+        # layout.addWidget(widgets["conflict"])
         layout.addWidget(widgets["scroll"])
 
         widgets["create"].clicked.connect(self.on_create_clicked)
         widgets["add"].clicked.connect(self.on_add_clicked)
-        widgets["conflict"].clicked.connect(self.on_conflict_clicked)
+        # widgets["conflict"].clicked.connect(self.on_conflict_clicked)
 
         self._widgets = widgets
         self._contexts = dict()
         self._data = {
             "suite": Suite(),
-            "addedContext": dict()
+            "addedContext": dict(),
+            "completerModel": None,
         }
+
+    def set_completer_model(self, model):
+        self._data["completerModel"] = model
 
     def _remove_context_by_id(self, id_):
         added = self._data["addedContext"].get(id_)
@@ -72,6 +79,10 @@ class SphereView(QtWidgets.QWidget):
         spoiler = Spoiler(title="untitled..")
         spoiler.set_content(context_w)
         spoiler.set_expanded(True)
+
+        model = self._data["completerModel"]
+        if model is not None:
+            context_w.setup_request_completer(model)
 
         layout = self._widgets["context"].layout()
         layout.insertRow(0, spoiler)  # new added context has higher priority
@@ -148,7 +159,7 @@ class ContextView(QtWidgets.QWidget):
 
         widgets = {
             "name": QtWidgets.QLineEdit(),
-            "request": QtWidgets.QLineEdit(),
+            "request": RequestTextEdit(),
             "resolve": QtWidgets.QPushButton("Resolve"),
             "remove": QtWidgets.QPushButton("Remove"),
             "tools": ToolsView(),
@@ -156,6 +167,11 @@ class ContextView(QtWidgets.QWidget):
 
         widgets["name"].setPlaceholderText("context name..")
         widgets["request"].setPlaceholderText("requests..")
+        widgets["request"].setAcceptRichText(False)
+        widgets["request"].setTabChangesFocus(True)
+
+        widgets["request"].setMaximumHeight(80)
+        widgets["tools"].setMaximumHeight(200)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -164,6 +180,7 @@ class ContextView(QtWidgets.QWidget):
         layout.addWidget(widgets["resolve"])
         layout.addWidget(widgets["remove"])
         layout.addWidget(widgets["tools"])
+        layout.setSpacing(2)
 
         widgets["name"].textChanged.connect(self.on_name_edited)
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
@@ -173,14 +190,28 @@ class ContextView(QtWidgets.QWidget):
         widgets["tools"].alias_changed.connect(self.on_alias_changed)
         widgets["tools"].hide_changed.connect(self.on_hide_changed)
 
-        # self.setMaximumHeight(200)
-
         self._widgets = widgets
         self._id = str(id(self))
         self._data = dict()
 
     def id(self):
         return self._id
+
+    def setup_request_completer(self, model):
+        requester = self._widgets["request"]
+        completer = RequestCompleter(requester)
+        completer.setModelSorting(completer.CaseInsensitivelySortedModel)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        completer.setWrapAround(False)
+
+        proxy = CompleterProxyModel()
+        proxy.setSourceModel(model)
+        completer.setCompletionColumn(model.CompletionColumn)
+        completer.setCompletionRole(model.CompletionRole)
+        completer.setModel(proxy)
+
+        requester.setCompleter(completer)
+        self._widgets["completer"] = completer
 
     def on_name_edited(self, text):
         self.named.emit(text)
@@ -192,7 +223,7 @@ class ContextView(QtWidgets.QWidget):
             return
 
         tools_view = self._widgets["tools"]
-        request = self._widgets["request"].text()
+        request = self._widgets["request"].toPlainText()
 
         self._data["context"] = None
         tools_view.clear()
