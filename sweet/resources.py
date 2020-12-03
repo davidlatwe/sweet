@@ -14,6 +14,27 @@ def find(*paths):
     return fname.replace("\\", "/")  # Cross-platform compatibility
 
 
+def pixmap(*paths):
+    path = find(*paths)
+    basename = paths[-1]
+    name, ext = os.path.splitext(basename)
+
+    if not ext:
+        path += ".png"
+
+    try:
+        pixmap = _cache[paths]
+    except KeyError:
+        pixmap = QtGui.QPixmap(find(*paths))
+        _cache[paths] = pixmap
+
+    return pixmap
+
+
+def icon(*paths):
+    return QtGui.QIcon(pixmap(*paths))
+
+
 def load_themes():
     _themes.clear()
     for theme in default_themes():
@@ -64,13 +85,13 @@ def default_themes():
             "name": "sweet",
             "source": find("sweet.qss"),
             "keywords": {
-                "primary.focus": "#907855",
-                "primary.bright": "#826138",
-                "primary.dim": "#63503F",
+                "primary.focus": "#76654B",
+                "primary.bright": "#654F3E",
+                "primary.dim": "#493D35",
 
-                "secondary.focus": "#795548",
-                "secondary.bright": "#5D4037",
-                "secondary.dim": "#3F3533",
+                "secondary.focus": "#4B6375",
+                "secondary.bright": "#3E6166",
+                "secondary.dim": "#36494A",
 
                 "surface.bright": "#262626",
                 "surface.dim": "#212121",
@@ -83,6 +104,9 @@ def default_themes():
 
                 "error.bright": "#C62828",
                 "error.dim": "#891B1B",
+
+                "warning.bright": "#DC9029",
+                "warning.dim": "#B8843A",
 
                 "on.bright.primary": "#212121",
                 "on.bright.secondary": "#212121",

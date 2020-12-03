@@ -14,6 +14,8 @@ class PackageItem(TreeItem):
 
 class PackageModel(AbstractTreeModel):
     FilterRole = QtCore.Qt.UserRole + 10
+    CompletionRole = QtCore.Qt.UserRole + 11
+    CompletionColumn = 0
     Headers = [
         "name",
         "tools",
@@ -91,6 +93,13 @@ class PackageModel(AbstractTreeModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return None
+
+        if role == self.CompletionRole:
+            item = index.internalPointer()
+            if item["_type"] == "family":
+                return item["family"]
+            else:
+                return item["version"]
 
         if role == QtCore.Qt.DisplayRole:
             col = index.column()

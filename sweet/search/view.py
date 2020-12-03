@@ -9,6 +9,7 @@ class PackageView(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(PackageView, self).__init__(parent=parent)
+        self.setObjectName("PackageBook")
 
         widgets = {
             "search": QtWidgets.QLineEdit(),
@@ -24,8 +25,8 @@ class PackageView(QtWidgets.QWidget):
         # * add reset button
         # * log model reset time
         # * no-local-package checkBox
+        # * show package paths, and able to update package list per path
 
-        self.setObjectName("PackageBook")
         widgets["view"].setObjectName("PackageTreeView")
         widgets["tab"].setObjectName("PackageTab")
         widgets["page"].setObjectName("BookPage")
