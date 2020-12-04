@@ -27,18 +27,6 @@ class PackageTabBar(common.view.VerticalDocTabBar):
         self.setMinimumHeight(120)
 
 
-class PackageSide(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super(PackageSide, self).__init__(parent=parent)
-        self.setObjectName("PackageSide")
-
-
-class PackagePage(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super(PackagePage, self).__init__(parent=parent)
-        self.setObjectName("PackagePage")
-
-
 class PackageView(QtWidgets.QWidget):
     """Single page tab widget"""
     def __init__(self, parent=None):
@@ -48,11 +36,13 @@ class PackageView(QtWidgets.QWidget):
         widgets = {
             "search": QtWidgets.QLineEdit(),
             "book": QtWidgets.QWidget(),
-            "page": PackagePage(),
-            "side": PackageSide(),
+            "page": QtWidgets.QWidget(),
+            "side": QtWidgets.QWidget(),
             "view": PackageTreeView(),
             "tab": PackageTabBar(),
         }
+        widgets["page"].setObjectName("PackagePage")
+        widgets["side"].setObjectName("PackageSide")
 
         widgets["search"].setPlaceholderText(" Search by family or tool..")
 

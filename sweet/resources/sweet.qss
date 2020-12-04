@@ -216,7 +216,7 @@ QToolTip, QTextEdit, QLineEdit {
 }
 
 #PackageSide {
-    background-color: %(background.bright)s;
+    background-color: transparent;
     border: none;
     border-right: 1px solid %(border.bright)s;
 }
