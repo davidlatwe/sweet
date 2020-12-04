@@ -7,7 +7,13 @@ from ..common.model import CompleterProxyModel
 from ..common.view import Spoiler, SlimTableView
 from ..common.view import RequestTextEdit, RequestCompleter
 from ..common.delegate import TableViewRowHover
-from .model import ToolsModel
+from .model import ToolModel
+
+
+class SphereAddContextButton(QtWidgets.QPushButton):
+    def __init__(self, parent=None):
+        super(SphereAddContextButton, self).__init__(parent=parent)
+        self.setObjectName("SphereAddContextButton")
 
 
 class SphereView(QtWidgets.QWidget):
@@ -16,21 +22,16 @@ class SphereView(QtWidgets.QWidget):
         super(SphereView, self).__init__(parent=parent)
         self.setObjectName("SphereView")
 
-        timers = {
-            "toolsUpdate": QtCore.QTimer(self),
-        }
-
         widgets = {
             "icon": QtWidgets.QLabel(),  # TODO: not added yet.. (profile)
             "name": QtWidgets.QLineEdit(),
             "create": QtWidgets.QPushButton("Create"),
-            "add": QtWidgets.QPushButton(),
+            "add": SphereAddContextButton(),
 
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
             "context": QtWidgets.QWidget(),
         }
-        widgets["add"].setObjectName("SphereAddContextButton")
 
         widgets["name"].setPlaceholderText("Suite name..")
         widgets["scroll"].setWidget(widgets["wrap"])
@@ -55,9 +56,7 @@ class SphereView(QtWidgets.QWidget):
 
         widgets["create"].clicked.connect(self.on_create_clicked)
         widgets["add"].clicked.connect(self.on_add_clicked)
-        timers["toolsUpdate"].timeout.connect(self.on_tools_updated)
 
-        self._timers = timers
         self._widgets = widgets
         self._contexts = dict()
         self._data = {
@@ -153,14 +152,6 @@ class SphereView(QtWidgets.QWidget):
         else:
             suite.unhide_tool(name, tool)
         self.reset_tools_update_timer()
-
-    def on_tools_updated(self):
-        # TODO: block and unblock gui ?
-        # TODO: block suite save if has conflicts
-        conflicts = self._data["suite"].get_conflicting_aliases()
-        # update tool models
-        for context_w in self._contexts.values():
-            context_w.set_conflicting(conflicts)
 
 
 class ContextView(QtWidgets.QWidget):
@@ -306,7 +297,7 @@ class ToolsView(QtWidgets.QWidget):
             "prefix": QtWidgets.QLineEdit(),
             "suffix": QtWidgets.QLineEdit(),
         }
-        model = ToolsModel()
+        model = ToolModel()
 
         widgets["view"].setItemDelegate(TableViewRowHover())
         widgets["view"].setAlternatingRowColors(True)

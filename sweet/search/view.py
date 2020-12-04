@@ -3,35 +3,60 @@ from Qt5 import QtCore, QtWidgets
 from .. import common
 from .model import PackageProxyModel
 
+# TODO:
+# * parse request into model item check state
+# * add reset button
+# * log model reset time
+# * no-local-package checkBox
+# * show package paths, and able to update package list per path
+
+
+class PackageTreeView(common.view.VerticalExtendedTreeView):
+    def __init__(self, parent=None):
+        super(PackageTreeView, self).__init__(parent=parent)
+        self.setObjectName("PackageTreeView")
+        self.setSortingEnabled(True)
+        self.setAlternatingRowColors(True)
+        self.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+
+class PackageTabBar(common.view.VerticalDocTabBar):
+    def __init__(self, parent=None):
+        super(PackageTabBar, self).__init__(parent=parent)
+        self.setObjectName("PackageTabBar")
+        self.setMinimumHeight(120)
+
+
+class PackageSide(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(PackageSide, self).__init__(parent=parent)
+        self.setObjectName("PackageSide")
+
+
+class PackagePage(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(PackagePage, self).__init__(parent=parent)
+        self.setObjectName("PackagePage")
+
 
 class PackageView(QtWidgets.QWidget):
     """Single page tab widget"""
-
     def __init__(self, parent=None):
         super(PackageView, self).__init__(parent=parent)
-        self.setObjectName("PackageBook")
+        self.setObjectName("PackageView")
 
         widgets = {
             "search": QtWidgets.QLineEdit(),
             "book": QtWidgets.QWidget(),
-            "page": QtWidgets.QWidget(),
-            "side": QtWidgets.QWidget(),
-            "view": common.view.VerticalExtendedTreeView(),
-            "tab": common.view.VerticalDocTabBar(),
+            "page": PackagePage(),
+            "side": PackageSide(),
+            "view": PackageTreeView(),
+            "tab": PackageTabBar(),
         }
 
-        # TODO:
-        # * parse request into model item check state
-        # * add reset button
-        # * log model reset time
-        # * no-local-package checkBox
-        # * show package paths, and able to update package list per path
+        widgets["search"].setPlaceholderText(" Search by family or tool..")
 
-        widgets["view"].setObjectName("PackageTreeView")
-        widgets["tab"].setObjectName("PackageTab")
-        widgets["page"].setObjectName("BookPage")
-        widgets["side"].setObjectName("BookSide")
-
+        # Layouts..
         layout = QtWidgets.QVBoxLayout(widgets["side"])
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["tab"])
@@ -54,12 +79,6 @@ class PackageView(QtWidgets.QWidget):
         layout.addWidget(widgets["book"])
         layout.setSpacing(0)
 
-        widgets["tab"].setMinimumHeight(120)
-        widgets["view"].setAlternatingRowColors(True)
-        widgets["view"].setSortingEnabled(True)
-        widgets["view"].sortByColumn(0, QtCore.Qt.AscendingOrder)
-        widgets["search"].setPlaceholderText(" Search by family or tool..")
-
         # Signals..
         header = widgets["view"].header()
         scroll = widgets["view"].verticalScrollBar()
@@ -72,7 +91,7 @@ class PackageView(QtWidgets.QWidget):
         self._widgets = widgets
         self._groups = []
 
-    def setModel(self, model):
+    def set_model(self, model):
         proxy = PackageProxyModel()
         proxy.setSourceModel(model)
         self._widgets["view"].setModel(proxy)
@@ -154,7 +173,3 @@ class PackageView(QtWidgets.QWidget):
         for group in model.name_groups():
             self._groups.append(group)
             tab.addTab(group)
-
-    def reset(self, data):
-        model = self.model()
-        model.reset(data)

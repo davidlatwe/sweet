@@ -7,7 +7,7 @@
     font-family: "Open Sans";
 }
 
-#PackageBook {
+#PackageView {
     min-width: 480px;
     min-height: 520px;
 }
@@ -133,11 +133,11 @@ QToolTip, QTextEdit, QLineEdit {
     background-color: %(surface.bright)s;
 }
 
-#PackageBook {
+#PackageView {
     background-color: %(background.bright)s;
 }/*note: "border: none" does not equal to "border: 1px solid trasnparent",
          there still 1px difference and may affect text position in tab*/
-#PackageTab::tab:left {
+#PackageTabBar::tab:left {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border: 1px solid %(border.dim)s;
@@ -145,22 +145,22 @@ QToolTip, QTextEdit, QLineEdit {
     padding: 8px;
 }
 
-#PackageTab::tab:left:next-selected {
+#PackageTabBar::tab:left:next-selected {
     border-top: 1px solid %(border.dim)s;
 }
 
-#PackageTab::tab:left:selected {
+#PackageTabBar::tab:left:selected {
     color: %(on.bright.surface)s;
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
     border-right: 1px solid transparent;
 }
 
-#PackageTab::tab:left:previous-selected {
+#PackageTabBar::tab:left:previous-selected {
     border-top: 1px solid transparent;
 }
 
-#PackageTab::tab:left:!selected {
+#PackageTabBar::tab:left:!selected {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border-right: 1px solid %(border.bright)s;
@@ -168,21 +168,21 @@ QToolTip, QTextEdit, QLineEdit {
     padding-left: 5px;
 }
 
-#PackageTab::tab:left:last:!selected {
+#PackageTabBar::tab:left:last:!selected {
     border-bottom: 1px solid %(border.dim)s;
 }
 
-#PackageTab::tab:left:last:selected {
+#PackageTabBar::tab:left:last:selected {
     border-bottom: 1px solid %(border.bright)s;
 }
 
-#PackageTab::tab:left:!selected:hover {
+#PackageTabBar::tab:left:!selected:hover {
     color: %(on.bright.primary)s;
     background-color: %(primary.focus)s;
 }
 
-#PackageTab::tab:left:disabled,
-#PackageTab::tab:left:disabled:selected {
+#PackageTabBar::tab:left:disabled,
+#PackageTabBar::tab:left:disabled:selected {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border: 1px solid %(border.dim)s;
@@ -192,30 +192,30 @@ QToolTip, QTextEdit, QLineEdit {
     padding-left: 5px;
 }
 
-#PackageTab::tab:left:disabled:previous-selected {
+#PackageTabBar::tab:left:disabled:previous-selected {
     border-top: 1px solid %(border.dim)s;
 }
 
-#PackageTab::tab:left:disabled:last {
+#PackageTabBar::tab:left:disabled:last {
     border-bottom: 1px solid %(border.dim)s;
 }
 
-#PackageTab::scroller {
+#PackageTabBar::scroller {
     width: 24px;
 }
 
-#PackageTab QToolButton {
+#PackageTabBar QToolButton {
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
 }
 
-#BookPage {
+#PackagePage {
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
     border-left: none;
 }
 
-#BookSide {
+#PackageSide {
     background-color: %(background.bright)s;
     border: none;
     border-right: 1px solid %(border.bright)s;

@@ -7,16 +7,17 @@ QtCheckState = QtCore.Qt.CheckState
 
 
 class ToolItem(dict):
-    def __init__(self, name):
+    def __init__(self, context_name, tool_name):
         data = {
-            "name": name,
+            "context": context_name,
+            "name": tool_name,
             "alias": "",
             "hide": False,
         }
         super(ToolItem, self).__init__(data)
 
 
-class ToolsModel(AbstractTableModel):
+class ToolModel(AbstractTableModel):
     ItemRole = QtCore.Qt.UserRole + 10
     Headers = [
         "native",
@@ -26,7 +27,7 @@ class ToolsModel(AbstractTableModel):
     hide_changed = QtCore.Signal(str, bool)
 
     def __init__(self, parent=None):
-        super(ToolsModel, self).__init__(parent)
+        super(ToolModel, self).__init__(parent)
         self._prefix = ""
         self._suffix = ""
         self._conflicts = []
@@ -129,3 +130,16 @@ class ToolsModel(AbstractTableModel):
                 QtCore.Qt.ItemIsEnabled |
                 QtCore.Qt.ItemIsEditable
             )
+
+
+class ToolProxyModel(QtCore.QSortFilterProxyModel):
+
+    def __init__(self, parent=None):
+        super(ToolProxyModel, self).__init__(parent=parent)
+        self._context_name = None
+
+    def set_context(self, name):
+        self._context_name = name
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        pass
