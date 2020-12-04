@@ -18,6 +18,10 @@ class SphereAddContextButton(QtWidgets.QPushButton):
 
 class SphereView(QtWidgets.QWidget):
 
+    suite_named = QtCore.Signal(str)
+    suite_saved = QtCore.Signal()
+    context_drafted = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(SphereView, self).__init__(parent=parent)
         self.setObjectName("SphereView")
@@ -25,8 +29,8 @@ class SphereView(QtWidgets.QWidget):
         widgets = {
             "icon": QtWidgets.QLabel(),  # TODO: not added yet.. (profile)
             "name": QtWidgets.QLineEdit(),
-            "create": QtWidgets.QPushButton("Create"),
-            "add": SphereAddContextButton(),
+            "save": QtWidgets.QPushButton("Save Suite"),
+            "draft": SphereAddContextButton(),
 
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
@@ -50,113 +54,32 @@ class SphereView(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(widgets["name"])
-        layout.addWidget(widgets["create"])
-        layout.addWidget(widgets["add"])
+        layout.addWidget(widgets["save"])
+        layout.addWidget(widgets["draft"])
         layout.addWidget(widgets["scroll"])
 
-        widgets["create"].clicked.connect(self.on_create_clicked)
-        widgets["add"].clicked.connect(self.on_add_clicked)
+        widgets["name"].textChanged.connect(self.suite_named.emit)
+        widgets["save"].clicked.connect(self.suite_saved.emit)
+        widgets["draft"].clicked.connect(self.context_drafted.emit)
 
         self._widgets = widgets
         self._contexts = dict()
-        self._data = {
-            "suite": Suite(),
-            "addedContext": dict(),
-            "completerModel": None,
-        }
 
-    def reset_tools_update_timer(self):
-        self._timers["toolsUpdate"].start(500)
-
-    def set_completer_model(self, model):
-        self._data["completerModel"] = model
-
-    def remove_context_by_id(self, id_):
-        added = self._data["addedContext"].get(id_)
-        if added is not None:
-            self._data["suite"].remove_context(added)
-
-    def on_create_clicked(self):
-        name = self._widgets["name"].text()
-        self._data["suite"].save(os.path.expanduser("~/%s" % name))
-
-    def on_add_clicked(self):
-        context_w = ContextView()
-        spoiler = Spoiler(title="untitled..")
-        spoiler.set_content(context_w)
-        spoiler.set_expanded(True)
-
-        model = self._data["completerModel"]
-        if model is not None:
-            context_w.setup_request_completer(model)
-
+    def add_context(self, widget, id_):
+        # newly added context has higher priority, hence row=0
         layout = self._widgets["context"].layout()
-        layout.insertRow(0, spoiler)  # new added context has higher priority
+        layout.insertRow(0, widget)
+        self._contexts[id_] = widget
 
-        self._contexts[context_w.id()] = context_w
-
-        def on_context_named(text):
-            spoiler.set_title(text or "untitled..")
-        context_w.named.connect(on_context_named)
-        context_w.resolved.connect(self.on_context_resolved)
-        context_w.removed.connect(self.on_context_removed)
-        context_w.prefix_changed.connect(self.on_context_prefix_changed)
-        context_w.suffix_changed.connect(self.on_context_suffix_changed)
-        context_w.alias_changed.connect(self.on_context_tool_alias_changed)
-        context_w.hide_changed.connect(self.on_context_tool_hide_changed)
-
-    def on_context_resolved(self, id_):
-        name, context = self._contexts[id_].get_context()
-        self.remove_context_by_id(id_)
-
-        try:
-            self._data["suite"].add_context(name, context)
-        except SuiteError as err:
-            print(err)
-        else:
-            self._data["addedContext"][id_] = name
-            self.reset_tools_update_timer()
-
-    def on_context_removed(self, id_):
-        self.remove_context_by_id(id_)
-        context_w = self._contexts.pop(id_)
-        context_w.deleteLater()
-        self.reset_tools_update_timer()
-
-    def on_context_prefix_changed(self, id_, prefix):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
-        suite.set_context_prefix(name, prefix)
-        self.reset_tools_update_timer()
-
-    def on_context_suffix_changed(self, id_, suffix):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
-        suite.set_context_suffix(name, suffix)
-        self.reset_tools_update_timer()
-
-    def on_context_tool_alias_changed(self, id_, tool, alias):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
-        if alias:
-            suite.alias_tool(name, tool, alias)
-        else:
-            suite.unalias_tool(name, tool)
-        self.reset_tools_update_timer()
-
-    def on_context_tool_hide_changed(self, id_, tool, hide):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
-        if hide:
-            suite.hide_tool(name, tool)
-        else:
-            suite.unhide_tool(name, tool)
-        self.reset_tools_update_timer()
+    def remove_context(self, id_):
+        widget = self._contexts.pop(id_)
+        widget.deleteLater()
 
 
 class ContextView(QtWidgets.QWidget):
-    named = QtCore.Signal(str)
-    resolved = QtCore.Signal(str)
+
+    named = QtCore.Signal(str, str)
+    requested = QtCore.Signal(str, list)
     removed = QtCore.Signal(str)
     prefix_changed = QtCore.Signal(str, str)
     suffix_changed = QtCore.Signal(str, str)
@@ -165,13 +88,17 @@ class ContextView(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(ContextView, self).__init__(parent=parent)
+        id_ = str(id(self))
 
         widgets = {
             "name": QtWidgets.QLineEdit(),
             "request": RequestTextEdit(),
             "resolve": QtWidgets.QPushButton("Resolve"),
             "remove": QtWidgets.QPushButton("Remove"),
-            "tools": ToolsView(),
+            "editor": QtWidgets.QWidget(),
+            "prefix": QtWidgets.QLineEdit(),
+            "suffix": QtWidgets.QLineEdit(),
+            "tools": ToolView(context_id=id_),
         }
 
         widgets["name"].setPlaceholderText("context name..")
@@ -179,8 +106,18 @@ class ContextView(QtWidgets.QWidget):
         widgets["request"].setAcceptRichText(False)
         widgets["request"].setTabChangesFocus(True)
 
+        widgets["prefix"].setPlaceholderText("Tool prefix..")
+        widgets["suffix"].setPlaceholderText("Tool suffix..")
+        widgets["tools"].setItemDelegate(TableViewRowHover())
+        widgets["tools"].setAlternatingRowColors(True)
+
         widgets["request"].setMaximumHeight(80)
         widgets["tools"].setMaximumHeight(170)
+
+        layout = QtWidgets.QHBoxLayout(widgets["editor"])
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["prefix"])
+        layout.addWidget(widgets["suffix"])
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -188,23 +125,27 @@ class ContextView(QtWidgets.QWidget):
         layout.addWidget(widgets["request"])
         layout.addWidget(widgets["resolve"])
         layout.addWidget(widgets["remove"])
+        layout.addWidget(widgets["editor"])
         layout.addWidget(widgets["tools"])
         layout.setSpacing(2)
 
         widgets["name"].textChanged.connect(self.on_name_edited)
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
         widgets["remove"].clicked.connect(self.on_remove_clicked)
-        widgets["tools"].prefix_changed.connect(self.on_prefix_changed)
-        widgets["tools"].suffix_changed.connect(self.on_suffix_changed)
-        widgets["tools"].alias_changed.connect(self.on_alias_changed)
-        widgets["tools"].hide_changed.connect(self.on_hide_changed)
+        widgets["prefix"].textChanged.connect(self.on_prefix_changed)
+        widgets["suffix"].textChanged.connect(self.on_suffix_changed)
+        widgets["tools"].alias_changed.connect(self.alias_changed.emit)
+        widgets["tools"].hide_changed.connect(self.hide_changed.emit)
 
         self._widgets = widgets
-        self._id = str(id(self))
+        self._id = id_
         self._data = dict()
 
     def id(self):
         return self._id
+
+    def setup_tool_view(self, model):
+        self._widgets["tools"].setModel(model)
 
     def setup_request_completer(self, model):
         requester = self._widgets["request"]
@@ -223,7 +164,7 @@ class ContextView(QtWidgets.QWidget):
         self._widgets["completer"] = completer
 
     def on_name_edited(self, text):
-        self.named.emit(text)
+        self.named.emit(self._id, text)
 
     def on_resolve_clicked(self):
         name = self._widgets["name"].text()
@@ -253,99 +194,46 @@ class ContextView(QtWidgets.QWidget):
         self.removed.emit(self._id)
 
     def on_prefix_changed(self, prefix):
+        model = self._widgets["tools"].model()
+        model.set_prefix(prefix)
         self.prefix_changed.emit(self._id, prefix)
 
     def on_suffix_changed(self, suffix):
+        model = self._widgets["tools"].model()
+        model.set_suffix(suffix)
         self.suffix_changed.emit(self._id, suffix)
 
-    def on_alias_changed(self, tool, alias):
-        self.alias_changed.emit(self._id, tool, alias)
-
-    def on_hide_changed(self, tool, hide):
-        self.hide_changed.emit(self._id, tool, hide)
-
-    def get_context(self):
-        name = self._widgets["name"].text()  # check name valid
-        context = self._data["context"]
-        return name, context
-
-    def save_context(self):
-        name, context = self.get_context()
-        context.save(os.path.expanduser("~/%s.rxt" % name))
-
     def set_conflicting(self, conflicts):
-        tools_view = self._widgets["tools"]
-        tools_view.set_conflicting(conflicts)
-
-    def validate(self):
-        pass
-
-
-class ToolsView(QtWidgets.QWidget):
-    prefix_changed = QtCore.Signal(str)
-    suffix_changed = QtCore.Signal(str)
-    alias_changed = QtCore.Signal(str, str)
-    hide_changed = QtCore.Signal(str, bool)
-
-    def __init__(self, parent=None):
-        super(ToolsView, self).__init__(parent=parent)
-        self.setObjectName("ToolsView")
-
-        widgets = {
-            "view": SlimTableView(),
-            "editor": QtWidgets.QWidget(),
-            "prefix": QtWidgets.QLineEdit(),
-            "suffix": QtWidgets.QLineEdit(),
-        }
-        model = ToolModel()
-
-        widgets["view"].setItemDelegate(TableViewRowHover())
-        widgets["view"].setAlternatingRowColors(True)
-        widgets["view"].setModel(model)
-        widgets["prefix"].setPlaceholderText("Tool prefix..")
-        widgets["suffix"].setPlaceholderText("Tool suffix..")
-
-        layout = QtWidgets.QHBoxLayout(widgets["editor"])
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["prefix"])
-        layout.addWidget(widgets["suffix"])
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["editor"])
-        layout.addWidget(widgets["view"])
-
-        widgets["prefix"].textChanged.connect(self.on_prefix_changed)
-        widgets["suffix"].textChanged.connect(self.on_suffix_changed)
-        model.alias_changed.connect(self.alias_changed.emit)
-        model.hide_changed.connect(self.hide_changed.emit)
-
-        self._widgets = widgets
+        model = self._widgets["tools"].model()
+        model.set_conflicting(conflicts)
 
     def clear(self):
-        model = self._widgets["view"].model()
+        model = self._widgets["tools"].model()
         model.clear()
 
     def add_tools(self, tools):
-        model = self._widgets["view"].model()
+        model = self._widgets["tools"].model()
         model.add_items(tools)
 
-    def on_prefix_changed(self, text):
-        view = self._widgets["view"]
-        model = view.model()
-        model.set_prefix(text)
-        view.viewport().update()
-        self.prefix_changed.emit(text)
 
-    def on_suffix_changed(self, text):
-        view = self._widgets["view"]
-        model = view.model()
-        model.set_suffix(text)
-        view.viewport().update()
-        self.suffix_changed.emit(text)
+class ToolView(SlimTableView):
+    alias_changed = QtCore.Signal(str, str, str)
+    hide_changed = QtCore.Signal(str, str, bool)
 
-    def set_conflicting(self, conflicts):
-        view = self._widgets["view"]
-        model = view.model()
-        model.set_conflicting(conflicts)
-        view.viewport().update()
+    def __init__(self, context_id, parent=None):
+        super(ToolView, self).__init__(parent=parent)
+        self.setObjectName("ToolView")
+        self._id = context_id
+
+    def dataChanged(self, first, last, roles=None):
+        roles = roles or []
+
+        if QtCore.Qt.CheckStateRole in roles:
+            data = last.data(ToolModel.ItemRole)
+            self.hide_changed.emit(self._id, data["name"], data["hide"])
+
+        if QtCore.Qt.EditRole in roles:
+            data = last.data(ToolModel.ItemRole)
+            self.alias_changed.emit(self._id, data["name"], data["alias"])
+
+        super(ToolView, self).dataChanged(first, last, roles)

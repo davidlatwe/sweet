@@ -14,5 +14,5 @@ def main():
     window.setStyleSheet(qss)
     window.show()
 
-    ctrl.search_packages(on_time=200)
+    ctrl.defer_search_packages(on_time=200)
     app.exec_()
