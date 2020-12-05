@@ -1,6 +1,5 @@
 
 import os
-from collections import defaultdict
 from Qt5 import QtCore
 from . import _rezapi as rez
 from .search.model import PackageModel
@@ -16,7 +15,7 @@ class Controller(QtCore.QObject):
             "suite": rez.SweetSuite(),
             "suiteName": "",
             "contextName": dict(),
-            "contextRequests": defaultdict(list),  # success requests history
+            "contextRequests": dict(),  # success requests history
         }
 
         timers = {
@@ -83,6 +82,7 @@ class Controller(QtCore.QObject):
 
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
+        self._state["contextRequests"][id_] = []
         self._models["contextTool"][id_] = ToolModel()
 
     def defer_search_packages(self, on_time=50):
