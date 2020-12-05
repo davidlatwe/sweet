@@ -52,6 +52,7 @@ class SphereView(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["save"])
         layout.addWidget(widgets["draft"])
