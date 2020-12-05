@@ -1,7 +1,7 @@
 
 import os
 import sys
-from Qt5 import QtWidgets
+from Qt5 import QtCore, QtWidgets
 from . import control, view, resources
 
 
@@ -11,10 +11,15 @@ def main():
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
+    storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
+                               QtCore.QSettings.UserScope,
+                               "Sweet", "preferences")
+    print("Preference file: %s" % storage.fileName())
+
     resources.load_themes()
     qss = resources.load_theme()
 
-    ctrl = control.Controller()
+    ctrl = control.Controller(storage)
     window = view.Window(ctrl=ctrl)
     window.setStyleSheet(qss)
     window.show()

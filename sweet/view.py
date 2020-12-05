@@ -94,3 +94,22 @@ class Window(QtWidgets.QMainWindow):
         view.suffix_changed.connect(ctrl.on_context_suffix_changed)
         view.alias_changed.connect(ctrl.on_context_tool_alias_changed)
         view.hide_changed.connect(ctrl.on_context_tool_hide_changed)
+
+    def showEvent(self, event):
+        super(Window, self).showEvent(event)
+        splitter = self._panels["split"]
+        self._ctrl.store("default/geometry", self.saveGeometry())
+        self._ctrl.store("default/windowState", self.saveState())
+        self._ctrl.store("default/windowSplitter", splitter.saveState())
+
+        if self._ctrl.retrieve("geometry"):
+            self.restoreGeometry(self._ctrl.retrieve("geometry"))
+            self.restoreState(self._ctrl.retrieve("windowState"))
+            splitter.restoreState(self._ctrl.retrieve("windowSplitter"))
+
+    def closeEvent(self, event):
+        splitter = self._panels["split"]
+        self._ctrl.store("geometry", self.saveGeometry())
+        self._ctrl.store("windowState", self.saveState())
+        self._ctrl.store("windowSplitter", splitter.saveState())
+        return super(Window, self).closeEvent(event)

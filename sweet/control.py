@@ -9,7 +9,7 @@ from .sphere.model import ToolModel
 
 class Controller(QtCore.QObject):
 
-    def __init__(self, parent=None):
+    def __init__(self, storage, parent=None):
         super(Controller, self).__init__(parent=parent)
 
         state = {
@@ -35,6 +35,7 @@ class Controller(QtCore.QObject):
         self._state = state
         self._timers = timers
         self._models = models
+        self._storage = storage
 
     @property
     def state(self):
@@ -43,6 +44,42 @@ class Controller(QtCore.QObject):
     @property
     def models(self):
         return self._models
+
+    def store(self, key, value):
+        """Write to persistent storage
+
+        Arguments:
+            key (str): Name of variable
+            value (object): Any datatype
+
+        """
+        self._storage.setValue(key, value)
+
+    def retrieve(self, key, default=None):
+        """Read from persistent storage
+
+        Arguments:
+            key (str): Name of variable
+            default (any): default value if key not found
+
+        """
+        value = self._storage.value(key)
+
+        if value is None:
+            value = default
+
+        # Account for poor serialisation format
+        # TODO: Implement a better format
+        true = ["2", "1", "true", True, 1, 2]
+        false = ["0", "false", False, 0]
+
+        if value in true:
+            value = True
+
+        if value in false:
+            value = False
+
+        return value
 
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
