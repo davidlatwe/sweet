@@ -108,8 +108,8 @@ class ContextView(QtWidgets.QWidget):
         widgets["tools"].setItemDelegate(TableViewRowHover())
         widgets["tools"].setAlternatingRowColors(True)
 
-        widgets["request"].setMaximumHeight(80)
-        widgets["tools"].setMaximumHeight(170)
+        widgets["request"].setMaximumHeight(60)
+        widgets["tools"].setMaximumHeight(140)
 
         layout = QtWidgets.QHBoxLayout(widgets["editor"])
         layout.setContentsMargins(0, 0, 0, 0)
@@ -185,6 +185,9 @@ class ToolView(SlimTableView):
         super(ToolView, self).__init__(parent=parent)
         self.setObjectName("ToolView")
         self._id = context_id
+
+        header = self.verticalHeader()
+        header.setDefaultSectionSize(24)  # fixed table row height
 
     def dataChanged(self, first, last, roles=None):
         roles = roles or []

@@ -513,6 +513,7 @@ QTreeView::branch:hover {
 #ToolView QHeaderView::section,
 #ToolView {
     background-color: %(background.bright)s;
+    alternate-background-color: %(background.dim)s;
 }
 
 #ToolView::item {
