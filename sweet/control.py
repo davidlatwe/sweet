@@ -153,6 +153,9 @@ class Controller(QtCore.QObject):
 
             tool.set_conflicting(conflicts)
 
+    def on_suite_named(self, name):
+        self._state["suiteName"] = name
+
     def on_suite_saved(self):
         suite = self._state["suite"]
         name = self._state["suiteName"]
@@ -161,7 +164,7 @@ class Controller(QtCore.QObject):
             for id_, n in self._state["contextName"].items():
                 suite.rename_context(id_, n)
 
-            suite.save(os.path.expanduser("~/%s" % name))
+            suite.save(os.path.expanduser("~/rez/suite/%s" % name))
 
             # restore id naming
             for id_, n in self._state["contextName"].items():

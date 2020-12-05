@@ -33,8 +33,9 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(widgets["package"])
         layout.addWidget(widgets["sphere"])
 
-        widgets["sphere"].context_drafted.connect(self.on_context_drafted)
+        widgets["sphere"].suite_named.connect(ctrl.on_suite_named)
         widgets["sphere"].suite_saved.connect(ctrl.on_suite_saved)
+        widgets["sphere"].context_drafted.connect(self.on_context_drafted)
 
         self._ctrl = ctrl
         self._panels = panels
