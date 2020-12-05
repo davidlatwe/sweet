@@ -8,10 +8,19 @@ from rez.config import config
 class SweetSuite(Suite):
 
     def has_context(self, name):
+        """Is context name exists in suite ?"""
         return name in self.contexts
 
     def rename_context(self, old_name, new_name):
-        # for rename freely with GUI
+        """Rename context
+
+        Tools will be flushed after rename.
+
+        Args:
+            old_name (str): Original context name.
+            new_name (str): New context name.
+
+        """
         if old_name not in self.contexts:
             raise SuiteError("Context not in suite: %r" % old_name)
 
@@ -21,6 +30,18 @@ class SweetSuite(Suite):
         self._flush_tools()
 
     def update_context(self, name, context):
+        """Add or update a context to the suite
+
+        If `name` exist in suite, `context` will be replaced and tools
+        be reset. This is to avoid removing and adding back context under
+        same name when re-requesting packages, which will lead to context
+        priority change.
+
+        Args:
+            name (str): Name to store the context under.
+            context (ResolvedContext): Context to add/update.
+
+        """
         # so we don't need to worry about priority change if remove and re-add
         if not context.success:
             raise SuiteError("Context is not resolved: %r" % name)
@@ -35,6 +56,7 @@ class SweetSuite(Suite):
         else:
             self.add_context(name, context)
 
+    # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
 
 

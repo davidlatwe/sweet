@@ -25,7 +25,7 @@ class SphereView(QtWidgets.QWidget):
 
         widgets = {
             "icon": QtWidgets.QLabel(),  # TODO: not added yet.. (profile)
-            "name": QtWidgets.QLineEdit(),
+            "name": QtWidgets.QLineEdit(),  # TODO: add name validator
             "save": QtWidgets.QPushButton("Save Suite"),
             "draft": SphereAddContextButton(),
 
@@ -88,7 +88,7 @@ class ContextView(QtWidgets.QWidget):
         id_ = str(id(self))
 
         widgets = {
-            "name": QtWidgets.QLineEdit(),
+            "name": QtWidgets.QLineEdit(),  # TODO: add name validator
             "request": RequestTextEdit(),
             "resolve": QtWidgets.QPushButton("Resolve"),
             "remove": QtWidgets.QPushButton("Remove"),
