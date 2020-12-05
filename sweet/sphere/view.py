@@ -46,7 +46,7 @@ class SphereView(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         layout = QtWidgets.QFormLayout(widgets["context"])
-        layout.setContentsMargins(6, 8, 4, 4)
+        layout.setContentsMargins(6, 8, 6, 4)
         layout.setFieldGrowthPolicy(layout.ExpandingFieldsGrow)
         layout.setFormAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         layout.setSpacing(0)
@@ -87,6 +87,7 @@ class ContextView(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(ContextView, self).__init__(parent=parent)
+        self.setObjectName("ContextView")
         id_ = str(id(self))
 
         panels = {
@@ -95,7 +96,10 @@ class ContextView(QtWidgets.QWidget):
         }
 
         widgets = {
-            "name": QtWidgets.QLineEdit(),  # TODO: add name validator
+            # TODO:
+            #  * add name validator
+            #  * load context if input name is filepath ends with .rxt
+            "name": QtWidgets.QLineEdit(),
             "bump": QtWidgets.QPushButton(),
             "parse": QtWidgets.QPushButton(),
             "resolve": QtWidgets.QPushButton(),

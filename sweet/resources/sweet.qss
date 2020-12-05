@@ -120,7 +120,7 @@ QPushButton:pressed {
 
 QToolTip, QTextEdit, QLineEdit {
     border: 1px solid %(border.bright)s;
-    background-color: %(surface.bright)s;
+    background-color: %(background.bright)s;
 }
 
 QTabWidget{
@@ -596,7 +596,12 @@ QTreeView::branch:hover {
     image: url(%(res)s/trash-fill.svg);
 }
 
+#ContextView QLineEdit {
+    background-color: %(background.bright)s;
+}
+
 #RequestTextEdit {
+    background-color: %(background.bright)s;
     font-family: "JetBrains Mono";
 }
 
