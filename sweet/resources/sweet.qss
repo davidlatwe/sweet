@@ -7,16 +7,6 @@
     font-family: "Open Sans";
 }
 
-#PackageView {
-    min-width: 480px;
-    min-height: 520px;
-}
-
-#SphereView {
-    min-width: 360px;
-    min-height: 520px;
-}
-
 QWidget {
     background-color: %(surface.bright)s;
 }
@@ -133,11 +123,65 @@ QToolTip, QTextEdit, QLineEdit {
     background-color: %(surface.bright)s;
 }
 
-#PackageView {
+QTabWidget{
+    border: none;
+}
+
+QTabWidget::pane {
+    border: 1px solid %(border.bright)s;
+    border-radius: 0px;
+    padding: 3px;
+}
+
+QTabBar
+{
+    qproperty-drawBase: 0;
+}
+
+QTabBar:focus
+{
+    border: 0px transparent;
+}
+
+QTabBar::tab {
+    background-color: %(surface.bright)s;
+    border: 1px solid %(border.bright)s;
+    padding: 5px;
+}
+
+QTabBar::tab:!selected
+{
+    color: %(on.dim.background)s;
     background-color: %(background.bright)s;
-}/*note: "border: none" does not equal to "border: 1px solid trasnparent",
+}
+
+QTabBar::tab:!selected:hover {
+    color: %(on.bright.primary)s;
+    background-color: %(primary.focus)s;
+}
+
+/*note: "border: none" does not equal to "border: 1px solid trasnparent",
          there still 1px difference and may affect text position in tab*/
-#PackageTabBar::tab:left {
+
+QTabBar::tab:top {
+    border-right: none;
+    border-bottom: none;
+}
+
+QTabBar::tab:top:last {
+    border-right: 1px solid %(border.bright)s;
+}
+
+QTabBar::tab:bottom {
+    border-right: none;
+    border-top: none;
+}
+
+QTabBar::tab:bottom:last {
+    border-right: 1px solid %(border.bright)s;
+}
+
+QTabBar::tab:left {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border: 1px solid %(border.dim)s;
@@ -145,22 +189,22 @@ QToolTip, QTextEdit, QLineEdit {
     padding: 8px;
 }
 
-#PackageTabBar::tab:left:next-selected {
+QTabBar::tab:left:next-selected {
     border-top: 1px solid %(border.dim)s;
 }
 
-#PackageTabBar::tab:left:selected {
+QTabBar::tab:left:selected {
     color: %(on.bright.surface)s;
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
     border-right: 1px solid transparent;
 }
 
-#PackageTabBar::tab:left:previous-selected {
+QTabBar::tab:left:previous-selected {
     border-top: 1px solid transparent;
 }
 
-#PackageTabBar::tab:left:!selected {
+QTabBar::tab:left:!selected {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border-right: 1px solid %(border.bright)s;
@@ -168,21 +212,21 @@ QToolTip, QTextEdit, QLineEdit {
     padding-left: 5px;
 }
 
-#PackageTabBar::tab:left:last:!selected {
+QTabBar::tab:left:last:!selected {
     border-bottom: 1px solid %(border.dim)s;
 }
 
-#PackageTabBar::tab:left:last:selected {
+QTabBar::tab:left:last:selected {
     border-bottom: 1px solid %(border.bright)s;
 }
 
-#PackageTabBar::tab:left:!selected:hover {
+QTabBar::tab:left:!selected:hover {
     color: %(on.bright.primary)s;
     background-color: %(primary.focus)s;
 }
 
-#PackageTabBar::tab:left:disabled,
-#PackageTabBar::tab:left:disabled:selected {
+QTabBar::tab:left:disabled,
+QTabBar::tab:left:disabled:selected {
     color: %(on.dim.background)s;
     background-color: %(background.dim)s;
     border: 1px solid %(border.dim)s;
@@ -192,21 +236,32 @@ QToolTip, QTextEdit, QLineEdit {
     padding-left: 5px;
 }
 
-#PackageTabBar::tab:left:disabled:previous-selected {
+QTabBar::tab:left:disabled:previous-selected {
     border-top: 1px solid %(border.dim)s;
 }
 
-#PackageTabBar::tab:left:disabled:last {
+QTabBar::tab:left:disabled:last {
     border-bottom: 1px solid %(border.dim)s;
 }
 
-#PackageTabBar::scroller {
+QTabBar::scroller {
     width: 24px;
 }
 
-#PackageTabBar QToolButton {
+QTabBar QToolButton {
+    color: %(on.bright.surface)s;
     background-color: %(surface.bright)s;
     border: 1px solid %(border.bright)s;
+}
+
+QTabBar QToolButton:disabled {
+    color: %(on.dim.surface)s;
+    background-color: %(surface.dim)s;
+    border: 1px solid %(border.bright)s;
+}
+
+#PackageView {
+    background-color: %(background.bright)s;
 }
 
 #PackagePage {
@@ -520,4 +575,37 @@ QTreeView::branch:hover {
 #SpoilerHead QToolButton::right-arrow:hover,
 #SpoilerHead QToolButton[state="close.on"]::right-arrow {
     image: url(%(res)s/branch_closed-on.png);
+}
+
+QSplitter::handle {
+    border: 1px dashed #3A3939;
+}
+
+QSplitter::handle:hover {
+    background-color: #787876;
+    border: 1px solid #3A3939;
+}
+
+QSplitter::handle:horizontal {
+    width: 1px;
+    background-color: transparent;
+}
+
+QSplitter::handle:vertical {
+    height: 1px;
+    background-color: transparent;
+}
+
+QSplitter::handle:vertical:hover {
+    background-color: #787876;
+    border: 1px solid #3A3939;
+}
+
+QSplitter::handle:horizontal:hover {
+    background-color: #787876;
+    border: 1px solid #3A3939;
+}
+
+QSplitter {
+    border: 0px;
 }

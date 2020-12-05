@@ -19,6 +19,15 @@ class Window(QtWidgets.QMainWindow):
 
         panels = {
             "body": QtWidgets.QWidget(),
+            "split": QtWidgets.QSplitter(),
+            "page": QtWidgets.QTabWidget(),
+        }
+
+        pages = {
+            "package": QtWidgets.QWidget(),
+            "suite": QtWidgets.QWidget(),
+            "profile": QtWidgets.QWidget(),
+            "preference": QtWidgets.QWidget(),
         }
 
         widgets = {
@@ -29,9 +38,21 @@ class Window(QtWidgets.QMainWindow):
         widgets["package"].set_model(ctrl.models["package"])
         widgets["package"].init_column_width()
 
-        layout = QtWidgets.QHBoxLayout(panels["body"])
+        # layouts..
+        panels["page"].addTab(pages["package"], "Package")
+        panels["page"].addTab(pages["suite"], "Suite")
+        panels["page"].addTab(pages["profile"], "Profile")
+        panels["page"].addTab(pages["preference"], "Preference")
+
+        panels["split"].setOrientation(QtCore.Qt.Horizontal)
+        panels["split"].addWidget(panels["page"])
+        panels["split"].addWidget(widgets["sphere"])
+
+        layout = QtWidgets.QHBoxLayout(pages["package"])
         layout.addWidget(widgets["package"])
-        layout.addWidget(widgets["sphere"])
+
+        layout = QtWidgets.QHBoxLayout(panels["body"])
+        layout.addWidget(panels["split"])
 
         widgets["sphere"].suite_named.connect(ctrl.on_suite_named)
         widgets["sphere"].suite_saved.connect(ctrl.on_suite_saved)
@@ -39,6 +60,7 @@ class Window(QtWidgets.QMainWindow):
 
         self._ctrl = ctrl
         self._panels = panels
+        self._pages = pages
         self._widgets = widgets
 
         self.setCentralWidget(panels["body"])
