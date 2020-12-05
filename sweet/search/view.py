@@ -20,7 +20,7 @@ class PackageTreeView(common.view.VerticalExtendedTreeView):
         self.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         time_delegate = common.delegate.PrettyTimeDelegate()
-        self.setItemDelegateForColumn(2, time_delegate)
+        self.setItemDelegateForColumn(1, time_delegate)
 
         self._delegates = {
             "date": time_delegate
@@ -87,6 +87,11 @@ class PackageView(QtWidgets.QWidget):
 
         self._widgets = widgets
         self._groups = []
+
+    def init_column_width(self):
+        # ignore this if window geo saved
+        self._widgets["view"].setColumnWidth(0, 180)  # name
+        self._widgets["view"].setColumnWidth(1, 120)  # date
 
     def set_model(self, model):
         proxy = PackageProxyModel()

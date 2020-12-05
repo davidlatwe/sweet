@@ -27,6 +27,7 @@ class Window(QtWidgets.QMainWindow):
         }
 
         widgets["package"].set_model(ctrl.models["package"])
+        widgets["package"].init_column_width()
 
         layout = QtWidgets.QHBoxLayout(panels["body"])
         layout.addWidget(widgets["package"])

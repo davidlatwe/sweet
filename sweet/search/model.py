@@ -1,5 +1,4 @@
 
-from datetime import datetime
 from Qt5 import QtCore, QtGui
 from ..common.model import AbstractTreeModel, TreeItem
 
@@ -18,8 +17,8 @@ class PackageModel(AbstractTreeModel):
     CompletionColumn = 0
     Headers = [
         "name",
-        "tools",
         "date",
+        "tools",
     ]
 
     def __init__(self, parent=None):
