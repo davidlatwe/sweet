@@ -39,17 +39,11 @@ class PackageModel(AbstractTreeModel):
         family = None
         families = set()
 
-        def get_date(timestamp):
-            # TODO: Convert date into much readable format, e.g.:
-            #   "A month ago", "X weeks ago", "Today 3:05 PM", "Just now"
-            #   (shouldn't need using time delegate)
-            return str(datetime.fromtimestamp(timestamp))
-
         def cover_previous_family():
             if family:
                 family["tools"] = ", ".join(sorted(family["tools"]))
                 family["timestamp"] = sorted(family["timestamp"])[-1]
-                family["date"] = get_date(family["timestamp"])
+                family["date"] = family["timestamp"]
 
         for item in sorted(items or [], key=lambda i: i["family"].lower()):
             family_name = item["family"]
@@ -61,7 +55,7 @@ class PackageModel(AbstractTreeModel):
                 "_group": initial,
                 "name": item["qualified_name"],
                 "tools": ", ".join(sorted(tools)),
-                "date": get_date(item["timestamp"])
+                "date": item["timestamp"]
             })
             item = PackageItem(item)
 

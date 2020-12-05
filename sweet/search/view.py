@@ -19,6 +19,13 @@ class PackageTreeView(common.view.VerticalExtendedTreeView):
         self.setAlternatingRowColors(True)
         self.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
+        time_delegate = common.delegate.PrettyTimeDelegate()
+        self.setItemDelegateForColumn(2, time_delegate)
+
+        self._delegates = {
+            "date": time_delegate
+        }
+
 
 class PackageTabBar(common.view.VerticalDocTabBar):
     def __init__(self, parent=None):
