@@ -56,6 +56,11 @@ class ToolModel(AbstractTableModel):
         self._suffix = text
         self.dataChanged.emit(first, last)
 
+    def iter_exposed_tools(self):
+        for item in self.items:
+            if not item["hide"]:
+                yield self._exposed_name(item)
+
     def clear(self):
         self.beginResetModel()
         self.items.clear()

@@ -1,9 +1,14 @@
 
+import os
+import sys
 from Qt5 import QtWidgets
 from . import control, view, resources
 
 
 def main():
+    if sys.platform == "darwin":
+        os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
+
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
     resources.load_themes()
@@ -15,4 +20,4 @@ def main():
     window.show()
 
     ctrl.defer_search_packages(on_time=200)
-    app.exec_()
+    return app.exec_()

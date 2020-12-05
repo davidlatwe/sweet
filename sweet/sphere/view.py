@@ -1,10 +1,7 @@
 
-import os
 from Qt5 import QtCore, QtWidgets
-from rez.resolved_context import ResolvedContext
-from rez.suite import Suite, SuiteError
 from ..common.model import CompleterProxyModel
-from ..common.view import Spoiler, SlimTableView
+from ..common.view import SlimTableView
 from ..common.view import RequestTextEdit, RequestCompleter
 from ..common.delegate import TableViewRowHover
 from .model import ToolModel
@@ -167,53 +164,17 @@ class ContextView(QtWidgets.QWidget):
         self.named.emit(self._id, text)
 
     def on_resolve_clicked(self):
-        name = self._widgets["name"].text()
-        if not name:
-            print("Name context first.")
-            return
-
-        tools_view = self._widgets["tools"]
         request = self._widgets["request"].toPlainText()
-
-        self._data["context"] = None
-        tools_view.clear()
-        try:
-            context = ResolvedContext(request.split())
-        except Exception as e:
-            print(e)
-            return
-
-        context_tools = context.get_tools(request_only=True)
-        for pkg_name, (variant, tools) in context_tools.items():
-            tools_view.add_tools(tools)
-
-        self._data["context"] = context
-        self.resolved.emit(self._id)
+        self.requested.emit(self._id, request.split())
 
     def on_remove_clicked(self):
         self.removed.emit(self._id)
 
     def on_prefix_changed(self, prefix):
-        model = self._widgets["tools"].model()
-        model.set_prefix(prefix)
         self.prefix_changed.emit(self._id, prefix)
 
     def on_suffix_changed(self, suffix):
-        model = self._widgets["tools"].model()
-        model.set_suffix(suffix)
         self.suffix_changed.emit(self._id, suffix)
-
-    def set_conflicting(self, conflicts):
-        model = self._widgets["tools"].model()
-        model.set_conflicting(conflicts)
-
-    def clear(self):
-        model = self._widgets["tools"].model()
-        model.clear()
-
-    def add_tools(self, tools):
-        model = self._widgets["tools"].model()
-        model.add_items(tools)
 
 
 class ToolView(SlimTableView):

@@ -64,7 +64,7 @@ class Window(QtWidgets.QMainWindow):
         view.removed.connect(lambda i: sphere.remove_context(i))
 
         view.named.connect(ctrl.on_context_named)
-        view.requested.connect(ctrl.on_context_resolved)
+        view.requested.connect(ctrl.on_context_requested)
         view.removed.connect(ctrl.on_context_removed)
         view.prefix_changed.connect(ctrl.on_context_prefix_changed)
         view.suffix_changed.connect(ctrl.on_context_suffix_changed)

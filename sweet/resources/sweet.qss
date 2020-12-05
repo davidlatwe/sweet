@@ -456,35 +456,35 @@ QTreeView::branch:hover {
 }
 
 #ToolView QHeaderView::section,
-#ToolView QAbstractItemView {
+#ToolView {
     background-color: %(background.bright)s;
 }
 
-#ToolView QAbstractItemView::item {
+#ToolView::item {
     padding-left: 4px;
 }
 
-#ToolView QAbstractItemView::indicator:unchecked {
+#ToolView::indicator:unchecked {
     image: url(%(res)s/toggle-on.svg);
 }
 
-#ToolView QAbstractItemView::indicator:unchecked:hover {
+#ToolView::indicator:unchecked:hover {
     image: url(%(res)s/toggle-on-bright.svg);
 }
 
-#ToolView QAbstractItemView::indicator:unchecked:disabled {
+#ToolView::indicator:unchecked:disabled {
     image: url(%(res)s/toggle-on-dim.svg);
 }
 
-#ToolView QAbstractItemView::indicator:checked {
+#ToolView::indicator:checked {
     image: url(%(res)s/toggle-off.svg);
 }
 
-#ToolView QAbstractItemView::indicator:checked:hover {
+#ToolView::indicator:checked:hover {
     image: url(%(res)s/toggle-off-bright.svg);
 }
 
-#ToolView QAbstractItemView::indicator:checked:disabled {
+#ToolView::indicator:checked:disabled {
     image: url(%(res)s/toggle-off-dim.svg);
 }
 

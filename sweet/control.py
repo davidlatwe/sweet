@@ -1,11 +1,8 @@
 
 import os
+from collections import defaultdict
 from Qt5 import QtCore
-from rez.packages_ import iter_package_families, iter_packages
-from rez.resolved_context import ResolvedContext
-from rez.suite import Suite, SuiteError
-from rez.config import config
-
+from . import _rezapi as rez
 from .search.model import PackageModel
 from .sphere.model import ToolModel
 
@@ -16,9 +13,10 @@ class Controller(QtCore.QObject):
         super(Controller, self).__init__(parent=parent)
 
         state = {
-            "suite": Suite(),
+            "suite": rez.SweetSuite(),
             "suiteName": "",
             "contextName": dict(),
+            "contextRequests": defaultdict(list),  # success requests history
         }
 
         timers = {
@@ -66,62 +64,67 @@ class Controller(QtCore.QObject):
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
         name = self._state["contextName"][id_]
+        history = self._state["contextRequests"][id_]
+        tool = self._models["contextTool"][id_]
         if not name:
             print("Naming context first.")
             return
 
         try:
-            suite.remove_context(name)  # TODO: context priority will changed
-        except SuiteError:
-            pin_priority = False
-        else:
-            pin_priority = True
-
-        tool = self._models["contextTool"][id_]
-        tool.clear()
-
-        try:
-            context = ResolvedContext(requests)
+            context = rez.ResolvedContext(requests)
         except Exception as e:
             print(e)
+            # dirty context
         else:
-            if context.success:
-                self._state["suite"].add_context(name, context)
-            else:
+            if not context.success:
+                # dirty context
                 print("Context resolving failed.")
+            else:
+                tool.clear()
+                context_tools = context.get_tools(request_only=True)
+                for pkg_name, (variant, tools) in context_tools.items():
+                    tool.add_items(tools)
+                history.append(requests)
+                suite.update_context(name, context)
+                self.defer_update_suite_tools()
 
-        finally:
+    def on_context_removed(self, id_):
+        self._models["contextTool"].pop(id_)
+        self._state["contextRequests"].pop(id_)
+        name = self._state["contextName"].pop(id_)
+        suite = self._state["suite"]
+        if suite.has_context(name):
+            suite.remove_context(name)
             self.defer_update_suite_tools()
 
     def on_context_named(self, id_, name):
-        self._state["contextName"][id_] = name
-
-    def on_context_removed(self, id_):
-        name = self._state["contextName"].pop(id_)
-        if name:
-            suite = self._state["suite"]
-            try:
-                suite.remove_context(name)
-            except SuiteError:
-                pass  # not yet been resolved hence not added into suite
-            else:
-                self.defer_update_suite_tools()
+        suite = self._state["suite"]
+        names = self._state["contextName"]
+        old_name = names[id_]
+        names[id_] = name
+        if suite.has_context(old_name):
+            suite.rename_context(old_name, name)
+            self.defer_update_suite_tools()
 
     def on_context_prefix_changed(self, id_, prefix):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
+        tool = self._models["contextTool"][id_]
+        name = self._state["contextName"][id_]
+        suite = self._state["suite"]
+        tool.set_prefix(prefix)
         suite.set_context_prefix(name, prefix)
         self.defer_update_suite_tools()
 
     def on_context_suffix_changed(self, id_, suffix):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
+        tool = self._models["contextTool"][id_]
+        name = self._state["contextName"][id_]
+        suite = self._state["suite"]
+        tool.set_suffix(suffix)
         suite.set_context_suffix(name, suffix)
         self.defer_update_suite_tools()
 
     def on_context_tool_alias_changed(self, id_, tool, alias):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
+        name = self._state["contextName"][id_]
+        suite = self._state["suite"]
         if alias:
             suite.alias_tool(name, tool, alias)
         else:
@@ -129,8 +132,8 @@ class Controller(QtCore.QObject):
         self.defer_update_suite_tools()
 
     def on_context_tool_hide_changed(self, id_, tool, hide):
-        name = self._data["addedContext"][id_]
-        suite = self._data["suite"]
+        name = self._state["contextName"][id_]
+        suite = self._state["suite"]
         if hide:
             suite.hide_tool(name, tool)
         else:
@@ -139,13 +142,20 @@ class Controller(QtCore.QObject):
 
     def on_tool_updated(self):
         # TODO: block and unblock gui ?
-        # TODO: block suite save if has conflicts
-        conflicts = self._state["suite"].get_conflicting_aliases()
+        suite = self._state["suite"]
+        suite.update_tools()
+
         # update tool models
-        for context_w in self._contexts.values():
-            context_w.set_conflicting(conflicts)
-            # Should change to use `get_alias_conflicts`, so the affect of
-            # context priority can properly shown.
+        for id_, name in self._state["contextName"].items():
+            conflicts = set()
+            tool = self._models["contextTool"][id_]
+
+            for exposed in tool.iter_exposed_tools():
+                for entry in suite.get_alias_conflicts(exposed) or []:
+                    if entry["context_name"] == name:
+                        conflicts.add(exposed)
+
+            tool.set_conflicting(conflicts)
 
     def on_suite_saved(self):
         name = self._state["suiteName"]
@@ -159,13 +169,13 @@ class Controller(QtCore.QObject):
         seen = dict()
 
         if no_local:
-            paths = config.nonlocal_packages_path
+            paths = rez.config.nonlocal_packages_path
 
-        for family in iter_package_families(paths=paths):
+        for family in rez.iter_package_families(paths=paths):
             name = family.name
             path = family.resource.location
 
-            for package in iter_packages(name, paths=[path]):
+            for package in rez.iter_packages(name, paths=[path]):
                 qualified_name = package.qualified_name
 
                 if qualified_name in seen:
