@@ -26,7 +26,7 @@ class Window(QtWidgets.QMainWindow):
         pages = {
             "package": QtWidgets.QWidget(),
             "suite": QtWidgets.QWidget(),
-            "profile": QtWidgets.QWidget(),
+            "context": QtWidgets.QWidget(),
             "preference": QtWidgets.QWidget(),
         }
 
@@ -41,7 +41,7 @@ class Window(QtWidgets.QMainWindow):
         # layouts..
         panels["page"].addTab(pages["package"], "Package")
         panels["page"].addTab(pages["suite"], "Suite")
-        panels["page"].addTab(pages["profile"], "Profile")
+        panels["page"].addTab(pages["context"], "Context")
         panels["page"].addTab(pages["preference"], "Preference")
 
         panels["split"].setOrientation(QtCore.Qt.Horizontal)
