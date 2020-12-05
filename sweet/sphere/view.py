@@ -5,6 +5,7 @@ from ..common.view import SlimTableView
 from ..common.view import RequestTextEdit, RequestCompleter
 from ..common.delegate import TableViewRowHover
 from .model import ToolModel
+from .. import resources as res
 
 
 class SphereAddContextButton(QtWidgets.QPushButton):
@@ -45,6 +46,7 @@ class SphereView(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         layout = QtWidgets.QFormLayout(widgets["context"])
+        layout.setContentsMargins(6, 8, 4, 4)
         layout.setFieldGrowthPolicy(layout.ExpandingFieldsGrow)
         layout.setFormAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         layout.setSpacing(0)
@@ -87,44 +89,69 @@ class ContextView(QtWidgets.QWidget):
         super(ContextView, self).__init__(parent=parent)
         id_ = str(id(self))
 
+        panels = {
+            "body": QtWidgets.QWidget(),
+            "side": QtWidgets.QWidget(),
+        }
+
         widgets = {
             "name": QtWidgets.QLineEdit(),  # TODO: add name validator
+            "bump": QtWidgets.QPushButton(),
+            "parse": QtWidgets.QPushButton(),
+            "resolve": QtWidgets.QPushButton(),
+            "config": QtWidgets.QPushButton(),
+            "detail": QtWidgets.QPushButton(),
+            "remove": QtWidgets.QPushButton(),
             "request": RequestTextEdit(),
-            "resolve": QtWidgets.QPushButton("Resolve"),
-            "remove": QtWidgets.QPushButton("Remove"),
-            "editor": QtWidgets.QWidget(),
             "prefix": QtWidgets.QLineEdit(),
             "suffix": QtWidgets.QLineEdit(),
             "tools": ToolView(context_id=id_),
         }
+        widgets["bump"].setObjectName("ContextBumpButton")
+        widgets["parse"].setObjectName("ContextParseRequestButton")
+        widgets["resolve"].setObjectName("ContextResolveButton")
+        widgets["config"].setObjectName("ContextConfigButton")
+        widgets["detail"].setObjectName("ContextDetailButton")
+        widgets["remove"].setObjectName("ContextRemoveButton")
 
         widgets["name"].setPlaceholderText("context name..")
         widgets["request"].setPlaceholderText("requests..")
         widgets["request"].setAcceptRichText(False)
         widgets["request"].setTabChangesFocus(True)
 
-        widgets["prefix"].setPlaceholderText("Tool prefix..")
-        widgets["suffix"].setPlaceholderText("Tool suffix..")
+        widgets["prefix"].setPlaceholderText("tool prefix..")
+        widgets["suffix"].setPlaceholderText("tool suffix..")
         widgets["tools"].setItemDelegate(TableViewRowHover())
         widgets["tools"].setAlternatingRowColors(True)
 
         widgets["request"].setMaximumHeight(60)
         widgets["tools"].setMaximumHeight(140)
 
-        layout = QtWidgets.QHBoxLayout(widgets["editor"])
+        layout = QtWidgets.QGridLayout(panels["body"])
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["prefix"])
-        layout.addWidget(widgets["suffix"])
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["name"])
-        layout.addWidget(widgets["request"])
-        layout.addWidget(widgets["resolve"])
-        layout.addWidget(widgets["remove"])
-        layout.addWidget(widgets["editor"])
-        layout.addWidget(widgets["tools"])
+        layout.addWidget(widgets["name"], 0, 0, 1, -1)
+        layout.addWidget(widgets["prefix"], 1, 0, 1, 1)
+        layout.addWidget(widgets["suffix"], 1, 1, 1, 1)
+        layout.addWidget(widgets["request"], 2, 0, 1, -1)
+        layout.addWidget(widgets["tools"], 3, 0, 1, -1)
         layout.setSpacing(2)
+
+        layout = QtWidgets.QGridLayout(panels["side"])
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["bump"], 0, 0)  # TODO: bump context
+        layout.addItem(QtWidgets.QSpacerItem(1, 8), 1, 0)
+        layout.addWidget(widgets["parse"], 2, 0)  # TODO: parse from search
+        layout.addWidget(widgets["resolve"], 3, 0)
+        layout.addWidget(widgets["config"], 4, 0)  # TODO: timestamp, filter..
+        layout.addWidget(widgets["detail"], 5, 0)  # TODO: view resolved info
+        layout.addWidget(widgets["remove"], 6, 0, QtCore.Qt.AlignBottom)
+        layout.setSpacing(6)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(panels["side"])
+        layout.addWidget(panels["body"], stretch=True)
+        layout.setSpacing(6)
 
         widgets["name"].textChanged.connect(self.on_name_edited)
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
@@ -134,6 +161,7 @@ class ContextView(QtWidgets.QWidget):
         widgets["tools"].alias_changed.connect(self.alias_changed.emit)
         widgets["tools"].hide_changed.connect(self.hide_changed.emit)
 
+        self._panels = panels
         self._widgets = widgets
         self._id = id_
         self._data = dict()

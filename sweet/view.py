@@ -78,13 +78,13 @@ class Window(QtWidgets.QMainWindow):
         view.setup_tool_view(model=ctrl.models["contextTool"][id_])
         view.setup_request_completer(model=ctrl.models["package"])
 
-        spoiler = Spoiler(title="untitled..")
+        spoiler = Spoiler(title="* untitled")
         spoiler.set_content(view)
         spoiler.set_expanded(True)
 
         sphere.add_context(spoiler, id_)
 
-        view.named.connect(lambda i, t: spoiler.set_title(t or "untitled.."))
+        view.named.connect(lambda i, t: spoiler.set_title(t or "* untitled"))
         view.removed.connect(lambda i: sphere.remove_context(i))
 
         view.named.connect(ctrl.on_context_named)
