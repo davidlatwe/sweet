@@ -102,6 +102,8 @@ class Window(QtWidgets.QMainWindow):
         view.named.connect(lambda i, t: spoiler.set_title(t or untitled))
         view.named.connect(lambda i, t: page.set_title(tab, t or untitled))
         view.named.connect(ctrl.on_context_named)
+        view.bumped.connect(lambda i: sphere.bump_context(i))
+        view.bumped.connect(ctrl.on_context_bumped)
         view.removed.connect(lambda i: sphere.remove_context(i))
         view.removed.connect(lambda i: page.remove_context(tab))
         view.removed.connect(ctrl.on_context_removed)

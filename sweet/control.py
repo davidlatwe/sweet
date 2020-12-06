@@ -92,6 +92,12 @@ class Controller(QtCore.QObject):
         self._models["contextEnvironment"][id_] = EnvironmentModel()
         self._models["contextTool"][id_] = ToolModel()
 
+        # we need to put an empty context on draft created, so the priority
+        # bump can be matched properly.
+        suite = self._state["suite"]
+        empty = rez.ResolvedContext([])
+        suite.add_context(id_, empty)
+
     def defer_search_packages(self, on_time=50):
         timer = self._timers["packageSearch"]
         timer.setSingleShot(True)
@@ -159,6 +165,11 @@ class Controller(QtCore.QObject):
 
     def on_context_named(self, id_, name):
         self._state["contextName"][id_] = name
+
+    def on_context_bumped(self, id_):
+        suite = self._state["suite"]
+        suite.bump_context(id_)
+        self.defer_update_suite_tools()
 
     def on_context_prefix_changed(self, id_, prefix):
         tool = self._models["contextTool"][id_]

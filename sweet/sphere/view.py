@@ -56,6 +56,11 @@ class SphereView(QtWidgets.QWidget):
         layout.insertRow(0, widget)
         self._contexts[id_] = widget
 
+    def bump_context(self, id_):
+        layout = self._widgets["context"].layout()
+        widget = self._contexts[id_]
+        layout.insertRow(0, widget)
+
     def remove_context(self, id_):
         widget = self._contexts.pop(id_)
         widget.deleteLater()
@@ -65,6 +70,7 @@ class ContextView(QtWidgets.QWidget):
 
     named = QtCore.Signal(str, str)
     removed = QtCore.Signal(str)
+    bumped = QtCore.Signal(str)
     jumped = QtCore.Signal()
     prefix_changed = QtCore.Signal(str, str)
     suffix_changed = QtCore.Signal(str, str)
@@ -117,7 +123,7 @@ class ContextView(QtWidgets.QWidget):
 
         layout = QtWidgets.QGridLayout(panels["side"])
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["bump"], 0, 0)  # TODO: bump context
+        layout.addWidget(widgets["bump"], 0, 0)
         layout.addWidget(widgets["jump"], 1, 0)
         layout.addWidget(widgets["remove"], 2, 0, QtCore.Qt.AlignBottom)
         layout.setSpacing(6)
@@ -130,6 +136,7 @@ class ContextView(QtWidgets.QWidget):
 
         widgets["name"].textChanged.connect(self.on_name_edited)
         widgets["remove"].clicked.connect(self.on_remove_clicked)
+        widgets["bump"].clicked.connect(self.on_bump_clicked)
         widgets["jump"].clicked.connect(self.on_jump_clicked)
         widgets["prefix"].textChanged.connect(self.on_prefix_changed)
         widgets["suffix"].textChanged.connect(self.on_suffix_changed)
@@ -149,6 +156,9 @@ class ContextView(QtWidgets.QWidget):
 
     def on_name_edited(self, text):
         self.named.emit(self._id, text)
+
+    def on_bump_clicked(self):
+        self.bumped.emit(self._id)
 
     def on_jump_clicked(self):
         self.jumped.emit()
