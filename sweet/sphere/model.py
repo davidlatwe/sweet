@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore, QtGui
+from ..vendor.Qt5 import QtCore, QtGui
 from ..common.model import AbstractTableModel
 from .. import resources as res
 

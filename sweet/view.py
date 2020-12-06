@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore, QtGui, QtWidgets
+from .vendor.Qt5 import QtCore, QtGui, QtWidgets
 
 from .version import version
 from .common.view import Spoiler

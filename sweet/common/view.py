@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore, QtGui, QtWidgets
+from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from . import delegate
 from .. import resources as res
 

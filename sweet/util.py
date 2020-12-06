@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore
+from .vendor.Qt5 import QtCore
 import traceback
 
 _threads = []

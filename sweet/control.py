@@ -1,6 +1,6 @@
 
 import os
-from Qt5 import QtCore
+from .vendor.Qt5 import QtCore
 from . import _rezapi as rez
 from .search.model import PackageModel
 from .sphere.model import ToolModel

@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore, QtWidgets
+from ..vendor.Qt5 import QtCore, QtWidgets
 from ..common.model import CompleterProxyModel
 from ..common.view import SlimTableView
 from ..common.view import RequestTextEdit, RequestCompleter

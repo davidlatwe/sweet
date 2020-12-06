@@ -1,5 +1,5 @@
 
-from Qt5 import QtCore, QtWidgets
+from ..vendor.Qt5 import QtCore, QtWidgets
 from .. import common
 from .model import PackageProxyModel
 

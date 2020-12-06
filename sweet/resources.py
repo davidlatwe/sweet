@@ -1,6 +1,6 @@
 
 import os
-from Qt5 import QtGui
+from .vendor.Qt5 import QtGui
 from collections import OrderedDict as odict
 
 dirname = os.path.dirname(__file__)

@@ -1,7 +1,7 @@
 
 import time
 from datetime import datetime
-from Qt5 import QtWidgets
+from ..vendor.Qt5 import QtWidgets
 
 
 class TableViewRowHover(QtWidgets.QStyledItemDelegate):

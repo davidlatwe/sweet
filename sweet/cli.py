@@ -1,7 +1,7 @@
 
 import os
 import sys
-from Qt5 import QtCore, QtWidgets
+from .vendor.Qt5 import QtCore, QtWidgets
 from . import control, view, resources
 
 
