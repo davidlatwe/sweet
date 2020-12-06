@@ -95,29 +95,35 @@ class ContextView(QtWidgets.QWidget):
             "body": QtWidgets.QWidget(),
             "side": QtWidgets.QWidget(),
         }
+        panels["side"].setObjectName("ContextOperationBar")
 
         widgets = {
             # TODO:
             #  * add name validator
             #  * load context if input name is filepath ends with .rxt
             "name": QtWidgets.QLineEdit(),
-            "bump": QtWidgets.QPushButton(),
-            "parse": QtWidgets.QPushButton(),
-            "resolve": QtWidgets.QPushButton(),
-            "config": QtWidgets.QPushButton(),
-            "detail": QtWidgets.QPushButton(),
-            "remove": QtWidgets.QPushButton(),
             "request": RequestTextEdit(),
             "prefix": QtWidgets.QLineEdit(),
             "suffix": QtWidgets.QLineEdit(),
             "tools": ToolView(context_id=id_),
+            # context operation btn
+            "bump": QtWidgets.QPushButton(),
+            "parse": QtWidgets.QPushButton(),
+            "resolve": QtWidgets.QPushButton(),
+            "timestamp": QtWidgets.QPushButton(),
+            "filter": QtWidgets.QPushButton(),
+            "building": QtWidgets.QPushButton(),
+            "detail": QtWidgets.QPushButton(),
+            "remove": QtWidgets.QPushButton(),
         }
-        widgets["bump"].setObjectName("ContextBumpButton")
-        widgets["parse"].setObjectName("ContextParseRequestButton")
-        widgets["resolve"].setObjectName("ContextResolveButton")
-        widgets["config"].setObjectName("ContextConfigButton")
-        widgets["detail"].setObjectName("ContextDetailButton")
-        widgets["remove"].setObjectName("ContextRemoveButton")
+        widgets["bump"].setObjectName("ContextBumpOpBtn")
+        widgets["parse"].setObjectName("ContextParseRequestOpBtn")
+        widgets["resolve"].setObjectName("ContextResolveOpBtn")
+        widgets["timestamp"].setObjectName("ContextTimestampOpBtn")
+        widgets["filter"].setObjectName("ContextFilterOpBtn")
+        widgets["building"].setObjectName("ContextBuildingOpBtn")
+        widgets["detail"].setObjectName("ContextDetailOpBtn")
+        widgets["remove"].setObjectName("ContextRemoveOpBtn")
 
         widgets["name"].setPlaceholderText("context name..")
         widgets["request"].setPlaceholderText("requests..")
@@ -144,12 +150,14 @@ class ContextView(QtWidgets.QWidget):
         layout = QtWidgets.QGridLayout(panels["side"])
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["bump"], 0, 0)  # TODO: bump context
-        layout.addItem(QtWidgets.QSpacerItem(1, 8), 1, 0)
+        layout.addItem(QtWidgets.QSpacerItem(1, 12), 1, 0)
         layout.addWidget(widgets["parse"], 2, 0)  # TODO: parse from search
         layout.addWidget(widgets["resolve"], 3, 0)
-        layout.addWidget(widgets["config"], 4, 0)  # TODO: timestamp, filter..
-        layout.addWidget(widgets["detail"], 5, 0)  # TODO: view resolved info
-        layout.addWidget(widgets["remove"], 6, 0, QtCore.Qt.AlignBottom)
+        layout.addWidget(widgets["timestamp"], 4, 0)  # TODO: pkg timestamp
+        layout.addWidget(widgets["filter"], 5, 0)  # TODO: pkg filter
+        layout.addWidget(widgets["building"], 6, 0)  # TODO: pkg building env
+        layout.addWidget(widgets["detail"], 7, 0)  # TODO: view resolved info
+        layout.addWidget(widgets["remove"], 8, 0, QtCore.Qt.AlignBottom)
         layout.setSpacing(6)
 
         layout = QtWidgets.QHBoxLayout(self)

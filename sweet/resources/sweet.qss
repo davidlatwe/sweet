@@ -506,7 +506,7 @@ QTreeView::branch:hover {
     image: url(%(res)s/plus.svg);
 }
 
-#ContextBumpButton {
+#ContextOperationBar QPushButton {
     max-width: 18px;
     max-height: 18px;
     min-width: 18px;
@@ -514,85 +514,69 @@ QTreeView::branch:hover {
     padding: 2px;
     border: none;
     background-color: transparent;
+}
+
+#ContextBumpOpBtn {
     image: url(%(res)s/arrow-bar-up-dim.svg);
 }
 
-#ContextBumpButton:hover {
+#ContextBumpOpBtn:hover {
     image: url(%(res)s/arrow-bar-up.svg);
 }
 
-#ContextParseRequestButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
+#ContextParseRequestOpBtn {
     image: url(%(res)s/cart-check-fill-dim.svg);
 }
 
-#ContextParseRequestButton:hover {
+#ContextParseRequestOpBtn:hover {
     image: url(%(res)s/cart-check-fill.svg);
 }
 
-#ContextResolveButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
+#ContextResolveOpBtn {
     image: url(%(res)s/lightning-fill-dim.svg);
 }
 
-#ContextResolveButton:hover {
+#ContextResolveOpBtn:hover {
     image: url(%(res)s/lightning-fill.svg);
 }
 
-#ContextConfigButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
-    image: url(%(res)s/gear-fill-dim.svg);
+#ContextTimestampOpBtn {
+    image: url(%(res)s/calendar2-week-fill-dim.svg);
 }
 
-#ContextConfigButton:hover {
-    image: url(%(res)s/gear-fill.svg);
+#ContextTimestampOpBtn:hover {
+    image: url(%(res)s/calendar2-week-fill.svg);
 }
 
-#ContextDetailButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
+#ContextFilterOpBtn {
+    image: url(%(res)s/funnel-fill-dim.svg);
+}
+
+#ContextFilterOpBtn:hover {
+    image: url(%(res)s/funnel-fill.svg);
+}
+
+#ContextBuildingOpBtn {
+    image: url(%(res)s/cone-striped-dim.svg);
+}
+
+#ContextBuildingOpBtn:hover {
+    image: url(%(res)s/cone-striped.svg);
+}
+
+#ContextDetailOpBtn {
     image: url(%(res)s/info-fill-dim.svg);
 }
 
-#ContextDetailButton:hover {
+#ContextDetailOpBtn:hover {
     image: url(%(res)s/info-fill.svg);
 }
 
-#ContextRemoveButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
+#ContextRemoveOpBtn {
     image: url(%(res)s/trash-fill-dim.svg);
 }
 
-#ContextRemoveButton:hover {
+#ContextRemoveOpBtn:hover {
     image: url(%(res)s/trash-fill.svg);
 }
 
