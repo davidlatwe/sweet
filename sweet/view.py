@@ -58,6 +58,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].dired.connect(ctrl.on_suite_dired)
         pages["suite"].commented.connect(ctrl.on_suite_commented)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
+        pages["suite"].drafted.connect(ctrl.on_suite_drafted)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
 
         self._ctrl = ctrl

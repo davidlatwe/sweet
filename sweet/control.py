@@ -5,6 +5,7 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
+from . import sweetconfig
 
 
 class Controller(QtCore.QObject):
@@ -229,19 +230,31 @@ class Controller(QtCore.QObject):
         suite.add_description(comment)
 
     def on_suite_saved(self):
+        self.save_suite(as_draft=False)
+
+    def on_suite_drafted(self):
+        self.save_suite(as_draft=True)
+
+    def save_suite(self, as_draft):
+        if as_draft:
+            path = sweetconfig.drafts()
+        else:
+            path = self._state["suiteDir"]
+
         suite = self._state["suite"]
-        path = self._state["suiteDir"]
         name = self._state["suiteName"]
+
         if name:
             # rename context from id to actual name
             for id_, n in self._state["contextName"].items():
                 suite.rename_context(id_, n)
 
-            suite.save(os.path.join(path, name))
-
-            # restore id naming
-            for id_, n in self._state["contextName"].items():
-                suite.rename_context(n, id_)
+            try:
+                suite.save(os.path.join(path, name))
+            finally:
+                # restore id naming
+                for id_, n in self._state["contextName"].items():
+                    suite.rename_context(n, id_)
         else:
             print("Naming suite first.")
 

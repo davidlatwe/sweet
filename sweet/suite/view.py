@@ -13,6 +13,7 @@ class SuiteView(QtWidgets.QWidget):
     dired = QtCore.Signal(str)
     commented = QtCore.Signal(str)
     saved = QtCore.Signal()
+    drafted = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -45,6 +46,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets["dir"].textChanged.connect(self.dired.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["save"].clicked.connect(self.saved.emit)
+        widgets["draft"].clicked.connect(self.drafted.emit)
 
         self._widgets = widgets
 
