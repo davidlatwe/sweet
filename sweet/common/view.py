@@ -1,5 +1,7 @@
 
+import json
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
+from .model import JsonModel
 from . import delegate
 from .. import resources as res
 
@@ -455,3 +457,51 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         cr.setWidth(popup.sizeHintForColumn(0)
                     + popup.verticalScrollBar().sizeHint().width())
         c.complete(cr)
+
+
+class JsonView(QtWidgets.QTreeView):
+    def __init__(self, parent=None):
+        super(JsonView, self).__init__(parent)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.on_right_click)
+
+    def on_right_click(self, position):
+        index = self.indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        model_ = index.model()
+        menu = QtWidgets.QMenu(self)
+        copy = QtWidgets.QAction("Copy JSON", menu)
+        copy_full = QtWidgets.QAction("Copy full JSON", menu)
+
+        menu.addAction(copy)
+        menu.addAction(copy_full)
+        menu.addSeparator()
+
+        def on_copy():
+            text = str(model_.data(index, JsonModel.JsonRole))
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        def on_copy_full():
+            if isinstance(model_, QtCore.QSortFilterProxyModel):
+                data = model_.sourceModel().json()
+            else:
+                data = model_.json()
+
+            text = json.dumps(data,
+                              indent=4,
+                              sort_keys=True,
+                              ensure_ascii=False)
+
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        copy.triggered.connect(on_copy)
+        copy_full.triggered.connect(on_copy_full)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()

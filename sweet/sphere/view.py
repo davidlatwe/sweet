@@ -1,11 +1,8 @@
 
 from ..vendor.Qt5 import QtCore, QtWidgets
-from ..common.model import CompleterProxyModel
 from ..common.view import SlimTableView
-from ..common.view import RequestTextEdit, RequestCompleter
 from ..common.delegate import TableViewRowHover
 from .model import ToolModel
-from .. import resources as res
 
 
 class SphereAddContextButton(QtWidgets.QPushButton):
@@ -79,8 +76,8 @@ class SphereView(QtWidgets.QWidget):
 class ContextView(QtWidgets.QWidget):
 
     named = QtCore.Signal(str, str)
-    requested = QtCore.Signal(str, list)
     removed = QtCore.Signal(str)
+    jumped = QtCore.Signal()
     prefix_changed = QtCore.Signal(str, str)
     suffix_changed = QtCore.Signal(str, str)
     alias_changed = QtCore.Signal(str, str, str)
@@ -102,40 +99,24 @@ class ContextView(QtWidgets.QWidget):
             #  * add name validator
             #  * load context if input name is filepath ends with .rxt
             "name": QtWidgets.QLineEdit(),
-            "request": RequestTextEdit(),
             "prefix": QtWidgets.QLineEdit(),
             "suffix": QtWidgets.QLineEdit(),
             "tools": ToolView(context_id=id_),
             # context operation btn
             "bump": QtWidgets.QPushButton(),
-            "parse": QtWidgets.QPushButton(),
-            "resolve": QtWidgets.QPushButton(),
-            "timestamp": QtWidgets.QPushButton(),
-            "filter": QtWidgets.QPushButton(),
-            "building": QtWidgets.QPushButton(),
-            "detail": QtWidgets.QPushButton(),
+            "jump": QtWidgets.QPushButton(),
             "remove": QtWidgets.QPushButton(),
         }
         widgets["bump"].setObjectName("ContextBumpOpBtn")
-        widgets["parse"].setObjectName("ContextParseRequestOpBtn")
-        widgets["resolve"].setObjectName("ContextResolveOpBtn")
-        widgets["timestamp"].setObjectName("ContextTimestampOpBtn")
-        widgets["filter"].setObjectName("ContextFilterOpBtn")
-        widgets["building"].setObjectName("ContextBuildingOpBtn")
-        widgets["detail"].setObjectName("ContextDetailOpBtn")
+        widgets["jump"].setObjectName("ContextResolveOpBtn")
         widgets["remove"].setObjectName("ContextRemoveOpBtn")
 
         widgets["name"].setPlaceholderText("context name..")
-        widgets["request"].setPlaceholderText("requests..")
-        widgets["request"].setAcceptRichText(False)
-        widgets["request"].setTabChangesFocus(True)
-
         widgets["prefix"].setPlaceholderText("tool prefix..")
         widgets["suffix"].setPlaceholderText("tool suffix..")
         widgets["tools"].setItemDelegate(TableViewRowHover())
         widgets["tools"].setAlternatingRowColors(True)
 
-        widgets["request"].setMaximumHeight(60)
         widgets["tools"].setMaximumHeight(140)
 
         layout = QtWidgets.QGridLayout(panels["body"])
@@ -143,21 +124,14 @@ class ContextView(QtWidgets.QWidget):
         layout.addWidget(widgets["name"], 0, 0, 1, -1)
         layout.addWidget(widgets["prefix"], 1, 0, 1, 1)
         layout.addWidget(widgets["suffix"], 1, 1, 1, 1)
-        layout.addWidget(widgets["request"], 2, 0, 1, -1)
-        layout.addWidget(widgets["tools"], 3, 0, 1, -1)
+        layout.addWidget(widgets["tools"], 2, 0, 1, -1)
         layout.setSpacing(2)
 
         layout = QtWidgets.QGridLayout(panels["side"])
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widgets["bump"], 0, 0)  # TODO: bump context
-        layout.addItem(QtWidgets.QSpacerItem(1, 12), 1, 0)
-        layout.addWidget(widgets["parse"], 2, 0)  # TODO: parse from search
-        layout.addWidget(widgets["resolve"], 3, 0)
-        layout.addWidget(widgets["timestamp"], 4, 0)  # TODO: pkg timestamp
-        layout.addWidget(widgets["filter"], 5, 0)  # TODO: pkg filter
-        layout.addWidget(widgets["building"], 6, 0)  # TODO: pkg building env
-        layout.addWidget(widgets["detail"], 7, 0)  # TODO: view resolved info
-        layout.addWidget(widgets["remove"], 8, 0, QtCore.Qt.AlignBottom)
+        layout.addWidget(widgets["jump"], 1, 0)
+        layout.addWidget(widgets["remove"], 2, 0, QtCore.Qt.AlignBottom)
         layout.setSpacing(6)
 
         layout = QtWidgets.QHBoxLayout(self)
@@ -167,8 +141,8 @@ class ContextView(QtWidgets.QWidget):
         layout.setSpacing(6)
 
         widgets["name"].textChanged.connect(self.on_name_edited)
-        widgets["resolve"].clicked.connect(self.on_resolve_clicked)
         widgets["remove"].clicked.connect(self.on_remove_clicked)
+        widgets["jump"].clicked.connect(self.on_jump_clicked)
         widgets["prefix"].textChanged.connect(self.on_prefix_changed)
         widgets["suffix"].textChanged.connect(self.on_suffix_changed)
         widgets["tools"].alias_changed.connect(self.alias_changed.emit)
@@ -185,28 +159,11 @@ class ContextView(QtWidgets.QWidget):
     def setup_tool_view(self, model):
         self._widgets["tools"].setModel(model)
 
-    def setup_request_completer(self, model):
-        requester = self._widgets["request"]
-        completer = RequestCompleter(requester)
-        completer.setModelSorting(completer.CaseInsensitivelySortedModel)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        completer.setWrapAround(False)
-
-        proxy = CompleterProxyModel()
-        proxy.setSourceModel(model)
-        completer.setCompletionColumn(model.CompletionColumn)
-        completer.setCompletionRole(model.CompletionRole)
-        completer.setModel(proxy)
-
-        requester.setCompleter(completer)
-        self._widgets["completer"] = completer
-
     def on_name_edited(self, text):
         self.named.emit(self._id, text)
 
-    def on_resolve_clicked(self):
-        request = self._widgets["request"].toPlainText()
-        self.requested.emit(self._id, request.split())
+    def on_jump_clicked(self):
+        self.jumped.emit()
 
     def on_remove_clicked(self):
         self.removed.emit(self._id)

@@ -3,6 +3,7 @@ import os
 from .vendor.Qt5 import QtCore
 from . import _rezapi as rez
 from .search.model import PackageModel
+from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
 
 
@@ -25,7 +26,10 @@ class Controller(QtCore.QObject):
 
         models = {
             "package": PackageModel(),
-            "contextTool": dict(),  # ToolModel per context
+            # models per context
+            "contextPackages": dict(),
+            "contextEnvironment": dict(),
+            "contextTool": dict(),
         }
 
         timers["packageSearch"].timeout.connect(self.on_package_searched)
@@ -83,6 +87,8 @@ class Controller(QtCore.QObject):
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
         self._state["contextRequests"][id_] = []
+        self._models["contextPackages"][id_] = ResolvedPackageModel()
+        self._models["contextEnvironment"][id_] = EnvironmentModel()
         self._models["contextTool"][id_] = ToolModel()
 
     def defer_search_packages(self, on_time=50):
@@ -102,6 +108,8 @@ class Controller(QtCore.QObject):
         suite = self._state["suite"]
         name = self._state["contextName"][id_]
         history = self._state["contextRequests"][id_]
+        resolved = self._models["contextPackages"][id_]
+        env = self._models["contextEnvironment"][id_]
         tool = self._models["contextTool"][id_]
         if not name:
             print("Naming context first.")
@@ -117,12 +125,18 @@ class Controller(QtCore.QObject):
                 # dirty context
                 print("Context resolving failed.")
             else:
+                resolved.clear()
+                env.clear()
                 tool.clear()
                 history.append(requests)
 
                 context_tools = context.get_tools(request_only=True)
                 for pkg_name, (variant, tools) in context_tools.items():
                     tool.add_items(tools)
+
+                resolved.add_items(context.resolved_packages)
+                env.load(context.get_environ())
+
                 # Use context id as name during suite editing to avoid name
                 # conflict when renaming context aggressively.
                 # Hint for future tests:
@@ -133,6 +147,8 @@ class Controller(QtCore.QObject):
 
     def on_context_removed(self, id_):
         self._models["contextTool"].pop(id_)
+        self._models["contextPackages"].pop(id_)
+        self._models["contextEnvironment"].pop(id_)
         self._state["contextName"].pop(id_)
         self._state["contextRequests"].pop(id_)
         suite = self._state["suite"]

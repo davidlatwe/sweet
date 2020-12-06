@@ -1,5 +1,6 @@
 
 from ..vendor.Qt5 import QtCore
+from ..vendor import qjsonmodel
 
 
 class TreeItem(dict):
@@ -140,3 +141,36 @@ class CompleterProxyModel(QtCore.QSortFilterProxyModel):
         if role == QtCore.Qt.CheckStateRole:  # disable checkbox
             return
         return super(CompleterProxyModel, self).data(index, role)
+
+
+class JsonModel(qjsonmodel.QJsonModel):
+
+    JsonRole = QtCore.Qt.UserRole + 1
+
+    def setData(self, index, value, role):
+        # Support copy/paste, but prevent edits
+        return False
+
+    def flags(self, index):
+        flags = super(JsonModel, self).flags(index)
+        return QtCore.Qt.ItemIsEditable | flags
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+
+        item = index.internalPointer()
+
+        if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
+            if index.column() == 0:
+                return item.key
+
+            if index.column() == 1:
+                return item.value
+
+        if role == self.JsonRole:
+            return self.json(item)
+
+        return super(JsonModel, self).data(index, role)
+
+    reset = qjsonmodel.QJsonModel.clear

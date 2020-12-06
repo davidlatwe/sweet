@@ -515,69 +515,71 @@ QTreeView::branch:hover {
     border: none;
     background-color: transparent;
 }
-
+/*property `icon` is available since 5.15. (only for QPushButton)
+https://doc.qt.io/qt-5/stylesheet-reference.html#icon
+*/
 #ContextBumpOpBtn {
-    image: url(%(res)s/arrow-bar-up-dim.svg);
+    icon: url(%(res)s/arrow-bar-up-dim.svg);
 }
 
 #ContextBumpOpBtn:hover {
-    image: url(%(res)s/arrow-bar-up.svg);
+    icon: url(%(res)s/arrow-bar-up.svg);
 }
 
 #ContextParseRequestOpBtn {
-    image: url(%(res)s/cart-check-fill-dim.svg);
+    icon: url(%(res)s/cart-check-fill-dim.svg);
 }
 
 #ContextParseRequestOpBtn:hover {
-    image: url(%(res)s/cart-check-fill.svg);
+    icon: url(%(res)s/cart-check-fill.svg);
 }
 
 #ContextResolveOpBtn {
-    image: url(%(res)s/lightning-fill-dim.svg);
+    icon: url(%(res)s/lightning-fill-dim.svg);
 }
 
 #ContextResolveOpBtn:hover {
-    image: url(%(res)s/lightning-fill.svg);
+    icon: url(%(res)s/lightning-fill.svg);
 }
 
 #ContextTimestampOpBtn {
-    image: url(%(res)s/calendar2-week-fill-dim.svg);
+    icon: url(%(res)s/calendar2-week-fill-dim.svg);
 }
 
 #ContextTimestampOpBtn:hover {
-    image: url(%(res)s/calendar2-week-fill.svg);
+    icon: url(%(res)s/calendar2-week-fill.svg);
 }
 
 #ContextFilterOpBtn {
-    image: url(%(res)s/funnel-fill-dim.svg);
+    icon: url(%(res)s/funnel-fill-dim.svg);
 }
 
 #ContextFilterOpBtn:hover {
-    image: url(%(res)s/funnel-fill.svg);
+    icon: url(%(res)s/funnel-fill.svg);
 }
 
 #ContextBuildingOpBtn {
-    image: url(%(res)s/cone-striped-dim.svg);
+    icon: url(%(res)s/cone-striped-dim.svg);
 }
 
 #ContextBuildingOpBtn:hover {
-    image: url(%(res)s/cone-striped.svg);
+    icon: url(%(res)s/cone-striped.svg);
 }
 
 #ContextDetailOpBtn {
-    image: url(%(res)s/info-fill-dim.svg);
+    icon: url(%(res)s/info-fill-dim.svg);
 }
 
 #ContextDetailOpBtn:hover {
-    image: url(%(res)s/info-fill.svg);
+    icon: url(%(res)s/info-fill.svg);
 }
 
 #ContextRemoveOpBtn {
-    image: url(%(res)s/trash-fill-dim.svg);
+    icon: url(%(res)s/trash-fill-dim.svg);
 }
 
 #ContextRemoveOpBtn:hover {
-    image: url(%(res)s/trash-fill.svg);
+    icon: url(%(res)s/trash-fill.svg);
 }
 
 #ContextView QLineEdit {

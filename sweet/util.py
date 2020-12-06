@@ -1,6 +1,9 @@
 
 from .vendor.Qt5 import QtCore
+import os
 import traceback
+import webbrowser
+import subprocess
 
 _threads = []
 
@@ -72,3 +75,12 @@ class Thread(QtCore.QThread):
         else:
             self.succeeded.emit(result)
 
+
+def open_file_location(fname):
+    if os.path.exists(fname):
+        if os.name == "nt":
+            subprocess.Popen("explorer /select,%s" % fname)
+        else:
+            webbrowser.open(os.path.dirname(fname))
+    else:
+        raise OSError("%s did not exist" % fname)

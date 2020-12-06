@@ -5,6 +5,7 @@ from .version import version
 from .common.view import Spoiler
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
+from .solve.view import SuiteContextTab, ContextResolveView
 from . import resources as res
 
 
@@ -24,36 +25,34 @@ class Window(QtWidgets.QMainWindow):
         }
 
         pages = {
-            "package": QtWidgets.QWidget(),
+            "package": PackageView(),
             "suite": QtWidgets.QWidget(),
-            "context": QtWidgets.QWidget(),
+            "context": SuiteContextTab(),
             "preference": QtWidgets.QWidget(),
         }
 
         widgets = {
-            "package": PackageView(),
             "sphere": SphereView(),
         }
 
-        widgets["package"].set_model(ctrl.models["package"])
-        widgets["package"].init_column_width()
-
         # layouts..
-        panels["page"].addTab(pages["package"], "Package")
-        panels["page"].addTab(pages["suite"], "Suite")
         panels["page"].addTab(pages["context"], "Context")
+        panels["page"].addTab(pages["suite"], "Suite")
+        panels["page"].addTab(pages["package"], "Package")
         panels["page"].addTab(pages["preference"], "Preference")
 
         panels["split"].setOrientation(QtCore.Qt.Horizontal)
         panels["split"].addWidget(panels["page"])
         panels["split"].addWidget(widgets["sphere"])
 
-        layout = QtWidgets.QHBoxLayout(pages["package"])
-        layout.addWidget(widgets["package"])
-
         layout = QtWidgets.QHBoxLayout(panels["body"])
         layout.addWidget(panels["split"])
 
+        # setup..
+        pages["package"].set_model(ctrl.models["package"])
+        pages["package"].init_column_width()
+
+        # signals..
         widgets["sphere"].suite_named.connect(ctrl.on_suite_named)
         widgets["sphere"].suite_saved.connect(ctrl.on_suite_saved)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
@@ -66,34 +65,56 @@ class Window(QtWidgets.QMainWindow):
         self.setCentralWidget(panels["body"])
         self.setFocus()
 
+        # create one draft context on launch
+        self.add_context_draft()
+
     def on_context_drafted(self):
+        self.add_context_draft()
+
+    def add_context_draft(self):
         ctrl = self._ctrl
         sphere = self._widgets["sphere"]
+        panel = self._panels["page"]
+        page = self._pages["context"]
+        untitled = "* untitled"
 
         view = ContextView()
-        id_ = view.id()
-        # tracking context by widget object's id
+        id_ = view.id()  # tracking context by widget's id
         ctrl.register_context_draft(id_)
 
         view.setup_tool_view(model=ctrl.models["contextTool"][id_])
-        view.setup_request_completer(model=ctrl.models["package"])
 
-        spoiler = Spoiler(title="* untitled")
+        spoiler = Spoiler(title=untitled)
         spoiler.set_content(view)
         spoiler.set_expanded(True)
-
         sphere.add_context(spoiler, id_)
 
-        view.named.connect(lambda i, t: spoiler.set_title(t or "* untitled"))
-        view.removed.connect(lambda i: sphere.remove_context(i))
+        tab = ContextResolveView(id_)
+        tab.setup_request_completer(model=ctrl.models["package"])
+        tab.set_models(packages=ctrl.models["contextPackages"][id_],
+                       environment=ctrl.models["contextEnvironment"][id_])
+        page.addTab(tab, untitled)
 
+        # signals..
+        view.named.connect(lambda i, t: spoiler.set_title(t or untitled))
+        view.named.connect(lambda i, t: page.set_title(tab, t or untitled))
         view.named.connect(ctrl.on_context_named)
-        view.requested.connect(ctrl.on_context_requested)
+        view.removed.connect(lambda i: sphere.remove_context(i))
+        view.removed.connect(lambda i: page.remove_context(tab))
         view.removed.connect(ctrl.on_context_removed)
         view.prefix_changed.connect(ctrl.on_context_prefix_changed)
         view.suffix_changed.connect(ctrl.on_context_suffix_changed)
         view.alias_changed.connect(ctrl.on_context_tool_alias_changed)
         view.hide_changed.connect(ctrl.on_context_tool_hide_changed)
+        tab.requested.connect(ctrl.on_context_requested)
+
+        def active_context_page():
+            page.show_context(tab)
+            panel.setCurrentIndex(0)  # context page
+        view.jumped.connect(active_context_page)
+
+        # show context resolve page on added
+        active_context_page()
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)
