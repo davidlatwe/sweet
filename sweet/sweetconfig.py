@@ -17,3 +17,8 @@ def suites():
         result.append((name, path))
 
     return result
+
+
+def drafts():
+    """Return draft suite saving dir path"""
+    return __os.path.expanduser("~/sweet/drafts")
