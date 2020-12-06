@@ -39,10 +39,12 @@ class ContextResolveView(QtWidgets.QWidget):
         self._id = context_id
 
         panels = {
+            "options": QtWidgets.QWidget(),
             "request": QtWidgets.QWidget(),
             "split": QtWidgets.QSplitter(),
             "resolved": ResolvedContextView(),
         }
+        panels["options"].setObjectName("ContextOperationBar")
 
         widgets = {
             "filter": QtWidgets.QPushButton(),
@@ -63,11 +65,19 @@ class ContextResolveView(QtWidgets.QWidget):
         widgets["request"].setTabChangesFocus(True)
 
         # layout..
+        layout = QtWidgets.QHBoxLayout(panels["options"])
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["parse"])
+        layout.addWidget(widgets["filter"])
+        layout.addWidget(widgets["timestamp"])
+        layout.addWidget(widgets["building"])
+        layout.setAlignment(QtCore.Qt.AlignLeft)
+
         layout = QtWidgets.QVBoxLayout(panels["request"])
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(panels["options"])
         layout.addWidget(widgets["request"])
         layout.addWidget(widgets["resolve"])
-
-        layout = QtWidgets.QVBoxLayout(panels["resolved"])
 
         panels["split"].setOrientation(QtCore.Qt.Vertical)
         panels["split"].addWidget(panels["request"])
