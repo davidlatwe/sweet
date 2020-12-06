@@ -12,9 +12,6 @@ class SphereAddContextButton(QtWidgets.QPushButton):
 
 
 class SphereView(QtWidgets.QWidget):
-
-    suite_named = QtCore.Signal(str)
-    suite_saved = QtCore.Signal()
     context_drafted = QtCore.Signal()
 
     def __init__(self, parent=None):
@@ -22,17 +19,12 @@ class SphereView(QtWidgets.QWidget):
         self.setObjectName("SphereView")
 
         widgets = {
-            "icon": QtWidgets.QLabel(),  # TODO: not added yet.. (profile)
-            "name": QtWidgets.QLineEdit(),  # TODO: add name validator
-            "save": QtWidgets.QPushButton("Save Suite"),
             "draft": SphereAddContextButton(),
-
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
             "context": QtWidgets.QWidget(),
         }
 
-        widgets["name"].setPlaceholderText("Suite name..")
         widgets["scroll"].setWidget(widgets["wrap"])
         widgets["scroll"].setWidgetResizable(True)
 
@@ -50,13 +42,9 @@ class SphereView(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(widgets["name"])
-        layout.addWidget(widgets["save"])
         layout.addWidget(widgets["draft"])
         layout.addWidget(widgets["scroll"])
 
-        widgets["name"].textChanged.connect(self.suite_named.emit)
-        widgets["save"].clicked.connect(self.suite_saved.emit)
         widgets["draft"].clicked.connect(self.context_drafted.emit)
 
         self._widgets = widgets

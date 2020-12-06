@@ -6,6 +6,7 @@ from .common.view import Spoiler
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
+from .suite.view import SuiteView
 from . import resources as res
 
 
@@ -26,7 +27,7 @@ class Window(QtWidgets.QMainWindow):
 
         pages = {
             "package": PackageView(),
-            "suite": QtWidgets.QWidget(),
+            "suite": SuiteView(),
             "context": SuiteContextTab(),
             "preference": QtWidgets.QWidget(),
         }
@@ -53,8 +54,9 @@ class Window(QtWidgets.QMainWindow):
         pages["package"].init_column_width()
 
         # signals..
-        widgets["sphere"].suite_named.connect(ctrl.on_suite_named)
-        widgets["sphere"].suite_saved.connect(ctrl.on_suite_saved)
+        pages["suite"].suite_named.connect(ctrl.on_suite_named)
+        pages["suite"].suite_dired.connect(ctrl.on_suite_dired)
+        pages["suite"].suite_saved.connect(ctrl.on_suite_saved)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
 
         self._ctrl = ctrl

@@ -14,6 +14,7 @@ class Controller(QtCore.QObject):
 
         state = {
             "suite": rez.SweetSuite(),
+            "suiteDir": "",
             "suiteName": "",
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history
@@ -209,15 +210,19 @@ class Controller(QtCore.QObject):
     def on_suite_named(self, name):
         self._state["suiteName"] = name
 
+    def on_suite_dired(self, path):
+        self._state["suiteDir"] = path
+
     def on_suite_saved(self):
         suite = self._state["suite"]
+        path = self._state["suiteDir"]
         name = self._state["suiteName"]
         if name:
             # rename context from id to actual name
             for id_, n in self._state["contextName"].items():
                 suite.rename_context(id_, n)
 
-            suite.save(os.path.expanduser("~/rez/suite/%s" % name))
+            suite.save(os.path.join(path, name))
 
             # restore id naming
             for id_, n in self._state["contextName"].items():
