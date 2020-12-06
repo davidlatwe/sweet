@@ -36,9 +36,9 @@ class Window(QtWidgets.QMainWindow):
         }
 
         # layouts..
+        panels["page"].addTab(pages["package"], "Package")
         panels["page"].addTab(pages["context"], "Context")
         panels["page"].addTab(pages["suite"], "Suite")
-        panels["page"].addTab(pages["package"], "Package")
         panels["page"].addTab(pages["preference"], "Preference")
 
         panels["split"].setOrientation(QtCore.Qt.Horizontal)
@@ -110,7 +110,7 @@ class Window(QtWidgets.QMainWindow):
 
         def active_context_page():
             page.show_context(tab)
-            panel.setCurrentIndex(0)  # context page
+            panel.setCurrentIndex(1)  # context page
         view.jumped.connect(active_context_page)
 
         # show context resolve page on added
