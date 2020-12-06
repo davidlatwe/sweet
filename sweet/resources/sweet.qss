@@ -678,35 +678,31 @@ QTreeView::branch:hover {
     image: url(%(res)s/branch_closed-on.png);
 }
 
-QSplitter::handle {
-    border: 1px dashed #3A3939;
-}
-
-QSplitter::handle:hover {
-    background-color: #787876;
-    border: 1px solid #3A3939;
-}
+/*https://bugreports.qt.io/browse/QTBUG-13768*/
+QSplitterHandle:hover {}
 
 QSplitter::handle:horizontal {
-    width: 1px;
+    width: 0px;
+    margin: 4px;
+    padding: -3px;
     background-color: transparent;
+    border: 1px dotted %(border.bright)s;
 }
 
 QSplitter::handle:vertical {
-    height: 1px;
+    height: 0px;
+    margin: 4px;
+    padding: -3px;
     background-color: transparent;
-}
-
-QSplitter::handle:vertical:hover {
-    background-color: #787876;
-    border: 1px solid #3A3939;
+    border: 1px dotted %(border.bright)s;
 }
 
 QSplitter::handle:horizontal:hover {
-    background-color: #787876;
-    border: 1px solid #3A3939;
+    background-color: transparent;
+    border: 1px dotted %(primary.bright)s;
 }
 
-QSplitter {
-    border: 0px;
+QSplitter::handle:vertical:hover {
+    background-color: transparent;
+    border: 1px dotted %(primary.bright)s;
 }
