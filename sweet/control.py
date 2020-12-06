@@ -5,6 +5,7 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
+from .suite.model import SuiteDraftModel
 from . import sweetconfig
 
 
@@ -26,10 +27,12 @@ class Controller(QtCore.QObject):
         timers = {
             "toolUpdate": QtCore.QTimer(self),
             "packageSearch": QtCore.QTimer(self),
+            "draftList": QtCore.QTimer(self),
         }
 
         models = {
             "package": PackageModel(),
+            "draft": SuiteDraftModel(),
             # models per context
             "contextPackages": dict(),
             "contextEnvironment": dict(),
@@ -37,6 +40,7 @@ class Controller(QtCore.QObject):
         }
 
         timers["packageSearch"].timeout.connect(self.on_package_searched)
+        timers["draftList"].timeout.connect(self.on_draft_listed)
         timers["toolUpdate"].timeout.connect(self.on_tool_updated)
 
         self._state = state
@@ -106,6 +110,11 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
+    def defer_list_drafts(self, on_time=50):
+        timer = self._timers["draftList"]
+        timer.setSingleShot(True)
+        timer.start(on_time)
+
     def defer_update_suite_tools(self, on_time=500):
         timer = self._timers["toolUpdate"]
         timer.setSingleShot(True)
@@ -113,6 +122,9 @@ class Controller(QtCore.QObject):
 
     def on_package_searched(self):
         self._models["package"].reset(self.iter_packages())
+
+    def on_draft_listed(self):
+        self._models["draft"].add_items(self.iter_drafts())
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -229,8 +241,8 @@ class Controller(QtCore.QObject):
     def on_suite_drafted(self):
         self.save_suite(as_draft=True)
 
-    def on_suite_loaded(self):
-        self.load_suite()
+    def on_suite_loaded(self, name):
+        self.load_suite(name)
 
     def remove_context(self, id_):
         self.context_removed.emit(id_)
@@ -267,9 +279,9 @@ class Controller(QtCore.QObject):
         else:
             print("Naming suite first.")
 
-    def load_suite(self):
-        path = sweetconfig.drafts() + "/bump_test"  # TODO: remove testing
-        name = os.path.basename(path)
+    def load_suite(self, name):
+        path = sweetconfig.drafts()
+        path = os.path.join(path, name)
         suite = rez.SweetSuite.load(path)
 
         self.clear_suite()
@@ -336,3 +348,16 @@ class Controller(QtCore.QObject):
                 seen[qualified_name] = doc
 
                 yield doc
+
+    def iter_drafts(self):
+        path = sweetconfig.drafts()
+        for dir in os.listdir(path):
+            filepath = os.path.join(path, dir, "suite.yaml")
+            if os.path.isfile(filepath):
+                description = rez.read_suite_description(filepath)
+
+                data = {
+                    "name": dir,
+                    "description": description,
+                }
+                yield data

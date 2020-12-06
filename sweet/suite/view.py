@@ -1,5 +1,7 @@
 
-from ..vendor.Qt5 import QtCore, QtWidgets
+from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
+from ..common.view import SlimTableView
+from .model import SuiteDraftModel
 
 
 class SuiteView(QtWidgets.QWidget):
@@ -14,7 +16,7 @@ class SuiteView(QtWidgets.QWidget):
     commented = QtCore.Signal(str)
     saved = QtCore.Signal()
     drafted = QtCore.Signal()
-    loaded = QtCore.Signal()
+    draft_loaded = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -26,7 +28,9 @@ class SuiteView(QtWidgets.QWidget):
             "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
             "draft": QtWidgets.QPushButton("Save Draft"),
-            "load": QtWidgets.QPushButton("Load Draft"),
+            "draftView": QtWidgets.QWidget(),
+            "draftList": SlimTableView(),
+            "draftDesc": QtWidgets.QTextEdit(),
         }
 
         widgets["name"].setPlaceholderText("Suite name..")
@@ -34,6 +38,14 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].setPlaceholderText("Suite description.. (optional)")
         widgets["desc"].setAcceptRichText(False)
         widgets["desc"].setTabChangesFocus(True)
+        widgets["draftDesc"].setReadOnly(True)
+        widgets["draftList"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        widgets["draftList"].customContextMenuRequested.connect(
+            self.on_draft_right_clicked)
+
+        layout = QtWidgets.QHBoxLayout(widgets["draftView"])
+        layout.addWidget(widgets["draftList"])
+        layout.addWidget(widgets["draftDesc"])
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(2, 8, 2, 2)
@@ -42,7 +54,7 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["save"])
         layout.addWidget(widgets["draft"])
-        layout.addWidget(widgets["load"])
+        layout.addWidget(widgets["draftView"])
         layout.setAlignment(QtCore.Qt.AlignTop)
 
         widgets["name"].textChanged.connect(self.named.emit)
@@ -50,10 +62,42 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["draft"].clicked.connect(self.drafted.emit)
-        widgets["load"].clicked.connect(self.loaded.emit)
 
         self._widgets = widgets
 
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()
         self.commented.emit(text)
+
+    def on_draft_selection_changed(self, selected, deselected):
+        selected = selected.indexes()
+        text = ""
+        if selected:
+            text = selected[0].data(role=SuiteDraftModel.DescriptionRole)
+        self._widgets["draftDesc"].setText(text)
+
+    def on_draft_right_clicked(self, position):
+        index = self._widgets["draftList"].indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        menu = QtWidgets.QMenu(self)
+        load = QtWidgets.QAction("Load Draft", menu)
+
+        menu.addAction(load)
+
+        def on_load():
+            name = index.data(role=QtCore.Qt.DisplayRole)
+            self.draft_loaded.emit(name)
+
+        load.triggered.connect(on_load)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
+    def set_model(self, draft):
+        self._widgets["draftList"].setModel(draft)
+        sel_model = self._widgets["draftList"].selectionModel()
+        sel_model.selectionChanged.connect(self.on_draft_selection_changed)

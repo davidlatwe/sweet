@@ -1,6 +1,6 @@
 
 import os
-from ..vendor.Qt5 import QtCore, QtGui
+from ..vendor.Qt5 import QtCore
 from ..common.model import AbstractTableModel, JsonModel
 
 

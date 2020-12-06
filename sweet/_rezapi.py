@@ -3,6 +3,8 @@ from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
 from rez import suite
 from rez.config import config
+from rez.vendor import yaml
+from rez.vendor.yaml.error import YAMLError
 
 Suite = suite.Suite
 SuiteError = suite.SuiteError
@@ -90,6 +92,16 @@ class SweetSuite(Suite):
     update_tools = Suite._update_tools
 
 
+def read_suite_description(filepath):
+    try:
+        with open(filepath) as f:
+            data = yaml.load(f.read(), Loader=yaml.FullLoader)
+    except YAMLError:
+        pass
+    else:
+        return data.get("description", "")
+
+
 __all__ = [
     "iter_package_families",
     "iter_packages",
@@ -97,4 +109,5 @@ __all__ = [
     "SweetSuite",
     "SuiteError",
     "config",
+    "read_suite_description",
 ]

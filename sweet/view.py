@@ -52,6 +52,7 @@ class Window(QtWidgets.QMainWindow):
         # setup..
         pages["package"].set_model(ctrl.models["package"])
         pages["package"].init_column_width()
+        pages["suite"].set_model(ctrl.models["draft"])
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
@@ -59,7 +60,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].commented.connect(ctrl.on_suite_commented)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].drafted.connect(ctrl.on_suite_drafted)
-        pages["suite"].loaded.connect(ctrl.on_suite_loaded)
+        pages["suite"].draft_loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
