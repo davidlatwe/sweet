@@ -7,6 +7,24 @@ from rez.config import config
 
 class SweetSuite(Suite):
 
+    def __init__(self):
+        super(SweetSuite, self).__init__()
+        self.description = ""
+
+    def add_description(self, text):
+        self.description = text
+
+    def to_dict(self):
+        data = super(SweetSuite, self).to_dict()
+        data["description"] = self.description
+        return data
+
+    @classmethod
+    def from_dict(cls, d):
+        s = super(SweetSuite, cls).from_dict(d)
+        s.description = d.get("description", "")
+        return s
+
     def has_context(self, name):
         """Is context name exists in suite ?"""
         return name in self.contexts

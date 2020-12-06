@@ -54,9 +54,10 @@ class Window(QtWidgets.QMainWindow):
         pages["package"].init_column_width()
 
         # signals..
-        pages["suite"].suite_named.connect(ctrl.on_suite_named)
-        pages["suite"].suite_dired.connect(ctrl.on_suite_dired)
-        pages["suite"].suite_saved.connect(ctrl.on_suite_saved)
+        pages["suite"].named.connect(ctrl.on_suite_named)
+        pages["suite"].dired.connect(ctrl.on_suite_dired)
+        pages["suite"].commented.connect(ctrl.on_suite_commented)
+        pages["suite"].saved.connect(ctrl.on_suite_saved)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
 
         self._ctrl = ctrl

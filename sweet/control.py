@@ -213,6 +213,10 @@ class Controller(QtCore.QObject):
     def on_suite_dired(self, path):
         self._state["suiteDir"] = path
 
+    def on_suite_commented(self, comment):
+        suite = self._state["suite"]
+        suite.add_description(comment)
+
     def on_suite_saved(self):
         suite = self._state["suite"]
         path = self._state["suiteDir"]

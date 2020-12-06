@@ -9,9 +9,10 @@ class SuiteView(QtWidgets.QWidget):
     # existing suite list (right click to load/import, search able)
     # batch context re-resolve, match by resolved package (another window ?)
 
-    suite_named = QtCore.Signal(str)
-    suite_dired = QtCore.Signal(str)
-    suite_saved = QtCore.Signal()
+    named = QtCore.Signal(str)
+    dired = QtCore.Signal(str)
+    commented = QtCore.Signal(str)
+    saved = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -20,21 +21,33 @@ class SuiteView(QtWidgets.QWidget):
         widgets = {
             "name": QtWidgets.QLineEdit(),  # TODO: add name validator
             "dir": QtWidgets.QLineEdit(),
+            "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
             "draft": QtWidgets.QPushButton("Save Draft"),
         }
 
         widgets["name"].setPlaceholderText("Suite name..")
         widgets["dir"].setPlaceholderText("Suite dir..")
+        widgets["desc"].setPlaceholderText("Suite description.. (optional)")
+        widgets["desc"].setAcceptRichText(False)
+        widgets["desc"].setTabChangesFocus(True)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(2, 8, 2, 2)
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["dir"])
+        layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["save"])
         layout.addWidget(widgets["draft"])
         layout.setAlignment(QtCore.Qt.AlignTop)
 
-        widgets["name"].textChanged.connect(self.suite_named.emit)
-        widgets["dir"].textChanged.connect(self.suite_dired.emit)
-        widgets["save"].clicked.connect(self.suite_saved.emit)
+        widgets["name"].textChanged.connect(self.named.emit)
+        widgets["dir"].textChanged.connect(self.dired.emit)
+        widgets["desc"].textChanged.connect(self.on_description_changed)
+        widgets["save"].clicked.connect(self.saved.emit)
+
+        self._widgets = widgets
+
+    def on_description_changed(self):
+        text = self._widgets["desc"].toPlainText()
+        self.commented.emit(text)
