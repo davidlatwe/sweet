@@ -17,6 +17,11 @@ class SuiteContextTab(QtWidgets.QTabWidget):
 
     def __init__(self, parent=None):
         super(SuiteContextTab, self).__init__(parent=parent)
+        self._tab_by_id = dict()
+
+    def addTab(self, tab, *args, **kwargs):
+        self._tab_by_id[tab.id()] = tab
+        return super(SuiteContextTab, self).addTab(tab, *args, **kwargs)
 
     def set_title(self, widget, text):
         index = self.indexOf(widget)
@@ -25,7 +30,8 @@ class SuiteContextTab(QtWidgets.QTabWidget):
     def show_context(self, widget):
         self.setCurrentWidget(widget)
 
-    def remove_context(self, widget):
+    def remove_context(self, id_):
+        widget = self._tab_by_id.pop(id_)
         index = self.indexOf(widget)
         self.removeTab(index)
         widget.deleteLater()
@@ -95,6 +101,9 @@ class ContextResolveView(QtWidgets.QWidget):
         self._panels = panels
         self._widgets = widgets
 
+    def id(self):
+        return self._id
+
     def setup_request_completer(self, model):
         requester = self._widgets["request"]
         completer = RequestCompleter(requester)
@@ -117,6 +126,9 @@ class ContextResolveView(QtWidgets.QWidget):
     def on_resolve_clicked(self):
         request = self._widgets["request"].toPlainText()
         self.requested.emit(self._id, request.split())
+
+    def set_requests(self, text):
+        self._widgets["request"].setText(text)
 
 
 class ResolvedContextView(QtWidgets.QTabWidget):

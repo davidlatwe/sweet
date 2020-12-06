@@ -146,3 +146,21 @@ class ToolModel(AbstractTableModel):
                 QtCore.Qt.ItemIsEnabled |
                 QtCore.Qt.ItemIsEditable
             )
+
+    def load(self, hidden, aliases):
+        items = self.items
+        if not items:
+            return
+
+        hidden = hidden or set()
+        aliases = aliases or dict()
+
+        for tool in items:
+            name = tool["name"]
+            tool["hide"] = name in hidden
+            tool["alias"] = aliases.get(name, "")
+
+        first = self.createIndex(0, 0)
+        last = self.createIndex(len(items) - 1, 1)
+        roles = [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole]
+        self.dataChanged.emit(first, last, roles)

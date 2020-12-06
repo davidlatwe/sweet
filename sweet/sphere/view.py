@@ -172,6 +172,11 @@ class ContextView(QtWidgets.QWidget):
     def on_suffix_changed(self, suffix):
         self.suffix_changed.emit(self._id, suffix)
 
+    def load(self, data):
+        self._widgets["name"].setText(data.get("name", ""))
+        self._widgets["prefix"].setText(data.get("prefix", ""))
+        self._widgets["suffix"].setText(data.get("suffix", ""))
+
 
 class ToolView(SlimTableView):
     alias_changed = QtCore.Signal(str, str, str)

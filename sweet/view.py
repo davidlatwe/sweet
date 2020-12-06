@@ -59,7 +59,10 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].commented.connect(ctrl.on_suite_commented)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].drafted.connect(ctrl.on_suite_drafted)
+        pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
+        ctrl.context_removed.connect(self.on_context_removed)
+        ctrl.context_loaded.connect(self.on_context_loaded)
 
         self._ctrl = ctrl
         self._panels = panels
@@ -75,7 +78,10 @@ class Window(QtWidgets.QMainWindow):
     def on_context_drafted(self):
         self.add_context_draft()
 
-    def add_context_draft(self):
+    def on_context_loaded(self, context_data, requests):
+        self.add_context_draft(context_data, requests)
+
+    def add_context_draft(self, context_data=None, requests=None):
         ctrl = self._ctrl
         sphere = self._widgets["sphere"]
         panel = self._panels["page"]
@@ -105,8 +111,6 @@ class Window(QtWidgets.QMainWindow):
         view.named.connect(ctrl.on_context_named)
         view.bumped.connect(lambda i: sphere.bump_context(i))
         view.bumped.connect(ctrl.on_context_bumped)
-        view.removed.connect(lambda i: sphere.remove_context(i))
-        view.removed.connect(lambda i: page.remove_context(tab))
         view.removed.connect(ctrl.on_context_removed)
         view.prefix_changed.connect(ctrl.on_context_prefix_changed)
         view.suffix_changed.connect(ctrl.on_context_suffix_changed)
@@ -121,6 +125,17 @@ class Window(QtWidgets.QMainWindow):
 
         # show context resolve page on added
         active_context_page()
+
+        # from loaded
+        if context_data:
+            view.load(context_data)
+        if requests:
+            tab.set_requests("\n".join(requests))
+            tab.requested.emit(id_, requests)
+
+    def on_context_removed(self, id_):
+        self._widgets["sphere"].remove_context(id_)
+        self._pages["context"].remove_context(id_)
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)

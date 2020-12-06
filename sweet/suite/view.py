@@ -14,6 +14,7 @@ class SuiteView(QtWidgets.QWidget):
     commented = QtCore.Signal(str)
     saved = QtCore.Signal()
     drafted = QtCore.Signal()
+    loaded = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -25,6 +26,7 @@ class SuiteView(QtWidgets.QWidget):
             "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
             "draft": QtWidgets.QPushButton("Save Draft"),
+            "load": QtWidgets.QPushButton("Load Draft"),
         }
 
         widgets["name"].setPlaceholderText("Suite name..")
@@ -40,6 +42,7 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["save"])
         layout.addWidget(widgets["draft"])
+        layout.addWidget(widgets["load"])
         layout.setAlignment(QtCore.Qt.AlignTop)
 
         widgets["name"].textChanged.connect(self.named.emit)
@@ -47,6 +50,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["draft"].clicked.connect(self.drafted.emit)
+        widgets["load"].clicked.connect(self.loaded.emit)
 
         self._widgets = widgets
 

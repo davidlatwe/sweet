@@ -9,6 +9,8 @@ from . import sweetconfig
 
 
 class Controller(QtCore.QObject):
+    context_removed = QtCore.Signal(str)
+    context_loaded = QtCore.Signal(dict, list)
 
     def __init__(self, storage, parent=None):
         super(Controller, self).__init__(parent=parent)
@@ -154,15 +156,8 @@ class Controller(QtCore.QObject):
                 self.defer_update_suite_tools()
 
     def on_context_removed(self, id_):
-        self._models["contextTool"].pop(id_)
-        self._models["contextPackages"].pop(id_)
-        self._models["contextEnvironment"].pop(id_)
-        self._state["contextName"].pop(id_)
-        self._state["contextRequests"].pop(id_)
-        suite = self._state["suite"]
-        if suite.has_context(id_):
-            suite.remove_context(id_)
-            self.defer_update_suite_tools()
+        self.remove_context(id_)
+        self.defer_update_suite_tools()
 
     def on_context_named(self, id_, name):
         self._state["contextName"][id_] = name
@@ -188,10 +183,9 @@ class Controller(QtCore.QObject):
 
     def on_context_tool_alias_changed(self, id_, tool, alias):
         suite = self._state["suite"]
+        suite.unalias_tool(id_, tool)
         if alias:
             suite.alias_tool(id_, tool, alias)
-        else:
-            suite.unalias_tool(id_, tool)
         self.defer_update_suite_tools()
 
     def on_context_tool_hide_changed(self, id_, tool, hide):
@@ -235,6 +229,21 @@ class Controller(QtCore.QObject):
     def on_suite_drafted(self):
         self.save_suite(as_draft=True)
 
+    def on_suite_loaded(self):
+        self.load_suite()
+
+    def remove_context(self, id_):
+        self.context_removed.emit(id_)
+
+        self._models["contextTool"].pop(id_)
+        self._models["contextPackages"].pop(id_)
+        self._models["contextEnvironment"].pop(id_)
+        self._state["contextName"].pop(id_)
+        self._state["contextRequests"].pop(id_)
+
+        suite = self._state["suite"]
+        suite.remove_context(id_)
+
     def save_suite(self, as_draft):
         if as_draft:
             path = sweetconfig.drafts()
@@ -257,6 +266,45 @@ class Controller(QtCore.QObject):
                     suite.rename_context(n, id_)
         else:
             print("Naming suite first.")
+
+    def load_suite(self):
+        path = sweetconfig.drafts() + "/bump_test"  # TODO: remove testing
+        name = os.path.basename(path)
+        suite = rez.SweetSuite.load(path)
+
+        self.clear_suite()
+        names = self._state["contextName"]
+        tools = self._models["contextTool"]
+
+        for ctx_name in suite.sorted_context_names():
+            context = suite.context(ctx_name)
+            requested = context.requested_packages()
+            prefix = suite.read_context(ctx_name, "prefix", default="")
+            suffix = suite.read_context(ctx_name, "suffix", default="")
+            hidden = suite.read_context(ctx_name, "hidden_tools")
+            aliases = suite.read_context(ctx_name, "tool_aliases")
+            # TODO: get filter, timestamp, building from context
+
+            ctx_data = {
+                "name": ctx_name,
+                "prefix": prefix,
+                "suffix": suffix,
+            }
+            requests = [str(r) for r in requested]
+            self.context_loaded.emit(ctx_data, requests)
+
+            id_ = next(i for i in names if names[i] == ctx_name)
+            tools[id_].load(hidden, aliases)
+
+        self._state["suiteName"] = name
+
+    def clear_suite(self):
+        for id_ in list(self._state["contextName"].keys()):
+            self.remove_context(id_)
+
+        self._state["suite"] = rez.SweetSuite()
+        self._state["suiteDir"] = ""
+        self._state["suiteName"] = ""
 
     def iter_packages(self, no_local=False):
         paths = None

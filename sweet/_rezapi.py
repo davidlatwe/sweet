@@ -1,8 +1,11 @@
 
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
-from rez.suite import Suite, SuiteError
+from rez import suite
 from rez.config import config
+
+Suite = suite.Suite
+SuiteError = suite.SuiteError
 
 
 class SweetSuite(Suite):
@@ -21,9 +24,18 @@ class SweetSuite(Suite):
 
     @classmethod
     def from_dict(cls, d):
+        suite.Suite = SweetSuite
         s = super(SweetSuite, cls).from_dict(d)
         s.description = d.get("description", "")
         return s
+
+    def sorted_context_names(self):
+        ctxs = self.contexts
+        return sorted(ctxs.keys(), key=lambda x: ctxs[x]["priority"])
+
+    def read_context(self, name, entry, default=None):
+        data = self._context(name)
+        return data.get(entry, default)
 
     def has_context(self, name):
         """Is context name exists in suite ?"""
