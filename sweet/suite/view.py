@@ -1,4 +1,5 @@
 
+import os
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from ..common.view import SlimTableView
 from .model import SuiteDraftModel
@@ -14,8 +15,7 @@ class SuiteView(QtWidgets.QWidget):
     dired = QtCore.Signal(str)
     commented = QtCore.Signal(str)
     saved = QtCore.Signal()
-    drafted = QtCore.Signal()
-    draft_loaded = QtCore.Signal(str)
+    loaded = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -26,7 +26,6 @@ class SuiteView(QtWidgets.QWidget):
             "dir": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
-            "draft": QtWidgets.QPushButton("Save Draft"),
             "draftView": QtWidgets.QWidget(),
             "draftList": SlimTableView(),
             "draftDesc": QtWidgets.QTextEdit(),
@@ -52,7 +51,6 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["dir"])
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["save"])
-        layout.addWidget(widgets["draft"])
         layout.addWidget(widgets["draftView"])
         layout.setAlignment(QtCore.Qt.AlignTop)
 
@@ -60,7 +58,6 @@ class SuiteView(QtWidgets.QWidget):
         widgets["dir"].textChanged.connect(self.dired.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["save"].clicked.connect(self.saved.emit)
-        widgets["draft"].clicked.connect(self.drafted.emit)
 
         self._widgets = widgets
 
@@ -83,13 +80,17 @@ class SuiteView(QtWidgets.QWidget):
             return
 
         menu = QtWidgets.QMenu(self)
-        load = QtWidgets.QAction("Load Draft", menu)
+        load = QtWidgets.QAction("Load", menu)
 
         menu.addAction(load)
 
         def on_load():
-            name = index.data(role=QtCore.Qt.DisplayRole)
-            self.draft_loaded.emit(name)
+            data = index.data(role=SuiteDraftModel.ItemRole)
+            self.loaded.emit(data["path"])
+
+            self._widgets["dir"].setText(data["root"])
+            self._widgets["name"].setText(data["name"])
+            self._widgets["desc"].setText(data["description"])
 
         load.triggered.connect(on_load)
 

@@ -8,13 +8,15 @@ class SuiteDraftItem(dict):
     def __init__(self, data):
         super(SuiteDraftItem, self).__init__({
             "name": data["name"],
+            "root": data["root"],
+            "path": data["path"],
             "description": data["description"],
         })
 
 
 class SuiteDraftModel(AbstractTableModel):
-
     DescriptionRole = QtCore.Qt.UserRole + 10
+    ItemRole = QtCore.Qt.UserRole + 11
     Headers = [
         "name",
     ]
@@ -46,3 +48,6 @@ class SuiteDraftModel(AbstractTableModel):
 
         if role == self.DescriptionRole:
             return data["description"]
+
+        if role == self.ItemRole:
+            return data

@@ -236,13 +236,10 @@ class Controller(QtCore.QObject):
         suite.add_description(comment)
 
     def on_suite_saved(self):
-        self.save_suite(as_draft=False)
+        self.save_suite()
 
-    def on_suite_drafted(self):
-        self.save_suite(as_draft=True)
-
-    def on_suite_loaded(self, name):
-        self.load_suite(name)
+    def on_suite_loaded(self, path):
+        self.load_suite(path)
 
     def remove_context(self, id_):
         self.context_removed.emit(id_)
@@ -256,13 +253,9 @@ class Controller(QtCore.QObject):
         suite = self._state["suite"]
         suite.remove_context(id_)
 
-    def save_suite(self, as_draft):
-        if as_draft:
-            path = sweetconfig.drafts()
-        else:
-            path = self._state["suiteDir"]
-
+    def save_suite(self):
         suite = self._state["suite"]
+        path = self._state["suiteDir"]
         name = self._state["suiteName"]
 
         if name:
@@ -279,9 +272,7 @@ class Controller(QtCore.QObject):
         else:
             print("Naming suite first.")
 
-    def load_suite(self, name):
-        path = sweetconfig.drafts()
-        path = os.path.join(path, name)
+    def load_suite(self, path):
         suite = rez.SweetSuite.load(path)
 
         self.clear_suite()
@@ -307,8 +298,6 @@ class Controller(QtCore.QObject):
 
             id_ = next(i for i in names if names[i] == ctx_name)
             tools[id_].load(hidden, aliases)
-
-        self._state["suiteName"] = name
 
     def clear_suite(self):
         for id_ in list(self._state["contextName"].keys()):
@@ -350,14 +339,17 @@ class Controller(QtCore.QObject):
                 yield doc
 
     def iter_drafts(self):
-        path = sweetconfig.drafts()
-        for dir in os.listdir(path):
-            filepath = os.path.join(path, dir, "suite.yaml")
+        root = sweetconfig.drafts()
+        for dir in os.listdir(root):
+            path = os.path.join(root, dir)
+            filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
 
                 data = {
                     "name": dir,
+                    "root": root,
+                    "path": path,
                     "description": description,
                 }
                 yield data

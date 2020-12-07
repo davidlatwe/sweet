@@ -1,4 +1,5 @@
 
+import os
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
 from rez import suite
@@ -93,6 +94,12 @@ class SweetSuite(Suite):
 
 
 def read_suite_description(filepath):
+    """
+    Args:
+        filepath (str): path to suite.yaml
+    Returns:
+        str
+    """
     try:
         with open(filepath) as f:
             data = yaml.load(f.read(), Loader=yaml.FullLoader)
