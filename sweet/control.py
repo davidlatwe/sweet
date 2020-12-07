@@ -27,13 +27,13 @@ class Controller(QtCore.QObject):
         timers = {
             "toolUpdate": QtCore.QTimer(self),
             "packageSearch": QtCore.QTimer(self),
-            "draftSuites": QtCore.QTimer(self),
-            "visibleSuites": QtCore.QTimer(self),
+            "savedSuites": QtCore.QTimer(self),
         }
 
         models = {
             "package": PackageModel(),
-            "draft": SavedSuiteModel(),
+            "recent": SavedSuiteModel(),
+            "drafts": SavedSuiteModel(),
             "visible": SavedSuiteModel(),
             # models per context
             "contextPackages": dict(),
@@ -42,8 +42,7 @@ class Controller(QtCore.QObject):
         }
 
         timers["packageSearch"].timeout.connect(self.on_package_searched)
-        timers["draftSuites"].timeout.connect(self.on_draft_listed)
-        timers["visibleSuites"].timeout.connect(self.on_visible_listed)
+        timers["savedSuites"].timeout.connect(self.on_saved_suite_listed)
         timers["toolUpdate"].timeout.connect(self.on_tool_updated)
 
         self._state = state
@@ -113,13 +112,8 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
-    def defer_list_draft_suites(self, on_time=50):
-        timer = self._timers["draftSuites"]
-        timer.setSingleShot(True)
-        timer.start(on_time)
-
-    def defer_list_visible_suites(self, on_time=50):
-        timer = self._timers["visibleSuites"]
+    def defer_list_saved_suites(self, on_time=50):
+        timer = self._timers["savedSuites"]
         timer.setSingleShot(True)
         timer.start(on_time)
 
@@ -131,10 +125,9 @@ class Controller(QtCore.QObject):
     def on_package_searched(self):
         self._models["package"].reset(self.iter_packages())
 
-    def on_draft_listed(self):
-        self._models["draft"].add_items(self.iter_draft_suites())
-
-    def on_visible_listed(self):
+    def on_saved_suite_listed(self):
+        self._models["recent"].add_items(self.iter_recent_suites())
+        self._models["drafts"].add_items(self.iter_draft_suites())
         self._models["visible"].add_items(self.iter_visible_suites())
 
     def on_context_requested(self, id_, requests):
@@ -249,8 +242,8 @@ class Controller(QtCore.QObject):
     def on_suite_saved(self):
         self.save_suite()
 
-    def on_suite_loaded(self, path):
-        self.load_suite(path)
+    def on_suite_loaded(self, path, as_import):
+        self.load_suite(path, as_import)
 
     def remove_context(self, id_):
         self.context_removed.emit(id_)
@@ -283,7 +276,7 @@ class Controller(QtCore.QObject):
         else:
             print("Naming suite first.")
 
-    def load_suite(self, path):
+    def load_suite(self, path, as_import):
         suite = rez.SweetSuite.load(path)
 
         self.clear_suite()
@@ -309,6 +302,9 @@ class Controller(QtCore.QObject):
 
             id_ = next(i for i in names if names[i] == ctx_name)
             tools[id_].load(hidden, aliases)
+
+        if not as_import:
+            self._state["suite"].load_path = os.path.realpath(path)
 
     def clear_suite(self):
         for id_ in list(self._state["contextName"].keys()):
@@ -348,6 +344,9 @@ class Controller(QtCore.QObject):
                 seen[qualified_name] = doc
 
                 yield doc
+
+    def iter_recent_suites(self):
+        return []
 
     def iter_draft_suites(self):
         root = sweetconfig.draft_root()

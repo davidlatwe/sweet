@@ -52,13 +52,15 @@ class Window(QtWidgets.QMainWindow):
         # setup..
         pages["package"].set_model(ctrl.models["package"])
         pages["package"].init_column_width()
-        pages["suite"].set_model(draft=ctrl.models["draft"],
+        pages["suite"].set_model(recent=ctrl.models["recent"],
+                                 drafts=ctrl.models["drafts"],
                                  visible=ctrl.models["visible"])
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
         pages["suite"].dired.connect(ctrl.on_suite_dired)
         pages["suite"].commented.connect(ctrl.on_suite_commented)
+        pages["suite"].newed.connect(self.on_suite_newed)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
@@ -74,6 +76,10 @@ class Window(QtWidgets.QMainWindow):
         self.setFocus()
 
         # create one draft context on launch
+        self.add_context_draft()
+
+    def on_suite_newed(self):
+        self._ctrl.clear_suite()
         self.add_context_draft()
 
     def on_context_drafted(self):

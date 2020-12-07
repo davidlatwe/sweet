@@ -12,8 +12,9 @@ class SuiteView(QtWidgets.QWidget):
     named = QtCore.Signal(str)
     dired = QtCore.Signal(str)
     commented = QtCore.Signal(str)
+    newed = QtCore.Signal()
     saved = QtCore.Signal()
-    loaded = QtCore.Signal(str)
+    loaded = QtCore.Signal(str, bool)
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -31,12 +32,12 @@ class SuiteView(QtWidgets.QWidget):
             "dir": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
-            "new": QtWidgets.QPushButton("New Suite"),  # TODO: clear
+            "new": QtWidgets.QPushButton("New Suite"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),  # TODO: update suite list
-            "draft": SuiteLoadView(),
             "recent": SuiteLoadView(),  # TODO: recently saved
+            "drafts": SuiteLoadView(),
             "visible": SuiteLoadView(),
         }
 
@@ -46,8 +47,8 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].setAcceptRichText(False)
         widgets["desc"].setTabChangesFocus(True)
 
-        widgets["suites"].addTab(widgets["draft"], "Drafts")
         widgets["suites"].addTab(widgets["recent"], "Recent")
+        widgets["suites"].addTab(widgets["drafts"], "Drafts")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
@@ -58,6 +59,7 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["dir"])
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["save"])
+        layout.addWidget(widgets["new"])
         layout.setSpacing(2)
 
         layout = QtWidgets.QVBoxLayout(panels["suites"])
@@ -80,8 +82,11 @@ class SuiteView(QtWidgets.QWidget):
         widgets["name"].textChanged.connect(self.named.emit)
         widgets["dir"].textChanged.connect(self.dired.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
+        widgets["new"].clicked.connect(self.newed.emit)
         widgets["save"].clicked.connect(self.saved.emit)
-        widgets["draft"].loaded.connect(self.on_loaded)
+        widgets["recent"].loaded.connect(self.on_loaded)
+        widgets["drafts"].loaded.connect(self.on_loaded)
+        widgets["visible"].loaded.connect(self.on_loaded)
 
         self._widgets = widgets
         self._panels = panels
@@ -91,13 +96,15 @@ class SuiteView(QtWidgets.QWidget):
         self.commented.emit(text)
 
     def on_loaded(self, name, root, path, description):
-        self.loaded.emit(path)
+        as_import = not bool(root)
+        self.loaded.emit(path, as_import)
         self._widgets["dir"].setText(root)
         self._widgets["name"].setText(name)
         self._widgets["desc"].setText(description)
 
-    def set_model(self, draft, visible):
-        self._widgets["draft"].set_model(draft)
+    def set_model(self, recent, drafts, visible):
+        self._widgets["recent"].set_model(recent)
+        self._widgets["drafts"].set_model(drafts)
         self._widgets["visible"].set_model(visible)
 
 
@@ -152,18 +159,28 @@ class SuiteLoadView(QtWidgets.QWidget):
             return
 
         menu = QtWidgets.QMenu(self)
-        load = QtWidgets.QAction("Load", menu)
+        open_ = QtWidgets.QAction("Open", menu)
+        import_ = QtWidgets.QAction("Import", menu)
 
-        menu.addAction(load)
+        menu.addAction(open_)
+        menu.addAction(import_)
 
-        def on_load():
+        def on_open():
             data = index.data(role=SavedSuiteModel.ItemRole)
             self.loaded.emit(data["name"],
                              data["root"],
                              data["path"],
                              data["description"])
 
-        load.triggered.connect(on_load)
+        def on_import():
+            data = index.data(role=SavedSuiteModel.ItemRole)
+            self.loaded.emit(data["name"],
+                             "",  # root path is not required on import
+                             data["path"],
+                             data["description"])
+
+        open_.triggered.connect(on_open)
+        import_.triggered.connect(on_import)
 
         menu.move(QtGui.QCursor.pos())
         menu.show()

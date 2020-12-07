@@ -67,6 +67,6 @@ def main():
     window.show()
 
     ctrl.defer_search_packages(on_time=200)
-    ctrl.defer_list_draft_suites(on_time=200)
-    ctrl.defer_list_visible_suites(on_time=200)
+    ctrl.defer_list_saved_suites(on_time=200)
+
     return app.exec_()
