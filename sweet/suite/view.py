@@ -34,8 +34,9 @@ class SuiteView(QtWidgets.QWidget):
             "new": QtWidgets.QPushButton("New Suite"),  # TODO: clear
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
-            "saved": QtWidgets.QLabel("Saved"),
+            "saved": QtWidgets.QLabel("Saved"),  # TODO: update suite list
             "draft": SuiteLoadView(),
+            "recent": SuiteLoadView(),  # TODO: recently saved
             "visible": SuiteLoadView(),
         }
 
@@ -46,6 +47,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].setTabChangesFocus(True)
 
         widgets["suites"].addTab(widgets["draft"], "Drafts")
+        widgets["suites"].addTab(widgets["recent"], "Recent")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
