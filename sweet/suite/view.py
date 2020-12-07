@@ -31,6 +31,7 @@ class SuiteView(QtWidgets.QWidget):
             "dir": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
             "save": QtWidgets.QPushButton("Save Suite"),
+            "new": QtWidgets.QPushButton("New Suite"),  # TODO: clear
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
