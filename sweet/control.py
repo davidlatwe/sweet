@@ -351,14 +351,17 @@ class Controller(QtCore.QObject):
 
     def iter_draft_suites(self):
         root = sweetconfig.draft_root()
-        for dir in os.listdir(root):
-            path = os.path.join(root, dir)
+        if not os.path.isdir(root):
+            return
+
+        for dir_name in os.listdir(root):
+            path = os.path.join(root, dir_name)
             filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
 
                 data = {
-                    "name": dir,
+                    "name": dir_name,
                     "root": root,
                     "path": path,
                     "description": description,
@@ -370,10 +373,10 @@ class Controller(QtCore.QObject):
             filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
-                root, dir = os.path.split(path)
+                root, dir_name = os.path.split(path)
 
                 data = {
-                    "name": dir,
+                    "name": dir_name,
                     "root": root,
                     "path": path,
                     "description": description,
