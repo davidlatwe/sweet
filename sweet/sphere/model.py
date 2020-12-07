@@ -155,12 +155,20 @@ class ToolModel(AbstractTableModel):
         hidden = hidden or set()
         aliases = aliases or dict()
 
-        for tool in items:
+        for row, tool in enumerate(items):
             name = tool["name"]
-            tool["hide"] = name in hidden
-            tool["alias"] = aliases.get(name, "")
+            is_hidden = name in hidden
+            alias = aliases.get(name, "")
+            roles = []
 
-        first = self.createIndex(0, 0)
-        last = self.createIndex(len(items) - 1, 1)
-        roles = [QtCore.Qt.CheckStateRole, QtCore.Qt.EditRole]
-        self.dataChanged.emit(first, last, roles)
+            if is_hidden:
+                tool["hide"] = True
+                roles.append(QtCore.Qt.CheckStateRole)
+
+            if alias:
+                tool["alias"] = alias
+                roles.append(QtCore.Qt.EditRole)
+
+            if roles:
+                index = self.createIndex(row, 0)
+                self.dataChanged.emit(index, index, roles)
