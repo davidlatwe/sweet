@@ -3,10 +3,10 @@ from ..vendor.Qt5 import QtCore
 from ..common.model import AbstractTableModel
 
 
-class SuiteDraftItem(dict):
+class SavedSuiteItem(dict):
 
     def __init__(self, data):
-        super(SuiteDraftItem, self).__init__({
+        super(SavedSuiteItem, self).__init__({
             "name": data["name"],
             "root": data["root"],
             "path": data["path"],
@@ -14,11 +14,12 @@ class SuiteDraftItem(dict):
         })
 
 
-class SuiteDraftModel(AbstractTableModel):
+class SavedSuiteModel(AbstractTableModel):
     DescriptionRole = QtCore.Qt.UserRole + 10
     ItemRole = QtCore.Qt.UserRole + 11
     Headers = [
         "name",
+        "description",
     ]
 
     def clear(self):
@@ -28,7 +29,7 @@ class SuiteDraftModel(AbstractTableModel):
 
     def add_items(self, items):
         self.beginResetModel()
-        self.items += [SuiteDraftItem(data) for data in items]
+        self.items += [SavedSuiteItem(data) for data in items]
         self.endResetModel()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):

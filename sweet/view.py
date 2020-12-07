@@ -52,7 +52,8 @@ class Window(QtWidgets.QMainWindow):
         # setup..
         pages["package"].set_model(ctrl.models["package"])
         pages["package"].init_column_width()
-        pages["suite"].set_model(ctrl.models["draft"])
+        pages["suite"].set_model(draft=ctrl.models["draft"],
+                                 visible=ctrl.models["visible"])
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)

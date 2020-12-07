@@ -5,7 +5,7 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
-from .suite.model import SuiteDraftModel
+from .suite.model import SavedSuiteModel
 from . import sweetconfig
 
 
@@ -27,12 +27,14 @@ class Controller(QtCore.QObject):
         timers = {
             "toolUpdate": QtCore.QTimer(self),
             "packageSearch": QtCore.QTimer(self),
-            "draftList": QtCore.QTimer(self),
+            "draftSuites": QtCore.QTimer(self),
+            "visibleSuites": QtCore.QTimer(self),
         }
 
         models = {
             "package": PackageModel(),
-            "draft": SuiteDraftModel(),
+            "draft": SavedSuiteModel(),
+            "visible": SavedSuiteModel(),
             # models per context
             "contextPackages": dict(),
             "contextEnvironment": dict(),
@@ -40,7 +42,8 @@ class Controller(QtCore.QObject):
         }
 
         timers["packageSearch"].timeout.connect(self.on_package_searched)
-        timers["draftList"].timeout.connect(self.on_draft_listed)
+        timers["draftSuites"].timeout.connect(self.on_draft_listed)
+        timers["visibleSuites"].timeout.connect(self.on_visible_listed)
         timers["toolUpdate"].timeout.connect(self.on_tool_updated)
 
         self._state = state
@@ -110,8 +113,13 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
-    def defer_list_drafts(self, on_time=50):
-        timer = self._timers["draftList"]
+    def defer_list_draft_suites(self, on_time=50):
+        timer = self._timers["draftSuites"]
+        timer.setSingleShot(True)
+        timer.start(on_time)
+
+    def defer_list_visible_suites(self, on_time=50):
+        timer = self._timers["visibleSuites"]
         timer.setSingleShot(True)
         timer.start(on_time)
 
@@ -124,7 +132,10 @@ class Controller(QtCore.QObject):
         self._models["package"].reset(self.iter_packages())
 
     def on_draft_listed(self):
-        self._models["draft"].add_items(self.iter_drafts())
+        self._models["draft"].add_items(self.iter_draft_suites())
+
+    def on_visible_listed(self):
+        self._models["visible"].add_items(self.iter_visible_suites())
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -338,13 +349,28 @@ class Controller(QtCore.QObject):
 
                 yield doc
 
-    def iter_drafts(self):
-        root = sweetconfig.drafts()
+    def iter_draft_suites(self):
+        root = sweetconfig.draft_root()
         for dir in os.listdir(root):
             path = os.path.join(root, dir)
             filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
+
+                data = {
+                    "name": dir,
+                    "root": root,
+                    "path": path,
+                    "description": description,
+                }
+                yield data
+
+    def iter_visible_suites(self):
+        for path in sweetconfig.suites():
+            filepath = os.path.join(path, "suite.yaml")
+            if os.path.isfile(filepath):
+                description = rez.read_suite_description(filepath)
+                root, dir = os.path.split(path)
 
                 data = {
                     "name": dir,

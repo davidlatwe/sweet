@@ -692,3 +692,12 @@ QSplitter::handle:vertical:hover {
     background-color: transparent;
     border: 1px dotted %(primary.bright)s;
 }
+
+#SuiteView QLabel {
+    font-size: 16px;
+}
+
+#SuiteLoadView QTextEdit {
+    background-color: %(surface.dim)s;
+    border: none;
+}
