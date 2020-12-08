@@ -104,7 +104,7 @@ class ToolModel(AbstractTableModel):
         if col == 0 and role == QtCore.Qt.DisplayRole:
             return data["name"]
 
-        if col == 1 and role == QtCore.Qt.DisplayRole:
+        if col == 1 and role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             if data["hide"]:
                 return ""
             return self._exposed_name(data)
