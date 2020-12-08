@@ -1,7 +1,7 @@
 
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from ..common.view import SlimTableView
-from .model import SavedSuiteModel
+from .model import SavedSuiteModel, AS_DRAFT
 from .. import util
 
 
@@ -32,8 +32,10 @@ class SuiteView(QtWidgets.QWidget):
             "name": QtWidgets.QLineEdit(),  # TODO: add name validator
             "dir": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
-            "save": QtWidgets.QPushButton("Save Suite"),
-            "new": QtWidgets.QPushButton("New Suite"),
+            "operate": QtWidgets.QWidget(),
+            "asDraft": QtWidgets.QCheckBox("Save As Draft"),
+            "save": QtWidgets.QPushButton("Save"),
+            "new": QtWidgets.QPushButton("New"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
@@ -41,6 +43,8 @@ class SuiteView(QtWidgets.QWidget):
             "drafts": SuiteLoadView(),
             "visible": SuiteLoadView(),
         }
+        widgets["save"].setObjectName("SuiteSaveButton")
+        widgets["new"].setObjectName("SuiteNewButton")
 
         widgets["name"].setPlaceholderText("Suite name..")
         widgets["dir"].setPlaceholderText("Suite dir..")
@@ -52,15 +56,21 @@ class SuiteView(QtWidgets.QWidget):
         widgets["suites"].addTab(widgets["drafts"], "Drafts")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
+        layout = QtWidgets.QGridLayout(widgets["operate"])
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.addWidget(widgets["asDraft"], 0, 0)
+        layout.addItem(QtWidgets.QSpacerItem(1, 1), 0, 1, 1, 2)
+        layout.addWidget(widgets["save"], 0, 3)
+        layout.addWidget(widgets["new"], 0, 4)
+
         layout = QtWidgets.QVBoxLayout(panels["save"])
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 12)
         layout.addWidget(widgets["session"])
         layout.addSpacing(4)
         layout.addWidget(widgets["name"])
         layout.addWidget(widgets["dir"])
         layout.addWidget(widgets["desc"])
-        layout.addWidget(widgets["save"])
-        layout.addWidget(widgets["new"])
+        layout.addWidget(widgets["operate"])
         layout.setSpacing(2)
 
         layout = QtWidgets.QVBoxLayout(panels["suites"])
@@ -80,6 +90,7 @@ class SuiteView(QtWidgets.QWidget):
         panels["split"].setStretchFactor(0, 20)
         panels["split"].setStretchFactor(1, 80)
 
+        widgets["asDraft"].stateChanged.connect(self.on_as_draft)
         widgets["name"].textChanged.connect(self.named.emit)
         widgets["dir"].textChanged.connect(self.dired.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
@@ -91,6 +102,15 @@ class SuiteView(QtWidgets.QWidget):
 
         self._widgets = widgets
         self._panels = panels
+
+    def on_as_draft(self, state):
+        dir_widget = self._widgets["dir"]
+        if state == QtCore.Qt.CheckState.Checked:
+            dir_widget.setEnabled(False)
+            self.dired.emit(AS_DRAFT)
+        else:
+            dir_widget.setEnabled(True)
+            self.dired.emit(dir_widget.text())
 
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()

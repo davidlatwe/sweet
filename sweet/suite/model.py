@@ -5,6 +5,9 @@ from ..common.model import AbstractTableModel
 from .. import _rezapi as rez, util
 
 
+AS_DRAFT = "<<sweet.draft>>"  # pragma
+
+
 class SavedSuiteItem(dict):
 
     def __init__(self, data):
@@ -35,8 +38,13 @@ class SavedSuiteModel(AbstractTableModel):
         if clear:
             self.items.clear()
 
+        existed = set(i["file"] for i in self.items)
+
         for filepath in suite_files:
             filepath = util.normpath(filepath)
+            if filepath in existed:
+                continue
+            existed.add(filepath)
 
             description = rez.read_suite_description(filepath)
             suite_dir, suite_yaml = os.path.split(filepath)
@@ -50,6 +58,8 @@ class SavedSuiteModel(AbstractTableModel):
                 "description": description,
             })
             self.items.append(item)
+
+        self.items.sort(key=lambda i: i["name"])
 
         self.endResetModel()
 

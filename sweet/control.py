@@ -5,7 +5,7 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
-from .suite.model import SavedSuiteModel
+from .suite.model import SavedSuiteModel, AS_DRAFT
 from . import sweetconfig, util
 
 
@@ -264,10 +264,15 @@ class Controller(QtCore.QObject):
         root = self._state["suiteDir"]
         name = self._state["suiteName"]
         comment = self._state["suiteDescription"]
+        add_draft = False
 
         if not root or not name:
             print("Naming suite first.")
             return
+
+        if root == AS_DRAFT:
+            root = sweetconfig.draft_root()
+            add_draft = True
 
         path = util.normpath(os.path.join(root, name))
 
@@ -279,7 +284,7 @@ class Controller(QtCore.QObject):
         try:
             suite.save(path)
             suite.load_path = os.path.realpath(path)
-            self.add_recent_suite(path)
+            self.update_suite_lists(path, add_draft)
         finally:
             # restore id naming
             for id_, n in self._state["contextName"].items():
@@ -353,7 +358,7 @@ class Controller(QtCore.QObject):
 
                 yield doc
 
-    def add_recent_suite(self, suite_path):
+    def update_suite_lists(self, suite_path, add_draft):
         max_count = self._state["recentSuiteCount"]
         sep = os.pathsep
         valid_path = list()
@@ -374,6 +379,9 @@ class Controller(QtCore.QObject):
 
         self.store("recentSavedSuites", os.pathsep.join(valid_path))
         self._models["recent"].add_files(valid_path)
+
+        if add_draft:
+            self._models["drafts"].add_files([newly_saved], clear=False)
 
     def iter_recent_suites(self):
         max_count = self._state["recentSuiteCount"]
