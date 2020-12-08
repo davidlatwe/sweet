@@ -76,6 +76,8 @@ class Window(QtWidgets.QMainWindow):
         self.setCentralWidget(panels["body"])
         self.setFocus()
 
+        # show suite page on launch
+        self._panels["page"].setCurrentIndex(2)
         # create one draft context on launch
         self.add_context_draft()
 
@@ -84,12 +86,12 @@ class Window(QtWidgets.QMainWindow):
         self.add_context_draft()
 
     def on_context_drafted(self):
-        self.add_context_draft()
+        self.add_context_draft(focus=True)
 
     def on_context_loaded(self, context_data, requests):
         self.add_context_draft(context_data, requests)
 
-    def add_context_draft(self, context_data=None, requests=None):
+    def add_context_draft(self, context_data=None, requests=None, focus=False):
         ctrl = self._ctrl
         sphere = self._widgets["sphere"]
         panel = self._panels["page"]
@@ -132,7 +134,8 @@ class Window(QtWidgets.QMainWindow):
         view.jumped.connect(active_context_page)
 
         # show context resolve page on added
-        active_context_page()
+        if focus:
+            active_context_page()
 
         # from loaded
         if context_data:
