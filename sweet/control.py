@@ -264,23 +264,25 @@ class Controller(QtCore.QObject):
         root = self._state["suiteDir"]
         name = self._state["suiteName"]
         comment = self._state["suiteDescription"]
+
+        if not root or not name:
+            print("Naming suite first.")
+
         path = util.normpath(os.path.join(root, name))
 
-        if name:
-            # rename context from id to actual name
-            for id_, n in self._state["contextName"].items():
-                suite.rename_context(id_, n)
+        # rename context from id to actual name
+        for id_, n in self._state["contextName"].items():
+            suite.rename_context(id_, n)
 
-            suite.add_description(comment)
-            try:
-                suite.save(path)
-                self.add_recent_suite(path)
-            finally:
-                # restore id naming
-                for id_, n in self._state["contextName"].items():
-                    suite.rename_context(n, id_)
-        else:
-            print("Naming suite first.")
+        suite.add_description(comment)
+        try:
+            suite.save(path)
+            suite.load_path = os.path.realpath(path)
+            self.add_recent_suite(path)
+        finally:
+            # restore id naming
+            for id_, n in self._state["contextName"].items():
+                suite.rename_context(n, id_)
 
     def load_suite(self, path, as_import):
         suite = rez.SweetSuite.load(path)
