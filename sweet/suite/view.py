@@ -183,7 +183,6 @@ class SuiteLoadView(QtWidgets.QWidget):
 
         def on_explore():
             data = index.data(role=SavedSuiteModel.ItemRole)
-            print(data["file"])
             util.open_file_location(data["file"])
 
         open_.triggered.connect(on_open)
