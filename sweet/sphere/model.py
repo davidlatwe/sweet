@@ -32,8 +32,8 @@ class ToolModel(AbstractTableModel):
         self._prefix = ""
         self._suffix = ""
         self._icons = {
-            "ok": res.icon("images", "play-fill-ok"),
-            "conflict": res.icon("images", "exclamation-triangle-fill"),
+            "ok": res.icon("images", "check-ok"),
+            "conflict": res.icon("images", "exclamation-warn"),
         }
 
     def _exposed_name(self, data):
