@@ -6,7 +6,7 @@ from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
 from .suite.model import SavedSuiteModel
-from . import sweetconfig
+from . import sweetconfig, util
 
 
 class Controller(QtCore.QObject):
@@ -356,15 +356,18 @@ class Controller(QtCore.QObject):
             return
 
         for dir_name in os.listdir(root):
-            path = os.path.join(root, dir_name)
-            filepath = os.path.join(path, "suite.yaml")
+            filepath = os.path.join(root, dir_name, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
+                path = util.normpath(os.path.join(root, dir_name))
+                filepath = util.normpath(filepath)
+                root, dir_name = os.path.split(path)
 
                 data = {
                     "name": dir_name,
                     "root": root,
                     "path": path,
+                    "file": filepath,
                     "description": description,
                 }
                 yield data
@@ -374,12 +377,15 @@ class Controller(QtCore.QObject):
             filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
                 description = rez.read_suite_description(filepath)
+                path = util.normpath(path)
+                filepath = util.normpath(filepath)
                 root, dir_name = os.path.split(path)
 
                 data = {
                     "name": dir_name,
                     "root": root,
                     "path": path,
+                    "file": filepath,
                     "description": description,
                 }
                 yield data

@@ -2,6 +2,7 @@
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from ..common.view import SlimTableView
 from .model import SavedSuiteModel
+from .. import util
 
 
 class SuiteView(QtWidgets.QWidget):
@@ -162,11 +163,9 @@ class SuiteLoadView(QtWidgets.QWidget):
             return
 
         menu = QtWidgets.QMenu(self)
-        open_ = QtWidgets.QAction("Open", menu)
-        import_ = QtWidgets.QAction("Import", menu)
-
-        menu.addAction(open_)
-        menu.addAction(import_)
+        open_ = QtWidgets.QAction("Open suite (loaded)", menu)
+        import_ = QtWidgets.QAction("Open suite (import)", menu)
+        explore = QtWidgets.QAction("Show in Explorer", menu)
 
         def on_open():
             data = index.data(role=SavedSuiteModel.ItemRole)
@@ -182,8 +181,18 @@ class SuiteLoadView(QtWidgets.QWidget):
                              data["path"],
                              data["description"])
 
+        def on_explore():
+            data = index.data(role=SavedSuiteModel.ItemRole)
+            print(data["file"])
+            util.open_file_location(data["file"])
+
         open_.triggered.connect(on_open)
         import_.triggered.connect(on_import)
+        explore.triggered.connect(on_explore)
+
+        menu.addAction(open_)
+        menu.addAction(import_)
+        menu.addAction(explore)
 
         menu.move(QtGui.QCursor.pos())
         menu.show()

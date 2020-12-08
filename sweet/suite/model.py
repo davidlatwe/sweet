@@ -10,6 +10,7 @@ class SavedSuiteItem(dict):
             "name": data["name"],
             "root": data["root"],
             "path": data["path"],
+            "file": data["file"],
             "description": data["description"],
         })
 

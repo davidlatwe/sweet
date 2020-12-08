@@ -84,3 +84,9 @@ def open_file_location(fname):
             webbrowser.open(os.path.dirname(fname))
     else:
         raise OSError("%s did not exist" % fname)
+
+
+def normpath(path):
+    return os.path.normpath(
+        os.path.normcase(os.path.abspath(path)).replace("\\", "/")
+    )
