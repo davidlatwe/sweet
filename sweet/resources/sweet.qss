@@ -21,6 +21,10 @@ QWidget:disabled {
     background-color: %(surface.dim)s;
 }
 
+QCheckBox:focus {
+    border: none;
+}
+
 QMenu, QLabel {
     padding-top: 2px;
     padding-bottom: 2px;
@@ -700,4 +704,20 @@ QSplitter::handle:vertical:hover {
 #SuiteLoadView QTextEdit {
     background-color: %(surface.dim)s;
     border: none;
+}
+
+#SuiteSaveButton {
+    icon: url(%(res)s/egg-fried-dim.svg);
+}
+
+#SuiteSaveButton:hover {
+    icon: url(%(res)s/egg-fried.svg);
+}
+
+#SuiteNewButton {
+    icon: url(%(res)s/egg-fill-dim.svg);
+}
+
+#SuiteNewButton:hover {
+    icon: url(%(res)s/egg-fill.svg);
 }
