@@ -98,6 +98,9 @@ class SuiteView(QtWidgets.QWidget):
     def on_loaded(self, name, root, path, description):
         as_import = not bool(root)
         self.loaded.emit(path, as_import)
+        self.change_suite(root, name, description)
+
+    def change_suite(self, root, name, description):
         self._widgets["dir"].setText(root)
         self._widgets["name"].setText(name)
         self._widgets["desc"].setText(description)

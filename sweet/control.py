@@ -10,6 +10,7 @@ from . import sweetconfig
 
 
 class Controller(QtCore.QObject):
+    suite_changed = QtCore.Signal(str, str, str)
     context_removed = QtCore.Signal(str)
     context_loaded = QtCore.Signal(dict, list)
 
@@ -20,6 +21,7 @@ class Controller(QtCore.QObject):
             "suite": rez.SweetSuite(),
             "suiteDir": "",
             "suiteName": "",
+            "suiteDescription": "",
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history
         }
@@ -236,8 +238,7 @@ class Controller(QtCore.QObject):
         self._state["suiteDir"] = path
 
     def on_suite_commented(self, comment):
-        suite = self._state["suite"]
-        suite.add_description(comment)
+        self._state["suiteDescription"] = comment
 
     def on_suite_saved(self):
         self.save_suite()
@@ -261,12 +262,14 @@ class Controller(QtCore.QObject):
         suite = self._state["suite"]
         path = self._state["suiteDir"]
         name = self._state["suiteName"]
+        comment = self._state["suiteDescription"]
 
         if name:
             # rename context from id to actual name
             for id_, n in self._state["contextName"].items():
                 suite.rename_context(id_, n)
 
+            suite.add_description(comment)
             try:
                 suite.save(os.path.join(path, name))
             finally:
@@ -310,9 +313,8 @@ class Controller(QtCore.QObject):
         for id_ in list(self._state["contextName"].keys()):
             self.remove_context(id_)
 
+        self.suite_changed.emit("", "", "")
         self._state["suite"] = rez.SweetSuite()
-        self._state["suiteDir"] = ""
-        self._state["suiteName"] = ""
 
     def iter_packages(self, no_local=False):
         paths = None

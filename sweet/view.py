@@ -64,6 +64,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
+        ctrl.suite_changed.connect(pages["suite"].change_suite)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
 
