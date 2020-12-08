@@ -42,7 +42,7 @@ def _load_userconfig(fname=None):
     return fname
 
 
-def main():
+def init():
     if sys.platform == "darwin":
         os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
 
@@ -64,6 +64,12 @@ def main():
     ctrl = control.Controller(storage)
     window = view.Window(ctrl=ctrl)
     window.setStyleSheet(qss)
+
+    return app, window, ctrl
+
+
+def main():
+    app, window, ctrl = init()
     window.show()
 
     ctrl.defer_search_packages(on_time=200)
