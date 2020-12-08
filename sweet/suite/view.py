@@ -8,7 +8,7 @@ from .. import util
 class SuiteView(QtWidgets.QWidget):
 
     # TODO:
-    # batch context re-resolve, match by resolved package (another window ?)
+    #   batch context re-resolve, match by resolved package (another window ?)
 
     named = QtCore.Signal(str)
     dired = QtCore.Signal(str)
@@ -36,8 +36,8 @@ class SuiteView(QtWidgets.QWidget):
             "new": QtWidgets.QPushButton("New Suite"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
-            "saved": QtWidgets.QLabel("Saved"),  # TODO: update suite list
-            "recent": SuiteLoadView(),  # TODO: recently saved
+            "saved": QtWidgets.QLabel("Saved"),
+            "recent": SuiteLoadView(),
             "drafts": SuiteLoadView(),
             "visible": SuiteLoadView(),
         }

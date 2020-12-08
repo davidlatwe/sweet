@@ -4,11 +4,11 @@ from .. import common
 from .model import PackageProxyModel
 
 # TODO:
-# * parse request into model item check state
-# * add reset button
-# * log model reset time
-# * no-local-package checkBox
-# * show package paths, and able to update package list per path
+#   * parse request into model item check state
+#   * add reset button
+#   * log model reset time
+#   * no-local-package checkBox
+#   * show package paths, and able to update package list per path
 
 
 class PackageTreeView(common.view.VerticalExtendedTreeView):
