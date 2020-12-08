@@ -175,3 +175,6 @@ class PackageView(QtWidgets.QWidget):
         for group in model.name_groups():
             self._groups.append(group)
             tab.addTab(group)
+
+        # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
+        tab.updateGeometry()
