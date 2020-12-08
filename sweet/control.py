@@ -267,6 +267,7 @@ class Controller(QtCore.QObject):
 
         if not root or not name:
             print("Naming suite first.")
+            return
 
         path = util.normpath(os.path.join(root, name))
 
