@@ -23,7 +23,8 @@ class Controller(QtCore.QObject):
             "suiteName": "",
             "suiteDescription": "",
             "contextName": dict(),
-            "contextRequests": dict(),  # success requests history
+            "contextRequests": dict(),  # success requests history (not used)
+            "recentSuiteCount": 10,  # TODO: change in preference
         }
 
         timers = {
@@ -128,9 +129,9 @@ class Controller(QtCore.QObject):
         self._models["package"].reset(self.iter_packages())
 
     def on_saved_suite_listed(self):
-        self._models["recent"].add_items(self.iter_recent_suites())
-        self._models["drafts"].add_items(self.iter_draft_suites())
-        self._models["visible"].add_items(self.iter_visible_suites())
+        self._models["recent"].add_files(self.iter_recent_suites())
+        self._models["drafts"].add_files(self.iter_draft_suites())
+        self._models["visible"].add_files(self.iter_visible_suites())
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -260,9 +261,10 @@ class Controller(QtCore.QObject):
 
     def save_suite(self):
         suite = self._state["suite"]
-        path = self._state["suiteDir"]
+        root = self._state["suiteDir"]
         name = self._state["suiteName"]
         comment = self._state["suiteDescription"]
+        path = util.normpath(os.path.join(root, name))
 
         if name:
             # rename context from id to actual name
@@ -271,7 +273,8 @@ class Controller(QtCore.QObject):
 
             suite.add_description(comment)
             try:
-                suite.save(os.path.join(path, name))
+                suite.save(path)
+                self.add_recent_suite(path)
             finally:
                 # restore id naming
                 for id_, n in self._state["contextName"].items():
@@ -347,8 +350,40 @@ class Controller(QtCore.QObject):
 
                 yield doc
 
+    def add_recent_suite(self, suite_path):
+        max_count = self._state["recentSuiteCount"]
+        sep = os.pathsep
+        valid_path = list()
+
+        for filepath in self.retrieve("recentSavedSuites", "").split(sep):
+            if not filepath or not os.path.isfile(filepath):
+                continue
+            valid_path.append(util.normpath(filepath))
+            if len(valid_path) == max_count:
+                break
+
+        newly_saved = util.normpath(os.path.join(suite_path, "suite.yaml"))
+
+        if newly_saved in valid_path:
+            valid_path.remove(newly_saved)
+        valid_path.insert(0, newly_saved)
+        valid_path = valid_path[:max_count]
+
+        self.store("recentSavedSuites", os.pathsep.join(valid_path))
+        self._models["recent"].add_files(valid_path)
+
     def iter_recent_suites(self):
-        return []
+        max_count = self._state["recentSuiteCount"]
+        sep = os.pathsep
+        valid_path = list()
+
+        for filepath in self.retrieve("recentSavedSuites", "").split(sep):
+            if not filepath or not os.path.isfile(filepath):
+                continue
+            yield filepath
+
+            if len(valid_path) == max_count:
+                break
 
     def iter_draft_suites(self):
         root = sweetconfig.draft_root()
@@ -358,34 +393,10 @@ class Controller(QtCore.QObject):
         for dir_name in os.listdir(root):
             filepath = os.path.join(root, dir_name, "suite.yaml")
             if os.path.isfile(filepath):
-                description = rez.read_suite_description(filepath)
-                path = util.normpath(os.path.join(root, dir_name))
-                filepath = util.normpath(filepath)
-                root, dir_name = os.path.split(path)
-
-                data = {
-                    "name": dir_name,
-                    "root": root,
-                    "path": path,
-                    "file": filepath,
-                    "description": description,
-                }
-                yield data
+                yield filepath
 
     def iter_visible_suites(self):
         for path in sweetconfig.suites():
             filepath = os.path.join(path, "suite.yaml")
             if os.path.isfile(filepath):
-                description = rez.read_suite_description(filepath)
-                path = util.normpath(path)
-                filepath = util.normpath(filepath)
-                root, dir_name = os.path.split(path)
-
-                data = {
-                    "name": dir_name,
-                    "root": root,
-                    "path": path,
-                    "file": filepath,
-                    "description": description,
-                }
-                yield data
+                yield filepath

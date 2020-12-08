@@ -1,6 +1,8 @@
 
+import os
 from ..vendor.Qt5 import QtCore
 from ..common.model import AbstractTableModel
+from .. import _rezapi as rez, util
 
 
 class SavedSuiteItem(dict):
@@ -28,9 +30,27 @@ class SavedSuiteModel(AbstractTableModel):
         self.items.clear()
         self.endResetModel()
 
-    def add_items(self, items):
+    def add_files(self, suite_files, clear=True):
         self.beginResetModel()
-        self.items += [SavedSuiteItem(data) for data in items]
+        if clear:
+            self.items.clear()
+
+        for filepath in suite_files:
+            filepath = util.normpath(filepath)
+
+            description = rez.read_suite_description(filepath)
+            suite_dir, suite_yaml = os.path.split(filepath)
+            suite_root, suite_name = os.path.split(suite_dir)
+
+            item = SavedSuiteItem({
+                "name": suite_name,
+                "root": suite_root,
+                "path": suite_dir,
+                "file": filepath,
+                "description": description,
+            })
+            self.items.append(item)
+
         self.endResetModel()
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
