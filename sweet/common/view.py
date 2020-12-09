@@ -349,10 +349,10 @@ class RequestCompleter(QtWidgets.QCompleter):
         return path.split("-", 1)
 
 
-class RequestCompleterPopup(QtWidgets.QListView):
+class CompleterPopup(QtWidgets.QListView):
     def __init__(self, parent=None):
-        super(RequestCompleterPopup, self).__init__(parent=parent)
-        self.setObjectName("RequestCompleterPopup")
+        super(CompleterPopup, self).__init__(parent=parent)
+        self.setObjectName("CompleterPopup")
         # this seems to be the only way to apply stylesheet to completer
         # popup.
         # TODO: make theme cache
@@ -373,7 +373,7 @@ class RequestTextEdit(QtWidgets.QTextEdit):
 
         self._completer = c
 
-        c.setPopup(RequestCompleterPopup())
+        c.setPopup(CompleterPopup())
         c.setWidget(self)
         c.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
         c.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
