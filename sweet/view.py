@@ -7,7 +7,7 @@ from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
 from .suite.view import SuiteView
-from . import resources as res
+from . import sweetconfig, resources as res
 
 
 class Window(QtWidgets.QMainWindow):
@@ -80,6 +80,9 @@ class Window(QtWidgets.QMainWindow):
         self._panels["page"].setCurrentIndex(2)
         # create one draft context on launch
         self.add_context_draft()
+        # set default root
+        default_root = sweetconfig.default_root() or ""
+        pages["suite"].change_suite(default_root, None, None)
 
     def on_suite_newed(self):
         self._ctrl.clear_suite()

@@ -14,4 +14,9 @@ def suite_bin_dirs():
 
 def draft_root():
     """Return draft suite saving dir path"""
-    return __os.path.expanduser("~/sweet/drafts")
+    return __os.path.expanduser("~/rez/sweet/drafts")
+
+
+def default_root():
+    """Return default suite saving dir path"""
+    return __os.path.expanduser("~/rez/sweet/suites")

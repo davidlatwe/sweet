@@ -324,7 +324,8 @@ class Controller(QtCore.QObject):
         for id_ in list(self._state["contextName"].keys()):
             self.remove_context(id_)
 
-        self.suite_changed.emit("", "", "")
+        default_root = sweetconfig.default_root() or ""
+        self.suite_changed.emit(default_root, "", "")
         self._state["suite"] = rez.SweetSuite()
 
     def iter_packages(self, no_local=False):

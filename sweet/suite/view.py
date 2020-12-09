@@ -122,9 +122,12 @@ class SuiteView(QtWidgets.QWidget):
         self.change_suite(root, name, description)
 
     def change_suite(self, root, name, description):
-        self._widgets["root"].setText(root)
-        self._widgets["name"].setText(name)
-        self._widgets["desc"].setText(description)
+        if root is not None:
+            self._widgets["root"].setText(root)
+        if name is not None:
+            self._widgets["name"].setText(name)
+        if description is not None:
+            self._widgets["desc"].setText(description)
 
     def set_model(self, recent, drafts, visible):
         self._widgets["recent"].set_model(recent)
