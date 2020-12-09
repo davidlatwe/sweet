@@ -1,8 +1,8 @@
 
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
-from ..common.view import SlimTableView
+from ..common.view import SlimTableView, CompleterPopup
 from .model import SavedSuiteModel, AS_DRAFT
-from .. import util
+from .. import util, sweetconfig
 
 
 class SuiteView(QtWidgets.QWidget):
@@ -102,6 +102,30 @@ class SuiteView(QtWidgets.QWidget):
 
         self._widgets = widgets
         self._panels = panels
+
+        self.setup_root_path_completer()
+
+    def setup_root_path_completer(self):
+        rooter = self._widgets["root"]
+
+        completer = QtWidgets.QCompleter(rooter)
+        completer.setPopup(CompleterPopup())
+        completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        completer.setModelSorting(completer.CaseInsensitivelySortedModel)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        completer.setWrapAround(False)
+
+        # NOTE:
+        #   Somehow, the completer failed to work after trying to list out
+        #   items under e.g. "c:/users", and never functioning again.
+        model = QtWidgets.QFileSystemModel(completer)
+        model.setReadOnly(True)
+        model.setOption(model.Option.DontUseCustomDirectoryIcons, True)
+        model.setRootPath(sweetconfig.default_root() or "")
+        completer.setModel(model)
+
+        rooter.setCompleter(completer)
+        self._widgets["completer"] = completer
 
     def on_as_draft(self, state):
         root_widget = self._widgets["root"]
