@@ -505,3 +505,9 @@ class JsonView(QtWidgets.QTreeView):
 
         menu.move(QtGui.QCursor.pos())
         menu.show()
+
+
+class QArgParserDialog(QtWidgets.QDialog):
+
+    def __init__(self, parent=None):
+        super(QArgParserDialog, self).__init__(parent=parent)

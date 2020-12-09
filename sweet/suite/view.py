@@ -1,6 +1,6 @@
 
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
-from ..common.view import SlimTableView, CompleterPopup
+from ..common.view import SlimTableView, CompleterPopup, QArgParserDialog
 from .model import SavedSuiteModel, AS_DRAFT
 from .. import util, sweetconfig
 
@@ -34,6 +34,7 @@ class SuiteView(QtWidgets.QWidget):
             "desc": QtWidgets.QTextEdit(),
             "operate": QtWidgets.QWidget(),
             "asDraft": QtWidgets.QCheckBox("Save As Draft"),
+            "more": QtWidgets.QPushButton("More"),
             "save": QtWidgets.QPushButton("Save"),
             "new": QtWidgets.QPushButton("New"),
             # -splitter-
@@ -42,7 +43,10 @@ class SuiteView(QtWidgets.QWidget):
             "recent": SuiteLoadView(),
             "drafts": SuiteLoadView(),
             "visible": SuiteLoadView(),
+            # additional data dialog
+            "data": QArgParserDialog(self),
         }
+        widgets["more"].setObjectName("SuiteMoreDataButton")
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
 
@@ -56,12 +60,17 @@ class SuiteView(QtWidgets.QWidget):
         widgets["suites"].addTab(widgets["drafts"], "Drafts")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
+        widgets["data"].setModal(True)
+        widgets["more"].setEnabled(False)
+        widgets["more"].setVisible(False)
+
         layout = QtWidgets.QGridLayout(widgets["operate"])
         layout.setContentsMargins(0, 4, 0, 0)
         layout.addWidget(widgets["asDraft"], 0, 0)
         layout.addItem(QtWidgets.QSpacerItem(1, 1), 0, 1, 1, 2)
-        layout.addWidget(widgets["save"], 0, 3)
-        layout.addWidget(widgets["new"], 0, 4)
+        layout.addWidget(widgets["more"], 0, 3)
+        layout.addWidget(widgets["save"], 0, 4)
+        layout.addWidget(widgets["new"], 0, 5)
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
         layout.setContentsMargins(0, 0, 0, 12)
@@ -94,8 +103,9 @@ class SuiteView(QtWidgets.QWidget):
         widgets["name"].textChanged.connect(self.named.emit)
         widgets["root"].textChanged.connect(self.rooted.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
-        widgets["new"].clicked.connect(self.newed.emit)
+        widgets["more"].clicked.connect(widgets["data"].show)
         widgets["save"].clicked.connect(self.saved.emit)
+        widgets["new"].clicked.connect(self.newed.emit)
         widgets["recent"].loaded.connect(self.on_loaded)
         widgets["drafts"].loaded.connect(self.on_loaded)
         widgets["visible"].loaded.connect(self.on_loaded)
@@ -126,6 +136,15 @@ class SuiteView(QtWidgets.QWidget):
 
         rooter.setCompleter(completer)
         self._widgets["completer"] = completer
+
+    def setup_save_option_parser(self, qargparser):
+        self._widgets["more"].setEnabled(True)
+        self._widgets["more"].setVisible(True)
+        layout = QtWidgets.QVBoxLayout(self._widgets["data"])
+        layout.addWidget(qargparser)
+
+        for arg in qargparser:
+            print(arg["name"], arg.read())
 
     def on_as_draft(self, state):
         root_widget = self._widgets["root"]

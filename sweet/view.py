@@ -55,6 +55,10 @@ class Window(QtWidgets.QMainWindow):
                                  drafts=ctrl.models["drafts"],
                                  visible=ctrl.models["visible"])
 
+        argparser = ctrl.suite_save_option_parser()
+        if argparser is not None:
+            pages["suite"].setup_save_option_parser(argparser)
+
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
         pages["suite"].rooted.connect(ctrl.on_suite_rooted)
@@ -66,6 +70,8 @@ class Window(QtWidgets.QMainWindow):
         ctrl.suite_changed.connect(pages["suite"].change_suite)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
+        if argparser is not None:
+            argparser.changed.connect(ctrl.on_option_parser_changed)
 
         self._ctrl = ctrl
         self._panels = panels
