@@ -88,5 +88,5 @@ def open_file_location(fname):
 
 def normpath(path):
     return os.path.normpath(
-        os.path.normcase(os.path.abspath(path)).replace("\\", "/")
-    )
+        os.path.normcase(os.path.abspath(path))
+    ).replace("\\", "/")
