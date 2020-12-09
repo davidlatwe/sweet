@@ -51,7 +51,6 @@ class Window(QtWidgets.QMainWindow):
 
         # setup..
         pages["package"].set_model(ctrl.models["package"])
-        pages["package"].init_column_width()
         pages["suite"].set_model(recent=ctrl.models["recent"],
                                  drafts=ctrl.models["drafts"],
                                  visible=ctrl.models["visible"])
@@ -76,13 +75,15 @@ class Window(QtWidgets.QMainWindow):
         self.setCentralWidget(panels["body"])
         self.setFocus()
 
+        # set default root
+        default_root = sweetconfig.default_root() or ""
+        self._pages["suite"].change_suite(default_root, None, None)
+        # adjust column
+        self._pages["package"].init_column_width()
         # show suite page on launch
         self._panels["page"].setCurrentIndex(2)
         # create one draft context on launch
         self.add_context_draft()
-        # set default root
-        default_root = sweetconfig.default_root() or ""
-        pages["suite"].change_suite(default_root, None, None)
 
     def on_suite_newed(self):
         self._ctrl.clear_suite()
