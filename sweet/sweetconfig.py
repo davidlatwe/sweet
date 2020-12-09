@@ -2,15 +2,14 @@
 import os as __os
 
 
-def suites():
-    """Return list of suite path
+def suite_bin_dirs():
+    """Return list of suite bin dir paths
 
     Returns:
         list: list of path string
 
     """
-    from rez.suite import Suite
-    return Suite.visible_suite_paths()
+    return None
 
 
 def draft_root():

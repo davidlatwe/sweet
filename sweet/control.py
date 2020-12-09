@@ -407,7 +407,9 @@ class Controller(QtCore.QObject):
                 yield filepath
 
     def iter_visible_suites(self):
-        for path in sweetconfig.suites():
+        bin_paths = sweetconfig.suite_bin_dirs()
+        suite_paths = rez.SweetSuite.visible_suite_paths(paths=bin_paths)
+
+        for path in suite_paths:
             filepath = os.path.join(path, "suite.yaml")
-            if os.path.isfile(filepath):
-                yield filepath
+            yield filepath
