@@ -11,7 +11,7 @@ class SuiteView(QtWidgets.QWidget):
     #   batch context re-resolve, match by resolved package (another window ?)
 
     named = QtCore.Signal(str)
-    dired = QtCore.Signal(str)
+    rooted = QtCore.Signal(str)
     commented = QtCore.Signal(str)
     newed = QtCore.Signal()
     saved = QtCore.Signal()
@@ -30,7 +30,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets = {
             "session": QtWidgets.QLabel("Current"),
             "name": QtWidgets.QLineEdit(),  # TODO: add name validator
-            "dir": QtWidgets.QLineEdit(),
+            "root": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
             "operate": QtWidgets.QWidget(),
             "asDraft": QtWidgets.QCheckBox("Save As Draft"),
@@ -46,8 +46,8 @@ class SuiteView(QtWidgets.QWidget):
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
 
-        widgets["name"].setPlaceholderText("Suite name..")
-        widgets["dir"].setPlaceholderText("Suite dir..")
+        widgets["name"].setPlaceholderText("Suite dir name..")
+        widgets["root"].setPlaceholderText("Suite dir root..")
         widgets["desc"].setPlaceholderText("Suite description.. (optional)")
         widgets["desc"].setAcceptRichText(False)
         widgets["desc"].setTabChangesFocus(True)
@@ -68,7 +68,7 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["session"])
         layout.addSpacing(4)
         layout.addWidget(widgets["name"])
-        layout.addWidget(widgets["dir"])
+        layout.addWidget(widgets["root"])
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["operate"])
         layout.setSpacing(2)
@@ -92,7 +92,7 @@ class SuiteView(QtWidgets.QWidget):
 
         widgets["asDraft"].stateChanged.connect(self.on_as_draft)
         widgets["name"].textChanged.connect(self.named.emit)
-        widgets["dir"].textChanged.connect(self.dired.emit)
+        widgets["root"].textChanged.connect(self.rooted.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["new"].clicked.connect(self.newed.emit)
         widgets["save"].clicked.connect(self.saved.emit)
@@ -104,13 +104,13 @@ class SuiteView(QtWidgets.QWidget):
         self._panels = panels
 
     def on_as_draft(self, state):
-        dir_widget = self._widgets["dir"]
+        root_widget = self._widgets["root"]
         if state == QtCore.Qt.CheckState.Checked:
-            dir_widget.setEnabled(False)
-            self.dired.emit(AS_DRAFT)
+            root_widget.setEnabled(False)
+            self.rooted.emit(AS_DRAFT)
         else:
-            dir_widget.setEnabled(True)
-            self.dired.emit(dir_widget.text())
+            root_widget.setEnabled(True)
+            self.rooted.emit(root_widget.text())
 
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()
@@ -122,7 +122,7 @@ class SuiteView(QtWidgets.QWidget):
         self.change_suite(root, name, description)
 
     def change_suite(self, root, name, description):
-        self._widgets["dir"].setText(root)
+        self._widgets["root"].setText(root)
         self._widgets["name"].setText(name)
         self._widgets["desc"].setText(description)
 

@@ -19,7 +19,7 @@ class Controller(QtCore.QObject):
 
         state = {
             "suite": rez.SweetSuite(),
-            "suiteDir": "",
+            "suiteRoot": "",
             "suiteName": "",
             "suiteDescription": "",
             "contextName": dict(),
@@ -235,8 +235,8 @@ class Controller(QtCore.QObject):
     def on_suite_named(self, name):
         self._state["suiteName"] = name
 
-    def on_suite_dired(self, path):
-        self._state["suiteDir"] = path
+    def on_suite_rooted(self, root):
+        self._state["suiteRoot"] = root
 
     def on_suite_commented(self, comment):
         self._state["suiteDescription"] = comment
@@ -261,7 +261,7 @@ class Controller(QtCore.QObject):
 
     def save_suite(self):
         suite = self._state["suite"]
-        root = self._state["suiteDir"]
+        root = self._state["suiteRoot"]
         name = self._state["suiteName"]
         comment = self._state["suiteDescription"]
         add_draft = False

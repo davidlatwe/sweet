@@ -58,7 +58,7 @@ class Window(QtWidgets.QMainWindow):
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
-        pages["suite"].dired.connect(ctrl.on_suite_dired)
+        pages["suite"].rooted.connect(ctrl.on_suite_rooted)
         pages["suite"].commented.connect(ctrl.on_suite_commented)
         pages["suite"].newed.connect(self.on_suite_newed)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
