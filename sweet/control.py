@@ -5,12 +5,12 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
-from .suite.model import SavedSuiteModel, AS_DRAFT
+from .suite.model import SavedSuiteModel
 from . import sweetconfig, util
 
 
 class Controller(QtCore.QObject):
-    suite_changed = QtCore.Signal(str, str, str)
+    suite_changed = QtCore.Signal(str, object, object)
     context_removed = QtCore.Signal(str)
     context_loaded = QtCore.Signal(dict, list)
 
@@ -26,6 +26,7 @@ class Controller(QtCore.QObject):
             "contextRequests": dict(),  # success requests history (not used)
             "recentSuiteCount": 10,  # TODO: change in preference
             "suiteSaveOptions": dict(),
+            "suiteSaveRoots": sweetconfig.saving_roots(),
         }
 
         timers = {
@@ -37,8 +38,8 @@ class Controller(QtCore.QObject):
         models = {
             "package": PackageModel(),
             "recent": SavedSuiteModel(),
-            "drafts": SavedSuiteModel(),
-            "visible": SavedSuiteModel(),
+            # models per suite saving root
+            "saved": {k: SavedSuiteModel() for k in state["suiteSaveRoots"]},
             # models per context
             "contextPackages": dict(),
             "contextEnvironment": dict(),
@@ -98,6 +99,9 @@ class Controller(QtCore.QObject):
 
         return value
 
+    def default_root(self):
+        return self._state["suiteSaveRoots"][sweetconfig.default_root]
+
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
         self._state["contextRequests"][id_] = []
@@ -130,9 +134,11 @@ class Controller(QtCore.QObject):
         self._models["package"].reset(self.iter_packages())
 
     def on_saved_suite_listed(self):
+        # TODO: iter each in separate threads
         self._models["recent"].add_files(self.iter_recent_suites())
-        self._models["drafts"].add_files(self.iter_draft_suites())
-        self._models["visible"].add_files(self.iter_visible_suites())
+        for key, model in self._models["saved"].items():
+            root = self._state["suiteSaveRoots"][key]
+            model.add_files(self.iter_suites_in_root(root))
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -236,8 +242,10 @@ class Controller(QtCore.QObject):
     def on_suite_named(self, name):
         self._state["suiteName"] = name
 
-    def on_suite_rooted(self, root):
+    def on_suite_rooted(self, name):
+        root = self._state["suiteSaveRoots"][name]
         self._state["suiteRoot"] = root
+        self.suite_changed.emit(root, None, None)
 
     def on_suite_commented(self, comment):
         self._state["suiteDescription"] = comment
@@ -268,15 +276,10 @@ class Controller(QtCore.QObject):
         root = self._state["suiteRoot"]
         name = self._state["suiteName"]
         comment = self._state["suiteDescription"]
-        add_draft = False
 
         if not root or not name:
             print("Naming suite first.")
             return
-
-        if root == AS_DRAFT:
-            root = sweetconfig.draft_root()
-            add_draft = True
 
         path = util.normpath(os.path.join(root, name))
 
@@ -288,7 +291,7 @@ class Controller(QtCore.QObject):
         try:
             suite.save(path)
             suite.load_path = os.path.realpath(path)
-            self.update_suite_lists(path, add_draft)
+            self.update_suite_lists(root, name)
             self.callback_on_suite_saved(path)
         finally:
             # restore id naming
@@ -322,14 +325,20 @@ class Controller(QtCore.QObject):
             id_ = next(i for i in names if names[i] == ctx_name)
             tools[id_].load(hidden, aliases)
 
-        if not as_import:
+        root, name = os.path.split(path)
+        if as_import:
+            root = ""
+            name = ""
+        else:
             self._state["suite"].load_path = os.path.realpath(path)
+
+        self.suite_changed.emit(root, name, suite.description)
 
     def clear_suite(self):
         for id_ in list(self._state["contextName"].keys()):
             self.remove_context(id_)
 
-        default_root = sweetconfig.default_root() or ""
+        default_root = self.default_root()
         self.suite_changed.emit(default_root, "", "")
         self._state["suite"] = rez.SweetSuite()
 
@@ -364,7 +373,7 @@ class Controller(QtCore.QObject):
 
                 yield doc
 
-    def update_suite_lists(self, suite_path, add_draft):
+    def update_suite_lists(self, root, name):
         max_count = self._state["recentSuiteCount"]
         sep = os.pathsep
         valid_path = list()
@@ -376,7 +385,7 @@ class Controller(QtCore.QObject):
             if len(valid_path) == max_count:
                 break
 
-        newly_saved = util.normpath(os.path.join(suite_path, "suite.yaml"))
+        newly_saved = util.normpath(os.path.join(root, name, "suite.yaml"))
 
         if newly_saved in valid_path:
             valid_path.remove(newly_saved)
@@ -386,8 +395,10 @@ class Controller(QtCore.QObject):
         self.store("recentSavedSuites", os.pathsep.join(valid_path))
         self._models["recent"].add_files(valid_path)
 
-        if add_draft:
-            self._models["drafts"].add_files([newly_saved], clear=False)
+        for key, _root in self._state["suiteSaveRoots"].items():
+            if _root == root:
+                self._models["saved"][key].add_files([newly_saved], clear=False)
+                break
 
     def iter_recent_suites(self):
         max_count = self._state["recentSuiteCount"]
@@ -402,8 +413,7 @@ class Controller(QtCore.QObject):
             if len(valid_path) == max_count:
                 break
 
-    def iter_draft_suites(self):
-        root = sweetconfig.draft_root()
+    def iter_suites_in_root(self, root):
         if not os.path.isdir(root):
             return
 
@@ -411,14 +421,6 @@ class Controller(QtCore.QObject):
             filepath = os.path.join(root, dir_name, "suite.yaml")
             if os.path.isfile(filepath):
                 yield filepath
-
-    def iter_visible_suites(self):
-        bin_paths = sweetconfig.suite_bin_dirs()
-        suite_paths = rez.SweetSuite.visible_suite_paths(paths=bin_paths)
-
-        for path in suite_paths:
-            filepath = os.path.join(path, "suite.yaml")
-            yield filepath
 
     def callback_on_suite_saved(self, suite_dir):
         options = self._state["suiteSaveOptions"].copy()

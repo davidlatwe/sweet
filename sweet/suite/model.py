@@ -5,9 +5,6 @@ from ..common.model import AbstractTableModel
 from .. import _rezapi as rez, util
 
 
-AS_DRAFT = "<<sweet.draft>>"  # pragma
-
-
 class SavedSuiteItem(dict):
 
     def __init__(self, data):

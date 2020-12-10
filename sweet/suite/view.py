@@ -1,8 +1,8 @@
 
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
-from ..common.view import SlimTableView, CompleterPopup, QArgParserDialog
-from .model import SavedSuiteModel, AS_DRAFT
-from .. import util, sweetconfig
+from ..common.view import SlimTableView, QArgParserDialog
+from .model import SavedSuiteModel
+from .. import util
 
 
 class SuiteView(QtWidgets.QWidget):
@@ -31,54 +31,54 @@ class SuiteView(QtWidgets.QWidget):
         widgets = {
             "session": QtWidgets.QLabel("Current"),
             "name": QtWidgets.QLineEdit(),  # TODO: add name validator
-            "root": QtWidgets.QLineEdit(),
             "desc": QtWidgets.QTextEdit(),
             "operate": QtWidgets.QWidget(),
-            "asDraft": QtWidgets.QCheckBox("Save As Draft"),
+            "dest": QtWidgets.QLineEdit(),
+            "roots": QtWidgets.QPushButton(),
             "opts": QtWidgets.QPushButton(" More"),
             "save": QtWidgets.QPushButton(" Save"),
             "new": QtWidgets.QPushButton(" New"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
-            "recent": SuiteLoadView(),
-            "drafts": SuiteLoadView(),
-            "visible": SuiteLoadView(),
             # additional option dialog
             "dialog": QArgParserDialog(self),
+            # location selecting menu
+            "actions": QtWidgets.QActionGroup(self),
         }
         widgets["opts"].setObjectName("SuiteOptionButton")
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
+        widgets["roots"].setObjectName("SuiteRootsButton")
 
         widgets["name"].setPlaceholderText("Suite dir name..")
-        widgets["root"].setPlaceholderText("Suite dir root..")
         widgets["desc"].setPlaceholderText("Suite description.. (optional)")
         widgets["desc"].setAcceptRichText(False)
         widgets["desc"].setTabChangesFocus(True)
-
-        widgets["suites"].addTab(widgets["recent"], "Recent")
-        widgets["suites"].addTab(widgets["drafts"], "Drafts")
-        widgets["suites"].addTab(widgets["visible"], "Visible")
+        widgets["dest"].setReadOnly(True)
 
         widgets["dialog"].setWindowTitle("Suite Save Options")
         widgets["opts"].setEnabled(False)
         widgets["opts"].setVisible(False)
 
+        widgets["roots"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        widgets["actions"].setExclusive(True)
+
         layout = QtWidgets.QGridLayout(widgets["operate"])
-        layout.setContentsMargins(0, 4, 0, 0)
-        layout.addWidget(widgets["asDraft"], 0, 0)
-        layout.addItem(QtWidgets.QSpacerItem(1, 1), 0, 1, 1, 2)
-        layout.addWidget(widgets["opts"], 0, 3)
-        layout.addWidget(widgets["save"], 0, 4)
-        layout.addWidget(widgets["new"], 0, 5)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widgets["roots"], 0, 0)
+        layout.addWidget(widgets["dest"], 0, 1, 1, -1)
+        layout.addItem(QtWidgets.QSpacerItem(1, 1), 1, 0, 1, 3)
+        layout.addWidget(widgets["opts"], 1, 3)
+        layout.addWidget(widgets["save"], 1, 4)
+        layout.addWidget(widgets["new"], 1, 5)
+        layout.setSpacing(2)
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
         layout.setContentsMargins(0, 0, 0, 12)
         layout.addWidget(widgets["session"])
         layout.addSpacing(4)
         layout.addWidget(widgets["name"])
-        layout.addWidget(widgets["root"])
         layout.addWidget(widgets["desc"])
         layout.addWidget(widgets["operate"])
         layout.setSpacing(2)
@@ -100,57 +100,24 @@ class SuiteView(QtWidgets.QWidget):
         panels["split"].setStretchFactor(0, 20)
         panels["split"].setStretchFactor(1, 80)
 
-        widgets["asDraft"].stateChanged.connect(self.on_as_draft)
+        # signals..
         widgets["name"].textChanged.connect(self.named.emit)
-        widgets["root"].textChanged.connect(self.rooted.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
         widgets["opts"].clicked.connect(self.on_dialog_shown)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["new"].clicked.connect(self.newed.emit)
-        widgets["recent"].loaded.connect(self.on_loaded)
-        widgets["drafts"].loaded.connect(self.on_loaded)
-        widgets["visible"].loaded.connect(self.on_loaded)
+        widgets["roots"].clicked.connect(self.on_roots_clicked)
+        widgets["roots"].customContextMenuRequested.connect(
+            self.on_roots_clicked
+        )
 
         self._widgets = widgets
         self._panels = panels
-
-        self.setup_root_path_completer()
-
-    def setup_root_path_completer(self):
-        rooter = self._widgets["root"]
-
-        completer = QtWidgets.QCompleter(rooter)
-        completer.setPopup(CompleterPopup())
-        completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        completer.setModelSorting(completer.CaseInsensitivelySortedModel)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        completer.setWrapAround(False)
-
-        # NOTE:
-        #   Somehow, the completer failed to work after trying to list out
-        #   items under e.g. "c:/users", and never functioning again.
-        model = QtWidgets.QFileSystemModel(completer)
-        model.setReadOnly(True)
-        model.setOption(model.Option.DontUseCustomDirectoryIcons, True)
-        model.setRootPath(sweetconfig.default_root() or "")
-        completer.setModel(model)
-
-        rooter.setCompleter(completer)
-        self._widgets["completer"] = completer
 
     def setup_save_options(self, options, storage):
         self._widgets["opts"].setEnabled(True)
         self._widgets["opts"].setVisible(True)
         self._widgets["dialog"].install(options, storage)
-
-    def on_as_draft(self, state):
-        root_widget = self._widgets["root"]
-        if state == QtCore.Qt.CheckState.Checked:
-            root_widget.setEnabled(False)
-            self.rooted.emit(AS_DRAFT)
-        else:
-            root_widget.setEnabled(True)
-            self.rooted.emit(root_widget.text())
 
     def on_dialog_shown(self):
         dialog = self._widgets["dialog"]
@@ -164,33 +131,58 @@ class SuiteView(QtWidgets.QWidget):
             dialog.write(default)
             self.optioned.emit(default)
 
+    def on_destination_changed(self, path):
+        self._widgets["dest"].setText(path)
+
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()
         self.commented.emit(text)
 
-    def on_loaded(self, name, root, path, description):
-        as_import = not bool(root)
+    def on_loaded(self, root_key, path, as_import):
         self.loaded.emit(path, as_import)
-        self.change_suite(root, name, description)
+        for action in self._widgets["actions"].actions():
+            value = not as_import and (action.text() == root_key)
+            action.setChecked(value)
 
-    def change_suite(self, root, name, description):
+    def on_roots_clicked(self):
+        menu = QtWidgets.QMenu(self)
+
+        for action in self._widgets["actions"].actions():
+            menu.addAction(action)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
+    def on_suite_changed(self, root, name, description):
         if root is not None:
-            self._widgets["root"].setText(root)
+            self._widgets["dest"].setText(root)
         if name is not None:
             self._widgets["name"].setText(name)
         if description is not None:
             self._widgets["desc"].setText(description)
 
-    def set_model(self, recent, drafts, visible):
-        self._widgets["recent"].set_model(recent)
-        self._widgets["drafts"].set_model(drafts)
-        self._widgets["visible"].set_model(visible)
+    def add_suite_list(self, name, model):
+        title = name.capitalize()
+        view = SuiteLoadView(key=title)
+        view.set_model(model)
+        view.loaded.connect(self.on_loaded)
+        self._widgets["suites"].addTab(view, title)
+
+    def add_suite_root(self, name, is_default):
+        title = name.capitalize()
+        action = QtWidgets.QAction(title)
+        action.setCheckable(True)
+        action.setChecked(is_default)
+
+        action.triggered.connect(lambda: self.rooted.emit(name))
+
+        self._widgets["actions"].addAction(action)
 
 
 class SuiteLoadView(QtWidgets.QWidget):
-    loaded = QtCore.Signal(str, str, str, str)  # name, root, path, desc
+    loaded = QtCore.Signal(str, str, bool)  # root_key, path, as_import
 
-    def __init__(self, parent=None):
+    def __init__(self, key, parent=None):
         super(SuiteLoadView, self).__init__(parent=parent)
         self.setObjectName("SuiteLoadView")
 
@@ -213,10 +205,12 @@ class SuiteLoadView(QtWidgets.QWidget):
         layout.setSpacing(2)
 
         widgets["desc"].setReadOnly(True)
+        widgets["list"].setAlternatingRowColors(True)
         widgets["list"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         widgets["list"].customContextMenuRequested.connect(self.on_rm_clicked)
 
         self._widgets = widgets
+        self._key = key
 
     def set_model(self, model):
         self._widgets["list"].setModel(model)
@@ -244,17 +238,11 @@ class SuiteLoadView(QtWidgets.QWidget):
 
         def on_open():
             data = index.data(role=SavedSuiteModel.ItemRole)
-            self.loaded.emit(data["name"],
-                             data["root"],
-                             data["path"],
-                             data["description"])
+            self.loaded.emit(self._key, data["path"], False)
 
         def on_import():
             data = index.data(role=SavedSuiteModel.ItemRole)
-            self.loaded.emit(data["name"],
-                             "",  # root path is not required on import
-                             data["path"],
-                             data["description"])
+            self.loaded.emit(self._key, data["path"], True)
 
         def on_explore():
             data = index.data(role=SavedSuiteModel.ItemRole)

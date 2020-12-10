@@ -1,39 +1,18 @@
 
-import os as __os
+
+# default suite saving root
+default_root = "local"
 
 
-def suite_bin_dirs():
-    """Return list of suite bin dir paths
-
-    Returns:
-        list: list of path string
-
+def saving_roots():
+    """Return a dict of suite saving root path
     """
-    # TODO: deprecate this for local and release suite dirs
-    return None
-
-
-def draft_root():
-    """Return draft suite saving dir path"""
+    from collections import OrderedDict as odict
     from . import util
-    return util.normpath(__os.path.expanduser("~/rez/sweet/drafts"))
-
-
-def default_root():
-    """Return default suite saving dir path"""
-    from . import util
-    # TODO: put this into root completer, and right click actions
-    return util.normpath(__os.path.expanduser("~/rez/sweet/suites"))
-
-
-def local_suite_dirs():
-    # TODO: put this into root completer, and right click actions
-    pass
-
-
-def release_suite_dirs():
-    # TODO: put this into root completer, and right click actions
-    pass
+    return odict([
+        ("draft", util.normpath("~/rez/sweet/drafts")),
+        ("local", util.normpath("~/rez/sweet/suites")),
+    ])
 
 
 def suite_save_options():

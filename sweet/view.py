@@ -51,9 +51,11 @@ class Window(QtWidgets.QMainWindow):
 
         # setup..
         pages["package"].set_model(ctrl.models["package"])
-        pages["suite"].set_model(recent=ctrl.models["recent"],
-                                 drafts=ctrl.models["drafts"],
-                                 visible=ctrl.models["visible"])
+        pages["suite"].add_suite_list("recent", ctrl.models["recent"])
+        for key in ctrl.state["suiteSaveRoots"].keys():
+            is_default = key == sweetconfig.default_root
+            pages["suite"].add_suite_root(key, is_default)
+            pages["suite"].add_suite_list(key, ctrl.models["saved"][key])
 
         options = sweetconfig.suite_save_options()
         if options:
@@ -71,7 +73,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
-        ctrl.suite_changed.connect(pages["suite"].change_suite)
+        ctrl.suite_changed.connect(pages["suite"].on_suite_changed)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
 
@@ -84,8 +86,8 @@ class Window(QtWidgets.QMainWindow):
         self.setFocus()
 
         # set default root
-        default_root = sweetconfig.default_root() or ""
-        self._pages["suite"].change_suite(default_root, None, None)
+        default_root = ctrl.default_root()
+        self._pages["suite"].on_suite_changed(default_root, None, None)
         # adjust column
         self._pages["package"].init_column_width()
         # show suite page on launch
