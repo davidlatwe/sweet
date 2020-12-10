@@ -4,6 +4,7 @@ from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from .model import JsonModel
 from . import delegate
 from .. import resources as res
+from ..vendor import qargparse
 
 
 class VerticalDocTabBar(QtWidgets.QTabBar):
@@ -511,3 +512,7 @@ class QArgParserDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(QArgParserDialog, self).__init__(parent=parent)
+        self.setModal(True)
+
+    def install(self, options, storage):
+        parser = qargparse.QArgumentParser(options, storage=storage)

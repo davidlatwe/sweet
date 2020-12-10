@@ -98,10 +98,6 @@ class Controller(QtCore.QObject):
 
         return value
 
-    def suite_save_option_parser(self):
-        parser = sweetconfig.suite_save_option_parser(self._storage)
-        return parser
-
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
         self._state["contextRequests"][id_] = []
@@ -130,7 +126,7 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
-    def on_option_parser_changed(self, arg):
+    def on_options_parsed(self, arg):
         self._state["suiteSaveOptions"][arg["name"]] = arg.read()
         # print(self._state["suiteSaveOptions"])
 

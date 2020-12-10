@@ -34,7 +34,7 @@ class SuiteView(QtWidgets.QWidget):
             "desc": QtWidgets.QTextEdit(),
             "operate": QtWidgets.QWidget(),
             "asDraft": QtWidgets.QCheckBox("Save As Draft"),
-            "more": QtWidgets.QPushButton("More"),
+            "more": QtWidgets.QPushButton("Options"),
             "save": QtWidgets.QPushButton("Save"),
             "new": QtWidgets.QPushButton("New"),
             # -splitter-
@@ -60,7 +60,6 @@ class SuiteView(QtWidgets.QWidget):
         widgets["suites"].addTab(widgets["drafts"], "Drafts")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
-        widgets["data"].setModal(True)
         widgets["more"].setEnabled(False)
         widgets["more"].setVisible(False)
 
@@ -106,6 +105,8 @@ class SuiteView(QtWidgets.QWidget):
         widgets["more"].clicked.connect(widgets["data"].show)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["new"].clicked.connect(self.newed.emit)
+        # widgets["data"].accepted.connect()
+        # widgets["data"].rejected.connect()
         widgets["recent"].loaded.connect(self.on_loaded)
         widgets["drafts"].loaded.connect(self.on_loaded)
         widgets["visible"].loaded.connect(self.on_loaded)
@@ -137,14 +138,10 @@ class SuiteView(QtWidgets.QWidget):
         rooter.setCompleter(completer)
         self._widgets["completer"] = completer
 
-    def setup_save_option_parser(self, qargparser):
+    def setup_save_options(self, options, storage):
         self._widgets["more"].setEnabled(True)
         self._widgets["more"].setVisible(True)
-        layout = QtWidgets.QVBoxLayout(self._widgets["data"])
-        layout.addWidget(qargparser)
-
-        for arg in qargparser:
-            print(arg["name"], arg.read())
+        self._widgets["data"].install(options, storage)
 
     def on_as_draft(self, state):
         root_widget = self._widgets["root"]

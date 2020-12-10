@@ -36,21 +36,16 @@ def release_suite_dirs():
     pass
 
 
-def suite_save_option_parser(storage):
+def suite_save_options():
     """Additional suite data input dialog widget
 
     The widget must have a signal that emit the input as dict.
 
     """
     from .vendor import qargparse
-
-    options = [
+    return [
         qargparse.Integer("arg_hello")
     ]
-
-    parser = qargparse.QArgumentParser(options, storage=storage)
-
-    return parser
 
 
 def on_suite_saved_callback(suite_dir, options):

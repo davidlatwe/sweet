@@ -1,8 +1,12 @@
 
 import os
 import sys
+import logging
 from .vendor.Qt5 import QtCore, QtWidgets
 from . import control, view, resources, sweetconfig
+
+log = logging.getLogger("sweet")
+log.setLevel(logging.DEBUG)
 
 
 UserError = type("UserError", (Exception,), {})
