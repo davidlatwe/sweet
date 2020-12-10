@@ -7,6 +7,7 @@ from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
 from .suite.view import SuiteView
+from .preference import Preference
 from . import sweetconfig, resources as res
 
 
@@ -29,7 +30,7 @@ class Window(QtWidgets.QMainWindow):
             "package": PackageView(),
             "suite": SuiteView(),
             "context": SuiteContextTab(),
-            "preference": QtWidgets.QWidget(),
+            "preference": Preference(ctrl),
         }
 
         widgets = {
@@ -76,6 +77,7 @@ class Window(QtWidgets.QMainWindow):
         ctrl.suite_changed.connect(pages["suite"].on_suite_changed)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
+        pages["preference"].changed.connect(self.on_preference_changed)
 
         self._ctrl = ctrl
         self._panels = panels
@@ -161,6 +163,9 @@ class Window(QtWidgets.QMainWindow):
     def on_context_removed(self, id_):
         self._widgets["sphere"].remove_context(id_)
         self._pages["context"].remove_context(id_)
+
+    def on_preference_changed(self, name, value):
+        pass
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)
