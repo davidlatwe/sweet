@@ -13,6 +13,7 @@ class SuiteView(QtWidgets.QWidget):
     named = QtCore.Signal(str)
     rooted = QtCore.Signal(str)
     commented = QtCore.Signal(str)
+    optioned = QtCore.Signal(dict)
     newed = QtCore.Signal()
     saved = QtCore.Signal()
     loaded = QtCore.Signal(str, bool)
@@ -34,19 +35,19 @@ class SuiteView(QtWidgets.QWidget):
             "desc": QtWidgets.QTextEdit(),
             "operate": QtWidgets.QWidget(),
             "asDraft": QtWidgets.QCheckBox("Save As Draft"),
-            "more": QtWidgets.QPushButton("Options"),
-            "save": QtWidgets.QPushButton("Save"),
-            "new": QtWidgets.QPushButton("New"),
+            "opts": QtWidgets.QPushButton(" More"),
+            "save": QtWidgets.QPushButton(" Save"),
+            "new": QtWidgets.QPushButton(" New"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
             "recent": SuiteLoadView(),
             "drafts": SuiteLoadView(),
             "visible": SuiteLoadView(),
-            # additional data dialog
-            "data": QArgParserDialog(self),
+            # additional option dialog
+            "dialog": QArgParserDialog(self),
         }
-        widgets["more"].setObjectName("SuiteMoreDataButton")
+        widgets["opts"].setObjectName("SuiteOptionButton")
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
 
@@ -60,14 +61,15 @@ class SuiteView(QtWidgets.QWidget):
         widgets["suites"].addTab(widgets["drafts"], "Drafts")
         widgets["suites"].addTab(widgets["visible"], "Visible")
 
-        widgets["more"].setEnabled(False)
-        widgets["more"].setVisible(False)
+        widgets["dialog"].setWindowTitle("Suite Save Options")
+        widgets["opts"].setEnabled(False)
+        widgets["opts"].setVisible(False)
 
         layout = QtWidgets.QGridLayout(widgets["operate"])
         layout.setContentsMargins(0, 4, 0, 0)
         layout.addWidget(widgets["asDraft"], 0, 0)
         layout.addItem(QtWidgets.QSpacerItem(1, 1), 0, 1, 1, 2)
-        layout.addWidget(widgets["more"], 0, 3)
+        layout.addWidget(widgets["opts"], 0, 3)
         layout.addWidget(widgets["save"], 0, 4)
         layout.addWidget(widgets["new"], 0, 5)
 
@@ -102,11 +104,9 @@ class SuiteView(QtWidgets.QWidget):
         widgets["name"].textChanged.connect(self.named.emit)
         widgets["root"].textChanged.connect(self.rooted.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
-        widgets["more"].clicked.connect(widgets["data"].show)
+        widgets["opts"].clicked.connect(self.on_dialog_shown)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["new"].clicked.connect(self.newed.emit)
-        # widgets["data"].accepted.connect()
-        # widgets["data"].rejected.connect()
         widgets["recent"].loaded.connect(self.on_loaded)
         widgets["drafts"].loaded.connect(self.on_loaded)
         widgets["visible"].loaded.connect(self.on_loaded)
@@ -139,9 +139,9 @@ class SuiteView(QtWidgets.QWidget):
         self._widgets["completer"] = completer
 
     def setup_save_options(self, options, storage):
-        self._widgets["more"].setEnabled(True)
-        self._widgets["more"].setVisible(True)
-        self._widgets["data"].install(options, storage)
+        self._widgets["opts"].setEnabled(True)
+        self._widgets["opts"].setVisible(True)
+        self._widgets["dialog"].install(options, storage)
 
     def on_as_draft(self, state):
         root_widget = self._widgets["root"]
@@ -151,6 +151,18 @@ class SuiteView(QtWidgets.QWidget):
         else:
             root_widget.setEnabled(True)
             self.rooted.emit(root_widget.text())
+
+    def on_dialog_shown(self):
+        dialog = self._widgets["dialog"]
+        default = dialog.read()
+
+        if dialog.exec_():
+            # accepted
+            self.optioned.emit(dialog.read())
+        else:
+            # rejected/canceled
+            dialog.write(default)
+            self.optioned.emit(default)
 
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()

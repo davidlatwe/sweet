@@ -706,6 +706,14 @@ QSplitter::handle:vertical:hover {
     border: none;
 }
 
+#SuiteOptionButton {
+    icon: url(%(res)s/sliders-dim.svg);
+}
+
+#SuiteOptionButton:hover {
+    icon: url(%(res)s/sliders.svg);
+}
+
 #SuiteSaveButton {
     icon: url(%(res)s/egg-fried-dim.svg);
 }

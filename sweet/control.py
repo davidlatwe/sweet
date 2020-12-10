@@ -126,10 +126,6 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
-    def on_options_parsed(self, arg):
-        self._state["suiteSaveOptions"][arg["name"]] = arg.read()
-        # print(self._state["suiteSaveOptions"])
-
     def on_package_searched(self):
         self._models["package"].reset(self.iter_packages())
 
@@ -245,6 +241,9 @@ class Controller(QtCore.QObject):
 
     def on_suite_commented(self, comment):
         self._state["suiteDescription"] = comment
+
+    def on_suite_options_parsed(self, options):
+        self._state["suiteSaveOptions"] = options
 
     def on_suite_saved(self):
         self.save_suite()

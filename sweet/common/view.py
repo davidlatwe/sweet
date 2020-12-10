@@ -512,7 +512,52 @@ class QArgParserDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(QArgParserDialog, self).__init__(parent=parent)
-        self.setModal(True)
+        self.setObjectName("QArgParserDialog")
+
+        widgets = {
+            "accept": QtWidgets.QPushButton("Accept"),
+            "reject": QtWidgets.QPushButton("Cancel"),
+        }
+
+        widgets["accept"].setDefault(True)
+
+        widgets["accept"].clicked.connect(self.on_accepted)
+        widgets["reject"].clicked.connect(self.on_rejected)
+
+        self._widgets = widgets
+        self._parser = None
 
     def install(self, options, storage):
         parser = qargparse.QArgumentParser(options, storage=storage)
+        accept = self._widgets["accept"]
+        reject = self._widgets["reject"]
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.addWidget(parser, 0, 0, 1, 2)
+        layout.addWidget(accept, 1, 0, 1, 1)
+        layout.addWidget(reject, 1, 1, 1, 1)
+
+        self._parser = parser
+
+    def read(self):
+        arguments = self._parser or []
+
+        data = dict()
+        for arg in arguments:
+            data[arg["name"]] = arg.read()
+
+        return data
+
+    def write(self, data):
+        arguments = self._parser or []
+
+        for arg in arguments:
+            key = arg["name"]
+            if key in data:
+                arg.write(data[key])
+
+    def on_accepted(self):
+        self.done(self.Accepted)
+
+    def on_rejected(self):
+        self.done(self.Rejected)

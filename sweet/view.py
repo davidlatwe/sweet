@@ -66,6 +66,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].named.connect(ctrl.on_suite_named)
         pages["suite"].rooted.connect(ctrl.on_suite_rooted)
         pages["suite"].commented.connect(ctrl.on_suite_commented)
+        pages["suite"].optioned.connect(ctrl.on_suite_options_parsed)
         pages["suite"].newed.connect(self.on_suite_newed)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
@@ -73,8 +74,6 @@ class Window(QtWidgets.QMainWindow):
         ctrl.suite_changed.connect(pages["suite"].change_suite)
         ctrl.context_removed.connect(self.on_context_removed)
         ctrl.context_loaded.connect(self.on_context_loaded)
-        if options is not None:
-            options.changed.connect(ctrl.on_option_parser_changed)
 
         self._ctrl = ctrl
         self._panels = panels
