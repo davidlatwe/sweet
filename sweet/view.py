@@ -56,7 +56,7 @@ class Window(QtWidgets.QMainWindow):
                                  visible=ctrl.models["visible"])
 
         options = sweetconfig.suite_save_options()
-        if options is not None:
+        if options:
             storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
                                        QtCore.QSettings.UserScope,
                                        "Sweet", "saveOptions")

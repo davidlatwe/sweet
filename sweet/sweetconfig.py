@@ -37,14 +37,16 @@ def release_suite_dirs():
 
 
 def suite_save_options():
-    """Additional suite data input dialog widget
+    """Additional suite save option widgets
 
-    The widget must have a signal that emit the input as dict.
+    Returns:
+        list: A list of qargparse.QArgument instance
 
     """
     from .vendor import qargparse
     return [
-        qargparse.Integer("arg_hello")
+        qargparse.Separator("demoArg"),
+        qargparse.Integer("demoOption"),
     ]
 
 

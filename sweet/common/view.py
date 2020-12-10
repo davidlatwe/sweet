@@ -518,6 +518,8 @@ class QArgParserDialog(QtWidgets.QDialog):
             "accept": QtWidgets.QPushButton("Accept"),
             "reject": QtWidgets.QPushButton("Cancel"),
         }
+        widgets["accept"].setObjectName("AcceptButton")
+        widgets["reject"].setObjectName("CancelButton")
 
         widgets["accept"].setDefault(True)
 
@@ -525,39 +527,81 @@ class QArgParserDialog(QtWidgets.QDialog):
         widgets["reject"].clicked.connect(self.on_rejected)
 
         self._widgets = widgets
-        self._parser = None
+        self._parsers = []
+        self._storage = None
 
     def install(self, options, storage):
-        parser = qargparse.QArgumentParser(options, storage=storage)
-        accept = self._widgets["accept"]
-        reject = self._widgets["reject"]
+        parsers = qargparse.QArgumentParser(options)
+        accepts = self._widgets["accept"]
+        rejects = self._widgets["reject"]
 
         layout = QtWidgets.QGridLayout(self)
-        layout.addWidget(parser, 0, 0, 1, 2)
-        layout.addWidget(accept, 1, 0, 1, 1)
-        layout.addWidget(reject, 1, 1, 1, 1)
+        layout.addWidget(parsers, 0, 0, 1, 2)
+        layout.addWidget(accepts, 1, 0, 1, 1)
+        layout.addWidget(rejects, 1, 1, 1, 1)
 
-        self._parser = parser
+        self._parsers = parsers
+        self._storage = storage
+
+        retrieved = self.retrieve()  # TODO: If error raised here, drop .ini
+        self.write(retrieved)
 
     def read(self):
-        arguments = self._parser or []
-
         data = dict()
-        for arg in arguments:
+        for arg in self._parsers:
             data[arg["name"]] = arg.read()
 
         return data
 
     def write(self, data):
-        arguments = self._parser or []
-
-        for arg in arguments:
+        for arg in self._parsers:
             key = arg["name"]
             if key in data:
                 arg.write(data[key])
 
+    def retrieve(self):
+        data = dict()
+        for arg in self._parsers:
+            key = arg["name"]
+            value = self._storage.value(key)
+            if value is not None:
+                data[key] = self.formatting(arg, value)
+
+        return data
+
+    def store(self):
+        for arg in self._parsers:
+            self._storage.setValue(arg["name"], arg.read())
+
     def on_accepted(self):
+        self.store()
         self.done(self.Accepted)
 
     def on_rejected(self):
         self.done(self.Rejected)
+
+    def formatting(self, arg, value):
+        if isinstance(arg, qargparse.Boolean):
+            value = bool({
+                None: QtCore.Qt.Unchecked,
+
+                0: QtCore.Qt.Unchecked,
+                1: QtCore.Qt.Checked,
+                2: QtCore.Qt.Checked,
+
+                "0": QtCore.Qt.Unchecked,
+                "1": QtCore.Qt.Checked,
+                "2": QtCore.Qt.Checked,
+
+                # May be stored as string, if used with IniFormat
+                "false": QtCore.Qt.Unchecked,
+                "true": QtCore.Qt.Checked,
+            }.get(value))
+
+        if isinstance(arg, qargparse.Number):
+            if isinstance(arg, qargparse.Float):
+                value = float(value)
+            else:
+                value = int(value)
+
+        return value
