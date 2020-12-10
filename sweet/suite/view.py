@@ -38,6 +38,7 @@ class SuiteView(QtWidgets.QWidget):
             "opts": QtWidgets.QPushButton(" More"),
             "save": QtWidgets.QPushButton(" Save"),
             "new": QtWidgets.QPushButton(" New"),
+            "open": QtWidgets.QPushButton(" Open"),  # TODO: Load or Import
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
@@ -72,6 +73,7 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["opts"], 1, 3)
         layout.addWidget(widgets["save"], 1, 4)
         layout.addWidget(widgets["new"], 1, 5)
+        layout.addWidget(widgets["open"], 1, 6)
         layout.setSpacing(2)
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
