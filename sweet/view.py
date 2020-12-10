@@ -17,7 +17,7 @@ class Window(QtWidgets.QMainWindow):
         super(Window, self).__init__(parent)
         self.setWindowTitle(self.title)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        # self.setWindowIcon(QtGui.QIcon(res.find("Logo_64.png")))
+        self.setWindowIcon(res.icon("images", "calculator"))  # TODO: logo
 
         panels = {
             "body": QtWidgets.QWidget(),
