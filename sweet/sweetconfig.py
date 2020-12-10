@@ -51,14 +51,14 @@ def suite_save_options():
 
 
 def on_suite_saved_callback(suite_dir, options):
-    """A callback that runs right after suite is saved
+    """A callback that runs after suite saved
 
     This could be used to create/update Allzpark profile, or triggering
     VCS.
 
     Args:
         suite_dir (str): suite saved path
-        options (dict)
+        options (dict): suite save options
 
     Returns:
         None

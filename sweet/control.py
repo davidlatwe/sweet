@@ -289,6 +289,7 @@ class Controller(QtCore.QObject):
             suite.save(path)
             suite.load_path = os.path.realpath(path)
             self.update_suite_lists(path, add_draft)
+            self.callback_on_suite_saved(path)
         finally:
             # restore id naming
             for id_, n in self._state["contextName"].items():
@@ -418,3 +419,7 @@ class Controller(QtCore.QObject):
         for path in suite_paths:
             filepath = os.path.join(path, "suite.yaml")
             yield filepath
+
+    def callback_on_suite_saved(self, suite_dir):
+        options = self._state["suiteSaveOptions"].copy()
+        sweetconfig.on_suite_saved_callback(suite_dir, options)
