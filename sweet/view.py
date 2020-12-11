@@ -60,9 +60,11 @@ class Window(QtWidgets.QMainWindow):
 
         options = sweetconfig.suite_save_options()
         if options:
+            # we need a separate .ini file for different save option config
             storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
                                        QtCore.QSettings.UserScope,
-                                       "Sweet", "saveOptions")
+                                       "Sweet", sweetconfig.save_options_ini)
+            print("Suite saving options .ini file: %s" % storage.fileName())
             pages["suite"].setup_save_options(options, storage)
 
         # signals..

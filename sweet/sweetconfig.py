@@ -15,6 +15,10 @@ def saving_roots():
     ])
 
 
+# suite save options .ini file name
+save_options_ini = "defaultSuiteOptions"
+
+
 def suite_save_options():
     """Additional suite save option widgets
 
