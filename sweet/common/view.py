@@ -543,8 +543,13 @@ class QArgParserDialog(QtWidgets.QDialog):
         self._parsers = parsers
         self._storage = storage
 
-        retrieved = self.retrieve()  # TODO: If error raised here, drop .ini
-        self.write(retrieved)
+        try:
+            retrieved = self.retrieve()
+        except ValueError:
+            print("Retrieving save option history failed, use default.")
+            self._storage.clear()
+        else:
+            self.write(retrieved)
 
     def read(self):
         data = dict()
