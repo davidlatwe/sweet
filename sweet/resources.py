@@ -41,6 +41,11 @@ def load_themes():
         _themes[theme["name"]] = theme
 
 
+def theme_names():
+    for name in _themes.keys():
+        yield name
+
+
 def load_theme(name=None):
     if name:
         theme = _themes.get(name)

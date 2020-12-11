@@ -157,6 +157,101 @@ QToolTip, QTextEdit, QLineEdit {
     background-color: %(background.bright)s;
 }
 
+QComboBox {
+    border: 1px solid %(border.bright)s;
+    padding: 2px;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url(%(res)s/down_arrow_dim.png);
+}
+
+QComboBox::down-arrow:on,
+QComboBox::down-arrow:hover,
+QComboBox::down-arrow:focus {
+    image: url(%(res)s/down_arrow.png);
+}
+
+QAbstractSpinBox {
+    border: 1px solid %(border.bright)s;
+}
+
+QAbstractSpinBox:up-button
+{
+    background-color: transparent;
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+}
+
+QAbstractSpinBox:down-button
+{
+    background-color: transparent;
+    subcontrol-origin: border;
+    subcontrol-position: center left;
+}
+
+QAbstractSpinBox::up-arrow,
+QAbstractSpinBox::up-arrow:disabled,
+QAbstractSpinBox::up-arrow:off {
+    image: url(%(res)s/up_arrow_dim.png);
+}
+
+QAbstractSpinBox::up-arrow:hover
+{
+    image: url(%(res)s/up_arrow.png);
+}
+
+QAbstractSpinBox::down-arrow,
+QAbstractSpinBox::down-arrow:disabled,
+QAbstractSpinBox::down-arrow:off
+{
+    image: url(%(res)s/down_arrow_dim.png);
+}
+
+QAbstractSpinBox::down-arrow:hover
+{
+    image: url(%(res)s/down_arrow.png);
+}
+
+QSlider::groove:horizontal {
+    background: %(background.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    height: 2px;
+    margin: 2px 0;
+}
+
+QSlider::handle:horizontal {
+    background: %(primary.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 6px;
+    height: 14px;
+    margin: -8px 0;
+}
+
+QSlider::groove:vertical {
+    background: %(background.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 2px;
+    margin: 0 0px;
+}
+
+QSlider::handle:vertical {
+    background: %(primary.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 14px;
+    height: 6px;
+    margin: 0 -8px;
+}
+
+QSlider:focus,
 QTabWidget{
     border: none;
 }
@@ -517,6 +612,7 @@ QTreeView::branch:hover {
     background-color: %(primary.focus)s;
 }
 
+#Preference QScrollArea,
 #SphereView QScrollArea {
     border: 1px solid %(border.bright)s;
 }
@@ -781,4 +877,8 @@ QSplitter::handle:vertical:hover {
 
 #CancelButton {
     icon: url(%(res)s/x.svg);
+}
+
+#DocStrings {
+    color: %(on.dim.surface)s;
 }
