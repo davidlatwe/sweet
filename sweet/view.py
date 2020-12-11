@@ -1,14 +1,14 @@
 
-from .vendor.Qt5 import QtCore, QtGui, QtWidgets
-
+import os
+from .vendor.Qt5 import QtCore, QtWidgets
 from .version import version
-from .common.view import Spoiler
+from .common.view import Spoiler, SimpleDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
 from .suite.view import SuiteView
 from .preference import Preference
-from . import sweetconfig, resources as res
+from . import util, sweetconfig, resources as res
 
 
 class Window(QtWidgets.QMainWindow):
@@ -30,7 +30,7 @@ class Window(QtWidgets.QMainWindow):
             "package": PackageView(),
             "suite": SuiteView(),
             "context": SuiteContextTab(),
-            "preference": Preference(ctrl),
+            "preference": Preference(ctrl.state),
         }
 
         widgets = {
@@ -73,6 +73,7 @@ class Window(QtWidgets.QMainWindow):
         pages["suite"].commented.connect(ctrl.on_suite_commented)
         pages["suite"].optioned.connect(ctrl.on_suite_options_parsed)
         pages["suite"].newed.connect(self.on_suite_newed)
+        pages["suite"].opened.connect(self.on_suite_opened)
         pages["suite"].saved.connect(ctrl.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
@@ -102,6 +103,30 @@ class Window(QtWidgets.QMainWindow):
     def on_suite_newed(self):
         self._ctrl.clear_suite()
         self.add_context_draft()
+
+    def on_suite_opened(self):
+        path = self.show_file_dialog("openSuite")
+        if path:
+
+            if not os.path.isfile(os.path.join(path, "suite.yaml")):
+                print("No 'suite.yaml' found, not a suite dir.")
+                return
+
+            action = self._ctrl.state["suiteOpenAs"]
+            if action == "Ask":
+                dialog = SimpleDialog(message="Open existing suite as ..",
+                                      options=["Loaded", "Import"],
+                                      parent=self)
+                if dialog.exec_():
+                    as_import = dialog.answer() == "Import"
+                else:
+                    return
+
+            else:
+                as_import = action == "Import"
+
+            path = util.normpath(path)
+            self._ctrl.load_suite(path, as_import)
 
     def on_context_drafted(self):
         self.add_context_draft(focus=True)
@@ -167,23 +192,52 @@ class Window(QtWidgets.QMainWindow):
         self._pages["context"].remove_context(id_)
 
     def on_preference_changed(self, name, value):
-        pass
+
+        if name == "theme":
+            qss = res.load_theme(value)
+            self.setStyleSheet(qss)
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+        elif name == "recentSuiteCount":
+            self._ctrl.state["recentSuiteCount"] = value
+            self._ctrl.defer_change_max_recent()
+
+        elif name == "suiteOpenAs":
+            self._ctrl.state["suiteOpenAs"] = value
+
+    def show_file_dialog(self, namespace=None):
+        state = self._ctrl.state
+        dialog = QtWidgets.QFileDialog(self)
+        if namespace and state.retrieve("%s/windowState" % namespace):
+            # somehow directory won't get restored with restoreState
+            dialog.setDirectory(state.retrieve("%s/directory" % namespace))
+            dialog.restoreState(state.retrieve("%s/windowState" % namespace))
+
+        path = dialog.getExistingDirectory()
+        if namespace:
+            state.store("%s/directory" % namespace, dialog.directory())
+            state.store("%s/windowState" % namespace, dialog.saveState())
+
+        return path
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)
+        state = self._ctrl.state
         splitter = self._panels["split"]
-        self._ctrl.store("default/geometry", self.saveGeometry())
-        self._ctrl.store("default/windowState", self.saveState())
-        self._ctrl.store("default/windowSplitter", splitter.saveState())
+        state.store("default/geometry", self.saveGeometry())
+        state.store("default/windowState", self.saveState())
+        state.store("default/windowSplitter", splitter.saveState())
 
-        if self._ctrl.retrieve("geometry"):
-            self.restoreGeometry(self._ctrl.retrieve("geometry"))
-            self.restoreState(self._ctrl.retrieve("windowState"))
-            splitter.restoreState(self._ctrl.retrieve("windowSplitter"))
+        if state.retrieve("geometry"):
+            self.restoreGeometry(state.retrieve("geometry"))
+            self.restoreState(state.retrieve("windowState"))
+            splitter.restoreState(state.retrieve("windowSplitter"))
 
     def closeEvent(self, event):
+        state = self._ctrl.state
         splitter = self._panels["split"]
-        self._ctrl.store("geometry", self.saveGeometry())
-        self._ctrl.store("windowState", self.saveState())
-        self._ctrl.store("windowSplitter", splitter.saveState())
+        state.store("geometry", self.saveGeometry())
+        state.store("windowState", self.saveState())
+        state.store("windowSplitter", splitter.saveState())
         return super(Window, self).closeEvent(event)

@@ -87,7 +87,7 @@ def default_themes():
     res_root = os.path.join(dirname, "resources", "images").replace("\\", "/")
     return [
         {
-            "name": "sweet",
+            "name": "sweet-dark",
             "source": find("sweet.qss"),
             "keywords": {
                 "primary.focus": "#76654B",
@@ -117,6 +117,48 @@ def default_themes():
                 "on.bright.secondary": "#212121",
                 "on.bright.surface": "#A49884",
                 "on.bright.background": "#6F6350",
+                "on.bright.error": "#FFFFFF",
+
+                "on.dim.primary": "#39322D",
+                "on.dim.secondary": "#4B403E",
+                "on.dim.surface": "#4D4D4D",
+                "on.dim.background": "#3F3F3F",
+                "on.dim.error": "#9E9E9E",
+
+                "res": res_root,
+            }
+        },
+        {
+            "name": "sweet-light",
+            "source": find("sweet.qss"),
+            "keywords": {
+                "primary.focus": "#76654B",
+                "primary.bright": "#654F3E",
+                "primary.dim": "#493D35",
+
+                "secondary.focus": "#4B6375",
+                "secondary.bright": "#3E6166",
+                "secondary.dim": "#36494A",
+
+                "surface.bright": "#C8BFB2",
+                "surface.dim": "#B0A798",
+
+                "background.bright": "#B3AA9E",
+                "background.dim": "#A0988D",
+
+                "border.bright": "#917F6F",
+                "border.dim": "#A08F89",
+
+                "error.bright": "#C62828",
+                "error.dim": "#891B1B",
+
+                "warning.bright": "#DC9029",
+                "warning.dim": "#B8843A",
+
+                "on.bright.primary": "#212121",
+                "on.bright.secondary": "#212121",
+                "on.bright.surface": "#342C25",
+                "on.bright.background": "#2C251F",
                 "on.bright.error": "#FFFFFF",
 
                 "on.dim.primary": "#39322D",

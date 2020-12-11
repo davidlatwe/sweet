@@ -10,16 +10,19 @@ class Preference(QtWidgets.QWidget):
     """
     changed = QtCore.Signal(str, object)
 
-    def __init__(self, ctrl, parent=None):
+    def __init__(self, state, parent=None):
         super(Preference, self).__init__(parent=parent)
         self.setObjectName("Preference")
 
         options = [
             qargparse.Separator("Appearance"),
 
-            qargparse.Enum("theme", items=res.theme_names(), help=(
-                "GUI skin. May need to restart Sweet after changed."
-            )),
+            qargparse.Enum(
+                "theme",
+                items=res.theme_names(),
+                default=0,
+                initial=state.retrieve("theme"),
+                help="GUI skin. May need to restart Sweet after changed."),
 
             qargparse.Button("resetLayout", help=(
                 "Reset stored layout to their defaults"
@@ -27,9 +30,15 @@ class Preference(QtWidgets.QWidget):
 
             qargparse.Separator("Settings"),
 
-            qargparse.Integer("recentSuiteCount", default=10),
+            qargparse.Integer("recentSuiteCount",
+                              min=1,
+                              default=10,
+                              initial=state.retrieve("recentSuiteCount")),
 
-            qargparse.Enum("suiteOpenAs", items=["Ask", "Loaded", "Import"]),
+            qargparse.Enum("suiteOpenAs",
+                           items=["Ask", "Loaded", "Import"],
+                           default=0,
+                           initial=state.retrieve("suiteOpenAs")),
         ]
 
         widgets = {
@@ -53,13 +62,10 @@ class Preference(QtWidgets.QWidget):
         widgets["options"].changed.connect(self.on_option_changed)
 
         self._widgets = widgets
-        self._ctrl = ctrl
-
-    def retrieve(self):
-        pass
+        self._state = state
 
     def on_option_changed(self, argument):
         name = argument["name"]
         value = argument.read()
-        self._ctrl.store(name, value)
+        self._state.store(name, value)
         self.changed.emit(name, value)

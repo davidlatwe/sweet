@@ -5,63 +5,29 @@ from . import _rezapi as rez
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
-from .suite.model import SavedSuiteModel
+from .suite.model import SavedSuiteModel, CapedSavedSuiteModel
 from . import sweetconfig, util
 
 
-class Controller(QtCore.QObject):
-    suite_changed = QtCore.Signal(str, object, object)
-    context_removed = QtCore.Signal(str)
-    context_loaded = QtCore.Signal(dict, list)
+class State(dict):
 
-    def __init__(self, storage, parent=None):
-        super(Controller, self).__init__(parent=parent)
-
-        state = {
+    def __init__(self, storage):
+        super(State, self).__init__({
             "suite": rez.SweetSuite(),
             "suiteRoot": "",
             "suiteName": "",
             "suiteDescription": "",
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history (not used)
-            "recentSuiteCount": 10,  # TODO: change in preference
             "suiteSaveOptions": dict(),
             "suiteSaveRoots": sweetconfig.saving_roots(),
-        }
+            "recentSavedSuites": None,
+            # these will be updated from preference
+            "recentSuiteCount": int(storage.value("recentSuiteCount", 10)),
+            "suiteOpenAs": storage.value("suiteOpenAs", 0),
+        })
 
-        timers = {
-            "toolUpdate": QtCore.QTimer(self),
-            "packageSearch": QtCore.QTimer(self),
-            "savedSuites": QtCore.QTimer(self),
-        }
-
-        models = {
-            "package": PackageModel(),
-            "recent": SavedSuiteModel(),
-            # models per suite saving root
-            "saved": {k: SavedSuiteModel() for k in state["suiteSaveRoots"]},
-            # models per context
-            "contextPackages": dict(),
-            "contextEnvironment": dict(),
-            "contextTool": dict(),
-        }
-
-        timers["packageSearch"].timeout.connect(self.on_package_searched)
-        timers["savedSuites"].timeout.connect(self.on_saved_suite_listed)
-        timers["toolUpdate"].timeout.connect(self.on_tool_updated)
-
-        self._state = state
-        self._timers = timers
-        self._models = models
         self._storage = storage
-
-    @property
-    def state(self):
-        return self._state
-
-    @property
-    def models(self):
-        return self._models
 
     def store(self, key, value):
         """Write to persistent storage
@@ -71,6 +37,7 @@ class Controller(QtCore.QObject):
             value (object): Any datatype
 
         """
+        self[key] = value
         self._storage.setValue(key, value)
 
     def retrieve(self, key, default=None):
@@ -87,7 +54,6 @@ class Controller(QtCore.QObject):
             value = default
 
         # Account for poor serialisation format
-        # TODO: Implement a better format
         true = ["2", "1", "true", True, 1, 2]
         false = ["0", "false", False, 0]
 
@@ -97,7 +63,62 @@ class Controller(QtCore.QObject):
         if value in false:
             value = False
 
+        if value and str(value).isnumeric():
+            value = float(value)
+
         return value
+
+
+class Controller(QtCore.QObject):
+    suite_changed = QtCore.Signal(str, object, object)
+    context_removed = QtCore.Signal(str)
+    context_loaded = QtCore.Signal(dict, list)
+
+    def __init__(self, storage, parent=None):
+        super(Controller, self).__init__(parent=parent)
+
+        state = State(storage=storage)
+
+        timers = {
+            "toolUpdate": QtCore.QTimer(self),
+            "packageSearch": QtCore.QTimer(self),
+            "savedSuites": QtCore.QTimer(self),
+            "maxRecent": QtCore.QTimer(self),
+        }
+
+        models = {
+            "package": PackageModel(),
+            "recent": CapedSavedSuiteModel(max_=state["recentSuiteCount"]),
+            # models per suite saving root
+            "saved": {k: SavedSuiteModel() for k in state["suiteSaveRoots"]},
+            # models per context
+            "contextPackages": dict(),
+            "contextEnvironment": dict(),
+            "contextTool": dict(),
+        }
+
+        timers["packageSearch"].timeout.connect(self.on_package_searched)
+        timers["savedSuites"].timeout.connect(self.on_saved_suite_listed)
+        timers["toolUpdate"].timeout.connect(self.on_tool_updated)
+        timers["maxRecent"].timeout.connect(self.on_max_recent_changed)
+
+        self._state = state
+        self._timers = timers
+        self._models = models
+
+        # trim down recent path count on launch
+        # self._state.store(
+        #     "recentSavedSuites",
+        #     os.pathsep.join(self.iter_recent_suites(fetch_all=False))
+        # )
+
+    @property
+    def state(self):  # state is also like a model and good to be exposed
+        return self._state
+
+    @property
+    def models(self):
+        return self._models
 
     def default_root(self):
         return self._state["suiteSaveRoots"][sweetconfig.default_root]
@@ -130,6 +151,11 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
+    def defer_change_max_recent(self, on_time=100):
+        timer = self._timers["maxRecent"]
+        timer.setSingleShot(True)
+        timer.start(on_time)
+
     def on_package_searched(self):
         self._models["package"].reset(self.iter_packages())
 
@@ -139,6 +165,10 @@ class Controller(QtCore.QObject):
         for key, model in self._models["saved"].items():
             root = self._state["suiteSaveRoots"][key]
             model.add_files(self.iter_suites_in_root(root))
+
+    def on_max_recent_changed(self):
+        value = self._state["recentSuiteCount"]
+        self._models["recent"].change_max_row(value)
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -374,43 +404,39 @@ class Controller(QtCore.QObject):
                 yield doc
 
     def update_suite_lists(self, root, name):
-        max_count = self._state["recentSuiteCount"]
-        sep = os.pathsep
-        valid_path = list()
-
-        for filepath in self.retrieve("recentSavedSuites", "").split(sep):
-            if not filepath or not os.path.isfile(filepath):
-                continue
-            valid_path.append(util.normpath(filepath))
-            if len(valid_path) == max_count:
-                break
+        state = self._state
+        models = self._models
 
         newly_saved = util.normpath(os.path.join(root, name, "suite.yaml"))
+        valid_path = [util.normpath(p) for p in self.iter_recent_suites()]
 
         if newly_saved in valid_path:
             valid_path.remove(newly_saved)
         valid_path.insert(0, newly_saved)
-        valid_path = valid_path[:max_count]
 
-        self.store("recentSavedSuites", os.pathsep.join(valid_path))
-        self._models["recent"].add_files(valid_path)
+        # store paths with no trimming just yet, for preference changing
+        state.store("recentSavedSuites", os.pathsep.join(valid_path))
+        # trim down in view
+        models["recent"].add_files(valid_path, clear=True)
 
-        for key, _root in self._state["suiteSaveRoots"].items():
+        for key, _root in state["suiteSaveRoots"].items():
             if _root == root:
-                self._models["saved"][key].add_files([newly_saved], clear=False)
+                models["saved"][key].add_files([newly_saved], clear=False)
                 break
 
-    def iter_recent_suites(self):
-        max_count = self._state["recentSuiteCount"]
-        sep = os.pathsep
-        valid_path = list()
+    def iter_recent_suites(self, fetch_all=True):
+        state = self._state
+        recent = state.retrieve("recentSavedSuites", "").split(os.pathsep)
+        max_count = -1 if fetch_all else self._state["recentSuiteCount"]
+        count = 0
 
-        for filepath in self.retrieve("recentSavedSuites", "").split(sep):
+        for filepath in recent:
             if not filepath or not os.path.isfile(filepath):
                 continue
             yield filepath
 
-            if len(valid_path) == max_count:
+            count += 1
+            if count == max_count:
                 break
 
     def iter_suites_in_root(self, root):

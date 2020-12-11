@@ -871,6 +871,14 @@ QSplitter::handle:vertical:hover {
     icon: url(%(res)s/egg-fill.svg);
 }
 
+#SuiteOpenButton {
+    icon: url(%(res)s/egg-fill-dim.svg);
+}
+
+#SuiteOpenButton:hover {
+    icon: url(%(res)s/egg-fill.svg);
+}
+
 #AcceptButton {
     icon: url(%(res)s/check-ok.svg);
 }

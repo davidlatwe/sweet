@@ -1,5 +1,6 @@
 
 import json
+from functools import partial
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
 from .model import JsonModel
 from . import delegate
@@ -610,3 +611,43 @@ class QArgParserDialog(QtWidgets.QDialog):
                 value = int(value)
 
         return value
+
+
+class SimpleDialog(QtWidgets.QDialog):
+
+    def __init__(self, message, options, parent=None):
+        super(SimpleDialog, self).__init__(parent=parent)
+        self.setObjectName("SimpleDialog")
+
+        widgets = {
+            "message": QtWidgets.QLabel(message),
+            "reject": QtWidgets.QPushButton("Cancel"),
+        }
+        widgets["reject"].setObjectName("CancelButton")
+
+        for opt in options:
+            widgets[opt] = QtWidgets.QPushButton(opt.capitalize())
+        widgets[options[0]].setDefault(True)
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.addWidget(widgets["message"], 0, 0, 1, -1)
+        for col, opt in enumerate(options):
+            layout.addWidget(widgets[opt], 2, col, 1, 1)
+        layout.addWidget(widgets["reject"], 2, col + 1, 1, 1)
+
+        for opt in options:
+            widgets[opt].clicked.connect(partial(self.on_accepted, opt))
+        widgets["reject"].clicked.connect(self.on_rejected)
+
+        self._widgets = widgets
+        self._answer = None
+
+    def on_accepted(self, option):
+        self._answer = option
+        self.done(self.Accepted)
+
+    def on_rejected(self):
+        self.done(self.Rejected)
+
+    def answer(self):
+        return self._answer

@@ -16,6 +16,7 @@ class SuiteView(QtWidgets.QWidget):
     optioned = QtCore.Signal(dict)
     newed = QtCore.Signal()
     saved = QtCore.Signal()
+    opened = QtCore.Signal()
     loaded = QtCore.Signal(str, bool)
 
     def __init__(self, parent=None):
@@ -50,6 +51,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets["opts"].setObjectName("SuiteOptionButton")
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
+        widgets["open"].setObjectName("SuiteOpenButton")
         widgets["roots"].setObjectName("SuiteRootsButton")
 
         widgets["name"].setPlaceholderText("Suite dir name..")
@@ -108,6 +110,7 @@ class SuiteView(QtWidgets.QWidget):
         widgets["opts"].clicked.connect(self.on_dialog_shown)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["new"].clicked.connect(self.newed.emit)
+        widgets["open"].clicked.connect(self.opened.emit)
         widgets["roots"].clicked.connect(self.on_roots_clicked)
         widgets["roots"].customContextMenuRequested.connect(
             self.on_roots_clicked

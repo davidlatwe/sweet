@@ -63,7 +63,7 @@ def init():
         pass
 
     resources.load_themes()
-    qss = resources.load_theme()
+    qss = resources.load_theme(name=storage.value("theme"))
 
     ctrl = control.Controller(storage)
     window = view.Window(ctrl=ctrl)

@@ -30,7 +30,7 @@ class SavedSuiteModel(AbstractTableModel):
         self.items.clear()
         self.endResetModel()
 
-    def add_files(self, suite_files, clear=True):
+    def add_files(self, suite_files, clear=True, sort=True):
         self.beginResetModel()
         if clear:
             self.items.clear()
@@ -56,7 +56,8 @@ class SavedSuiteModel(AbstractTableModel):
             })
             self.items.append(item)
 
-        self.items.sort(key=lambda i: i["name"])
+        if sort:
+            self.items.sort(key=lambda i: i["name"])
 
         self.endResetModel()
 
@@ -80,3 +81,30 @@ class SavedSuiteModel(AbstractTableModel):
 
         if role == self.ItemRole:
             return data
+
+
+class CapedSavedSuiteModel(SavedSuiteModel):
+
+    def __init__(self, max_, parent=None):
+        super(CapedSavedSuiteModel, self).__init__(parent)
+        self._max = max_
+        self._all_files = list()
+
+    def change_max_row(self, value):
+        self._max = value
+        self.add_files(self._all_files)
+
+    def add_files(self, suite_files, clear=True, sort=False):
+        self._all_files = list(suite_files)
+        suite_files = self._all_files[:self._max]
+        super(CapedSavedSuiteModel, self).add_files(suite_files, clear, sort)
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        row = index.row()
+        if (row + 1) > self._max:
+            return None
+
+        return super(CapedSavedSuiteModel, self).data(index, role)
