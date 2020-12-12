@@ -872,11 +872,11 @@ QSplitter::handle:vertical:hover {
 }
 
 #SuiteOpenButton {
-    icon: url(%(res)s/egg-fill-dim.svg);
+    icon: url(%(res)s/folder2-open-dim.svg);
 }
 
 #SuiteOpenButton:hover {
-    icon: url(%(res)s/egg-fill.svg);
+    icon: url(%(res)s/folder2-open.svg);
 }
 
 #AcceptButton {
