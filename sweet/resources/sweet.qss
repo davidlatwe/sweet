@@ -297,6 +297,7 @@ QTabBar::tab:top {
     border-bottom: none;
 }
 
+QTabBar::tab:top:only-one,
 QTabBar::tab:top:last {
     border-right: 1px solid %(border.bright)s;
 }
@@ -306,6 +307,7 @@ QTabBar::tab:bottom {
     border-top: none;
 }
 
+QTabBar::tab:bottom:only-one,
 QTabBar::tab:bottom:last {
     border-right: 1px solid %(border.bright)s;
 }
