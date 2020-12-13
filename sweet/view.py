@@ -2,7 +2,7 @@
 import os
 from .vendor.Qt5 import QtCore, QtWidgets
 from .version import version
-from .common.view import Spoiler, SimpleDialog
+from .common.view import Spoiler, SimpleDialog, QArgParserDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
@@ -35,6 +35,7 @@ class Window(QtWidgets.QMainWindow):
 
         widgets = {
             "sphere": SphereView(),
+            "optDialog": None,
         }
 
         # layouts..
@@ -65,16 +66,19 @@ class Window(QtWidgets.QMainWindow):
                                        QtCore.QSettings.UserScope,
                                        "Sweet", sweetconfig.save_options_ini)
             print("Suite saving options .ini file: %s" % storage.fileName())
-            pages["suite"].setup_save_options(options, storage)
+            dialog = QArgParserDialog(self)
+            dialog.setWindowTitle("Suite Save Options")
+            dialog.install(options, storage)
+
+            widgets["optDialog"] = dialog
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
         pages["suite"].rooted.connect(ctrl.on_suite_rooted)
         pages["suite"].commented.connect(ctrl.on_suite_commented)
-        pages["suite"].optioned.connect(ctrl.on_suite_options_parsed)
         pages["suite"].newed.connect(self.on_suite_newed)
         pages["suite"].opened.connect(self.on_suite_opened)
-        pages["suite"].saved.connect(ctrl.on_suite_saved)
+        pages["suite"].saved.connect(self.on_suite_saved)
         pages["suite"].loaded.connect(ctrl.on_suite_loaded)
         widgets["sphere"].context_drafted.connect(self.on_context_drafted)
         ctrl.suite_changed.connect(pages["suite"].on_suite_changed)
@@ -103,6 +107,10 @@ class Window(QtWidgets.QMainWindow):
     def on_suite_newed(self):
         self._ctrl.clear_suite()
         self.add_context_draft()
+
+    def on_suite_saved(self):
+        self.show_save_option_dialog()
+        self._ctrl.on_suite_saved()
 
     def on_suite_opened(self):
         path = self.show_file_dialog("openSuite")
@@ -220,6 +228,23 @@ class Window(QtWidgets.QMainWindow):
             state.store("%s/windowState" % namespace, dialog.saveState())
 
         return path
+
+    def show_save_option_dialog(self):
+        dialog = self._widgets["optDialog"]
+        if dialog is None:
+            return
+
+        default = dialog.read()
+
+        if dialog.exec_():
+            # accepted
+            options = dialog.read()
+        else:
+            # rejected/canceled
+            dialog.write(default)
+            options = default
+
+        self._ctrl.state["suiteSaveOptions"] = options
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)

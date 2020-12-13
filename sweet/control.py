@@ -280,9 +280,6 @@ class Controller(QtCore.QObject):
     def on_suite_commented(self, comment):
         self._state["suiteDescription"] = comment
 
-    def on_suite_options_parsed(self, options):
-        self._state["suiteSaveOptions"] = options
-
     def on_suite_saved(self):
         self.save_suite()
 

@@ -849,14 +849,6 @@ QSplitter::handle:vertical:hover {
     icon: url(%(res)s/journal-bookmark-fill.svg);
 }
 
-#SuiteOptionButton {
-    icon: url(%(res)s/sliders-dim.svg);
-}
-
-#SuiteOptionButton:hover {
-    icon: url(%(res)s/sliders.svg);
-}
-
 #SuiteSaveButton {
     icon: url(%(res)s/egg-fried-dim.svg);
 }

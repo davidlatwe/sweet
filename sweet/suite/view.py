@@ -13,7 +13,6 @@ class SuiteView(QtWidgets.QWidget):
     named = QtCore.Signal(str)
     rooted = QtCore.Signal(str)
     commented = QtCore.Signal(str)
-    optioned = QtCore.Signal(dict)
     newed = QtCore.Signal()
     saved = QtCore.Signal()
     opened = QtCore.Signal()
@@ -36,19 +35,15 @@ class SuiteView(QtWidgets.QWidget):
             "operate": QtWidgets.QWidget(),
             "dest": QtWidgets.QLineEdit(),
             "roots": QtWidgets.QPushButton(),
-            "opts": QtWidgets.QPushButton(" More"),
             "save": QtWidgets.QPushButton(" Save"),
             "new": QtWidgets.QPushButton(" New"),
             "open": QtWidgets.QPushButton(" Open"),  # TODO: Load or Import
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
-            # additional option dialog
-            "dialog": QArgParserDialog(self),
             # location selecting menu
             "actions": QtWidgets.QActionGroup(self),
         }
-        widgets["opts"].setObjectName("SuiteOptionButton")
         widgets["save"].setObjectName("SuiteSaveButton")
         widgets["new"].setObjectName("SuiteNewButton")
         widgets["open"].setObjectName("SuiteOpenButton")
@@ -60,10 +55,6 @@ class SuiteView(QtWidgets.QWidget):
         widgets["desc"].setTabChangesFocus(True)
         widgets["dest"].setReadOnly(True)
 
-        widgets["dialog"].setWindowTitle("Suite Save Options")
-        widgets["opts"].setEnabled(False)
-        widgets["opts"].setVisible(False)
-
         widgets["roots"].setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         widgets["actions"].setExclusive(True)
 
@@ -72,10 +63,9 @@ class SuiteView(QtWidgets.QWidget):
         layout.addWidget(widgets["roots"], 0, 0)
         layout.addWidget(widgets["dest"], 0, 1, 1, -1)
         layout.addItem(QtWidgets.QSpacerItem(1, 1), 1, 0, 1, 3)
-        layout.addWidget(widgets["opts"], 1, 3)
-        layout.addWidget(widgets["save"], 1, 4)
-        layout.addWidget(widgets["new"], 1, 5)
-        layout.addWidget(widgets["open"], 1, 6)
+        layout.addWidget(widgets["save"], 1, 3)
+        layout.addWidget(widgets["new"], 1, 4)
+        layout.addWidget(widgets["open"], 1, 5)
         layout.setSpacing(2)
 
         layout = QtWidgets.QVBoxLayout(panels["save"])
@@ -107,7 +97,6 @@ class SuiteView(QtWidgets.QWidget):
         # signals..
         widgets["name"].textChanged.connect(self.named.emit)
         widgets["desc"].textChanged.connect(self.on_description_changed)
-        widgets["opts"].clicked.connect(self.on_dialog_shown)
         widgets["save"].clicked.connect(self.saved.emit)
         widgets["new"].clicked.connect(self.newed.emit)
         widgets["open"].clicked.connect(self.opened.emit)
@@ -118,23 +107,6 @@ class SuiteView(QtWidgets.QWidget):
 
         self._widgets = widgets
         self._panels = panels
-
-    def setup_save_options(self, options, storage):
-        self._widgets["opts"].setEnabled(True)
-        self._widgets["opts"].setVisible(True)
-        self._widgets["dialog"].install(options, storage)
-
-    def on_dialog_shown(self):
-        dialog = self._widgets["dialog"]
-        default = dialog.read()
-
-        if dialog.exec_():
-            # accepted
-            self.optioned.emit(dialog.read())
-        else:
-            # rejected/canceled
-            dialog.write(default)
-            self.optioned.emit(default)
 
     def on_destination_changed(self, path):
         self._widgets["dest"].setText(path)
