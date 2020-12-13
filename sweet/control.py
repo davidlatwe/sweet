@@ -24,7 +24,7 @@ class State(dict):
             "recentSavedSuites": None,
             # these will be updated from preference
             "recentSuiteCount": int(storage.value("recentSuiteCount", 10)),
-            "suiteOpenAs": storage.value("suiteOpenAs", 0),
+            "suiteOpenAs": storage.value("suiteOpenAs", "Ask"),
         })
 
         self._storage = storage
