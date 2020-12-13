@@ -52,11 +52,15 @@ class ContextResolveView(QtWidgets.QWidget):
         }
         panels["options"].setObjectName("ContextOperationBar")
 
+        dialogs = {
+            "timestamp": TimestampDialog(self),
+        }
+
         widgets = {
-            "filter": QtWidgets.QPushButton(),
-            "timestamp": QtWidgets.QPushButton(),
-            "building": QtWidgets.QPushButton(),
-            "parse": QtWidgets.QPushButton(),
+            "filter": QtWidgets.QPushButton(),  # TODO: package filter
+            "timestamp": QtWidgets.QPushButton(),  # TODO: not complete yet
+            "building": QtWidgets.QPushButton(),  # TODO: set resolve build env
+            "parse": QtWidgets.QPushButton(),  # TODO: set request from search
             "request": RequestTextEdit(),
             "resolve": QtWidgets.QPushButton("Resolve"),
         }
@@ -97,8 +101,10 @@ class ContextResolveView(QtWidgets.QWidget):
 
         # signals..
         widgets["resolve"].clicked.connect(self.on_resolve_clicked)
+        widgets["timestamp"].clicked.connect(self.on_timestamp_clicked)
 
         self._panels = panels
+        self._dialogs = dialogs
         self._widgets = widgets
 
     def id(self):
@@ -126,6 +132,11 @@ class ContextResolveView(QtWidgets.QWidget):
     def on_resolve_clicked(self):
         request = self._widgets["request"].toPlainText()
         self.requested.emit(self._id, request.split())
+
+    def on_timestamp_clicked(self):
+        dialog = self._dialogs["timestamp"]
+        if dialog.exec_():
+            print(dialog.timestamp())
 
     def set_requests(self, text):
         self._widgets["request"].setText(text)
@@ -196,3 +207,39 @@ class ResolvedPackagesView(SlimTableView):
 
         menu.move(QtGui.QCursor.pos())
         menu.show()
+
+
+class TimestampDialog(QtWidgets.QDialog):
+
+    def __init__(self, parent=None):
+        super(TimestampDialog, self).__init__(parent=parent)
+
+        widgets = {
+            "calendar": QtWidgets.QCalendarWidget(),
+            "clock": None,
+            "accept": QtWidgets.QPushButton("Accept"),
+            "reject": QtWidgets.QPushButton("Cancel"),
+        }
+        widgets["accept"].setObjectName("AcceptButton")
+        widgets["reject"].setObjectName("CancelButton")
+
+        widgets["accept"].setDefault(True)
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.addWidget(widgets["calendar"], 0, 0, 1, -1)
+        layout.addWidget(widgets["accept"], 1, 0, 1, 1)
+        layout.addWidget(widgets["reject"], 1, 1, 1, 1)
+
+        widgets["accept"].clicked.connect(self.on_accepted)
+        widgets["reject"].clicked.connect(self.on_rejected)
+
+        self._widgets = widgets
+
+    def on_accepted(self):
+        self.done(self.Accepted)
+
+    def on_rejected(self):
+        self.done(self.Rejected)
+
+    def timestamp(self):
+        return self._widgets["calendar"].selectedDate()
