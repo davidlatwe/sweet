@@ -27,12 +27,7 @@ def suite_save_options():
 
     """
     from .vendor import qargparse
-    return [
-        qargparse.Separator("demoArg"),
-        qargparse.Integer("demoOption"),
-        qargparse.String("version"),
-        qargparse.String("path"),
-    ]
+    return []
 
 
 def on_suite_saved_callback(suite_dir, options):
@@ -49,49 +44,4 @@ def on_suite_saved_callback(suite_dir, options):
         None
 
     """
-    import os
-    import errno
-    import shutil
-    from rez.package_maker import PackageMaker
-    from rez.developer_package import DeveloperPackage
-
-    root, name = os.path.split(suite_dir)
-
-    maker = PackageMaker(name, package_cls=DeveloperPackage)
-    maker.version = options["version"]  # or query from db
-    maker.requires = []
-    maker.variants = None
-    maker.commands = '\n'.join([
-        "env.PATH.prepend('{root}/suite/bin')",
-    ])
-
-    package = maker.get_package()
-
-    data = maker._get_data()
-    data["sweetAutoBuild"] = True  # breadcrumb for preprocessing
-
-    # preprocessing
-    result = package._get_preprocessed(data)
-
-    if result:
-        package, data = result
-
-    variant = next(package.iter_variants())
-    variant_ = variant.install(options["path"])
-
-    root = variant_.root
-
-    if root:
-        try:
-            os.makedirs(root)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                # That's ok
-                pass
-            else:
-                raise
-
-        # copy suite to package
-        shutil.copytree(suite_dir, os.path.join(root, "suite"))
-
     return None
