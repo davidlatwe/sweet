@@ -355,13 +355,14 @@ class Controller(QtCore.QObject):
             id_ = next(i for i in names if names[i] == ctx_name)
             tools[id_].load(hidden, aliases)
 
-        root, name = os.path.split(path)
         if as_import:
             root = ""
             name = ""
         else:
+            root, name = os.path.split(path)
             self._state["suite"].load_path = os.path.realpath(path)
 
+        self._state["suiteRoot"] = root
         self.suite_changed.emit(root, name, suite.description)
 
     def clear_suite(self):
