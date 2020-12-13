@@ -7,9 +7,6 @@ from .. import util
 
 class SuiteView(QtWidgets.QWidget):
 
-    # TODO:
-    #   batch context re-resolve, match by resolved package (another window ?)
-
     named = QtCore.Signal(str)
     rooted = QtCore.Signal(str)
     commented = QtCore.Signal(str)
@@ -37,7 +34,7 @@ class SuiteView(QtWidgets.QWidget):
             "roots": QtWidgets.QPushButton(),
             "save": QtWidgets.QPushButton(" Save"),
             "new": QtWidgets.QPushButton(" New"),
-            "open": QtWidgets.QPushButton(" Open"),  # TODO: Load or Import
+            "open": QtWidgets.QPushButton(" Open"),
             # -splitter-
             "suites": QtWidgets.QTabWidget(),
             "saved": QtWidgets.QLabel("Saved"),
