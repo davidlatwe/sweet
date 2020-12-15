@@ -1,5 +1,6 @@
 
 import os
+from rez.utils.execution import create_forwarding_script
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
 from rez import suite
@@ -91,6 +92,35 @@ class SweetSuite(Suite):
 
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
+
+    def save(self, path, live=False, verbose=False):
+        super(SweetSuite, self).save(path, verbose=verbose)
+        if live:
+            # remove .rxt ?
+            # override bin
+            tools_path = os.path.join(path, "bin")
+
+            tools = self.get_tools()
+            for tool_alias, d in tools.items():
+                tool_name = d["tool_name"]
+                context_name = d["context_name"]
+
+                data = self._context(context_name)
+                prefix_char = data.get("prefix_char")
+
+                if verbose:
+                    print("(live) creating %r -> %r (%s context)..."
+                          % (tool_alias, tool_name, context_name))
+                filepath = os.path.join(tools_path, tool_alias)
+
+                create_forwarding_script(
+                    filepath,
+                    module=("live_resolve", "sweet"),  # rez plugin
+                    func_name="_FWD__invoke_suite_tool_alias",
+                    context_name=context_name,
+                    tool_name=tool_name,
+                    prefix_char=prefix_char,
+                )
 
 
 def read_suite_description(filepath):
