@@ -14,16 +14,21 @@ SuiteError = suite.SuiteError
 
 class SweetSuite(Suite):
 
-    def __init__(self):
+    def __init__(self, live=False):
         super(SweetSuite, self).__init__()
         self.description = ""
+        self._is_live = live
 
     def add_description(self, text):
         self.description = text
 
+    def is_live(self):
+        return self._is_live
+
     def to_dict(self):
         data = super(SweetSuite, self).to_dict()
         data["description"] = self.description
+        data["live_resolve"] = self._is_live
         return data
 
     @classmethod
@@ -31,6 +36,7 @@ class SweetSuite(Suite):
         suite.Suite = SweetSuite
         s = super(SweetSuite, cls).from_dict(d)
         s.description = d.get("description", "")
+        s._is_live = d.get("live_resolve", False)
         return s
 
     def sorted_context_names(self):
@@ -93,9 +99,9 @@ class SweetSuite(Suite):
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
 
-    def save(self, path, live=False, verbose=False):
+    def save(self, path, verbose=False):
         super(SweetSuite, self).save(path, verbose=verbose)
-        if live:
+        if self._is_live:
             # remove .rxt ?
             # override bin
             tools_path = os.path.join(path, "bin")
@@ -106,6 +112,8 @@ class SweetSuite(Suite):
                 context_name = d["context_name"]
 
                 data = self._context(context_name)
+                context = data["context"]
+                requests = [str(r) for r in context.requested_packages()]
                 prefix_char = data.get("prefix_char")
 
                 if verbose:
@@ -116,7 +124,8 @@ class SweetSuite(Suite):
                 create_forwarding_script(
                     filepath,
                     module=("live_resolve", "sweet"),  # rez plugin
-                    func_name="_FWD__invoke_suite_tool_alias",
+                    func_name="_FWD__invoke_suite_tool_alias_in_live",
+                    package_requests=requests,
                     context_name=context_name,
                     tool_name=tool_name,
                     prefix_char=prefix_char,
