@@ -14,7 +14,7 @@ SuiteError = suite.SuiteError
 
 class SweetSuite(Suite):
 
-    def __init__(self, live=False):
+    def __init__(self, live=True):
         super(SweetSuite, self).__init__()
         self.description = ""
         self._is_live = live
@@ -123,7 +123,7 @@ class SweetSuite(Suite):
 
                 create_forwarding_script(
                     filepath,
-                    module=("live_resolve", "sweet"),  # rez plugin
+                    module=("build_system", "sweet"),  # rez plugin
                     func_name="_FWD__invoke_suite_tool_alias_in_live",
                     package_requests=requests,
                     context_name=context_name,

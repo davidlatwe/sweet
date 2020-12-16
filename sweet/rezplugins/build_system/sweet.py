@@ -1,11 +1,15 @@
 
 import os
 import sys
+from rezplugins.build_system import custom
 from rez.resolved_context import ResolvedContext
 
 
-class SweetLiveResolve(object):
-    pass
+class SweetBuildSystem(custom.CustomBuildSystem):
+
+    @classmethod
+    def name(cls):
+        return "sweet"
 
 
 def _FWD__invoke_suite_tool_alias_in_live(package_requests,
@@ -25,4 +29,4 @@ def _FWD__invoke_suite_tool_alias_in_live(package_requests,
 
 
 def register_plugin():
-    return SweetLiveResolve
+    return SweetBuildSystem
