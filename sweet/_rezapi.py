@@ -25,6 +25,31 @@ class SweetSuite(Suite):
     def is_live(self):
         return self._is_live
 
+    def context(self, name):
+        """Get a context.
+
+        Args:
+            name (str): Name to store the context under.
+
+        Returns:
+            `ResolvedContext` object.
+        """
+        data = self._context(name)
+        context = data.get("context")
+        if context:
+            return context
+
+        assert self.load_path
+        context_path = self._context_path(name)
+        context = ResolvedContext.load(context_path)
+
+        if self._is_live:
+            context = ResolvedContext(context.requested_packages())
+
+        data["context"] = context
+        data["loaded"] = True
+        return context
+
     def to_dict(self):
         data = super(SweetSuite, self).to_dict()
         data["description"] = self.description
