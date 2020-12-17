@@ -45,3 +45,15 @@ def on_suite_saved_callback(suite_dir, options):
 
     """
     return None
+
+
+def profile_roots():
+    from rez.config import config as rez_config
+    from collections import OrderedDict as odict
+
+    mongozark = rez_config.plugins.package_repository.mongozark
+
+    return odict([
+        ("local", mongozark.rez.install),
+        ("release", mongozark.rez.release),
+    ])
