@@ -6,11 +6,11 @@ from rez.resolved_context import ResolvedContext
 from rez.config import _load_config_from_filepaths, config
 
 
-class SweetBuildSystem(custom.CustomBuildSystem):
+class SweetyBuildSystem(custom.CustomBuildSystem):
 
     @classmethod
     def name(cls):
-        return "sweet"
+        return "sweety"
 
 
 def find_configs(dir_path):
@@ -53,4 +53,4 @@ def _FWD__invoke_suite_tool_alias_in_live(package_requests,
 
 
 def register_plugin():
-    return SweetBuildSystem
+    return SweetyBuildSystem
