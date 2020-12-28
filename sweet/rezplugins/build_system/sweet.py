@@ -17,7 +17,7 @@ def find_configs(dir_path):
     configs = list()
 
     while True:
-        config_file = os.path.join(dir_path, "rezconfig.py")
+        config_file = os.path.join(dir_path, ".rezconfig.py")
         if os.path.isfile(config_file):
             configs.append(config_file)
 
