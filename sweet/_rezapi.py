@@ -1,6 +1,8 @@
 
 import os
+from rez.utils.filesystem import forceful_rmtree
 from rez.utils.execution import create_forwarding_script
+from rez.utils.yaml import dump_yaml
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
 from rez import suite
@@ -125,36 +127,88 @@ class SweetSuite(Suite):
     update_tools = Suite._update_tools
 
     def save(self, path, verbose=False):
-        super(SweetSuite, self).save(path, verbose=verbose)
-        if self._is_live:
-            # remove .rxt ?
-            # override bin
-            tools_path = os.path.join(path, "bin")
+        """Save the suite to disk.
 
-            tools = self.get_tools()
-            for tool_alias, d in tools.items():
-                tool_name = d["tool_name"]
-                context_name = d["context_name"]
+        Args:
+            path (str): Path to save the suite to. If a suite is already saved
+                at `path`, then it will be overwritten. Otherwise, if `path`
+                exists, an error is raised.
+        """
+        path = os.path.realpath(path)
+        if os.path.exists(path):
+            if self.load_path and self.load_path == path:
+                if verbose:
+                    print("saving over previous suite...")
+                for context_name in self.context_names:
+                    self.context(context_name)  # load before dir deleted
+                forceful_rmtree(path)
+            else:
+                raise SuiteError("Cannot save, path exists: %r" % path)
 
-                data = self._context(context_name)
+        if verbose and self._is_live:
+            print("saving live suite...")
+
+        os.makedirs(path)
+
+        # write suite data
+        data = self.to_dict()
+        filepath = os.path.join(path, "suite.yaml")
+        with open(filepath, "w") as f:
+            f.write(dump_yaml(data))
+
+        # write contexts
+        if not self._is_live:
+            contexts_path = os.path.join(path, "contexts")
+            os.makedirs(contexts_path)
+
+            for context_name in self.context_names:
+                context = self.context(context_name)
+                context._set_parent_suite(path, context_name)
+                filepath = self._context_path(context_name, path)
+                if verbose:
+                    print("writing %r..." % filepath)
+                context.save(filepath)
+
+        # create alias wrappers
+        tools_path = os.path.join(path, "bin")
+        os.makedirs(tools_path)
+        if verbose:
+            print("creating alias wrappers in %r..." % tools_path)
+
+        tools = self.get_tools()
+        for tool_alias, d in tools.items():
+            tool_name = d["tool_name"]
+            context_name = d["context_name"]
+
+            data = self._context(context_name)
+            prefix_char = data.get("prefix_char")
+
+            if verbose:
+                print("creating %r -> %r (%s context)..."
+                      % (tool_alias, tool_name, context_name))
+            filepath = os.path.join(tools_path, tool_alias)
+
+            if self._is_live:
                 context = data["context"]
                 requests = [str(r) for r in context.requested_packages()]
-                prefix_char = data.get("prefix_char")
+                kwargs = {
+                    "module": ("build_system", "sweet"),  # rez plugin
+                    "func_name": "_FWD__invoke_suite_tool_alias_in_live",
+                    "package_requests": requests,
+                    "context_name": context_name,
+                    "tool_name": tool_name,
+                    "prefix_char": prefix_char,
+                }
+            else:
+                kwargs = {
+                    "module": "suite",
+                    "func_name": "_FWD__invoke_suite_tool_alias",
+                    "context_name": context_name,
+                    "tool_name": tool_name,
+                    "prefix_char": prefix_char,
+                }
 
-                if verbose:
-                    print("(live) creating %r -> %r (%s context)..."
-                          % (tool_alias, tool_name, context_name))
-                filepath = os.path.join(tools_path, tool_alias)
-
-                create_forwarding_script(
-                    filepath,
-                    module=("build_system", "sweet"),  # rez plugin
-                    func_name="_FWD__invoke_suite_tool_alias_in_live",
-                    package_requests=requests,
-                    context_name=context_name,
-                    tool_name=tool_name,
-                    prefix_char=prefix_char,
-                )
+            create_forwarding_script(filepath, **kwargs)
 
 
 def read_suite_description(filepath):
