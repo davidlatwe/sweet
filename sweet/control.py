@@ -21,7 +21,9 @@ class State(dict):
             "contextRequests": dict(),  # success requests history (not used)
             "suiteSaveRoots": sweetconfig.suite_roots(),
             "recentSavedSuites": None,
-            # these will be updated from preference
+            "rootKey": None,
+
+            # Preferences, these will be updated on preference changed
             "recentSuiteCount": int(storage.value("recentSuiteCount", 10)),
             "suiteOpenAs": storage.value("suiteOpenAs", "Ask"),
         })
@@ -267,6 +269,7 @@ class Controller(QtCore.QObject):
 
     def on_suite_rooted(self, name):
         root = self._state["suiteSaveRoots"][name]
+        self._state["rootKey"] = name
         self._state["suiteRoot"] = root
         self.suite_changed.emit(root, None, None)
 
