@@ -230,9 +230,11 @@ def read_suite_description(filepath):
 __all__ = [
     "iter_package_families",
     "iter_packages",
+    "read_suite_description",
+
+    "config",
+    "SuiteError",
+
     "ResolvedContext",
     "SweetSuite",
-    "SuiteError",
-    "config",
-    "read_suite_description",
 ]
