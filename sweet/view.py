@@ -2,7 +2,7 @@
 import os
 from .vendor.Qt5 import QtCore, QtWidgets
 from .version import version
-from .common.view import Spoiler, SimpleDialog, QArgParserDialog
+from .common.view import Spoiler, SimpleDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
@@ -35,7 +35,6 @@ class Window(QtWidgets.QMainWindow):
 
         widgets = {
             "sphere": SphereView(),
-            "optDialog": None,
         }
 
         # layouts..
@@ -58,19 +57,6 @@ class Window(QtWidgets.QMainWindow):
             is_default = key == sweetconfig.default_root
             pages["suite"].add_suite_root(key, is_default)
             pages["suite"].add_suite_list(key, ctrl.models["saved"][key])
-
-        options = sweetconfig.suite_save_options()
-        if options:
-            # we need a separate .ini file for different save option config
-            storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
-                                       QtCore.QSettings.UserScope,
-                                       "Sweet", sweetconfig.save_options_ini)
-            print("Suite saving options .ini file: %s" % storage.fileName())
-            dialog = QArgParserDialog(self)
-            dialog.setWindowTitle("Suite Save Options")
-            dialog.install(options, storage)
-
-            widgets["optDialog"] = dialog
 
         # signals..
         pages["suite"].named.connect(ctrl.on_suite_named)
@@ -109,7 +95,6 @@ class Window(QtWidgets.QMainWindow):
         self.add_context_draft()
 
     def on_suite_saved(self):
-        self.show_save_option_dialog()
         self._ctrl.on_suite_saved()
 
     def on_suite_opened(self):
@@ -228,23 +213,6 @@ class Window(QtWidgets.QMainWindow):
             state.store("%s/windowState" % namespace, dialog.saveState())
 
         return path
-
-    def show_save_option_dialog(self):
-        dialog = self._widgets["optDialog"]
-        if dialog is None:
-            return
-
-        default = dialog.read()
-
-        if dialog.exec_():
-            # accepted
-            options = dialog.read()
-        else:
-            # rejected/canceled
-            dialog.write(default)
-            options = default
-
-        self._ctrl.state["suiteSaveOptions"] = options
 
     def showEvent(self, event):
         super(Window, self).showEvent(event)

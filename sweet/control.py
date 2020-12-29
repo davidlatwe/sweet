@@ -19,7 +19,6 @@ class State(dict):
             "suiteDescription": "",
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history (not used)
-            "suiteSaveOptions": dict(),
             "suiteSaveRoots": sweetconfig.suite_roots(),
             "recentSavedSuites": None,
             # these will be updated from preference
@@ -313,7 +312,6 @@ class Controller(QtCore.QObject):
             suite.save(path)
             suite.load_path = os.path.realpath(path)
             self.update_suite_lists(root, name)
-            self.callback_on_suite_saved(path)
         finally:
             # restore id naming
             for id_, n in self._state["contextName"].items():
@@ -439,7 +437,3 @@ class Controller(QtCore.QObject):
             filepath = os.path.join(root, dir_name, "suite.yaml")
             if os.path.isfile(filepath):
                 yield filepath
-
-    def callback_on_suite_saved(self, suite_dir):
-        options = self._state["suiteSaveOptions"].copy()
-        sweetconfig.on_suite_saved_callback(suite_dir, options)
