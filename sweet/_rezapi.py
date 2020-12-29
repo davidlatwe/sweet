@@ -20,6 +20,8 @@ class SweetSuite(Suite):
         super(SweetSuite, self).__init__()
         self.description = ""
         self._is_live = live
+        # TODO: Implementing `live` checkBox, and it should reflect loaded
+        #   suite's "live_resolve" value.
 
     def add_description(self, text):
         self.description = text
