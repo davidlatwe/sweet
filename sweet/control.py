@@ -20,7 +20,7 @@ class State(dict):
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history (not used)
             "suiteSaveOptions": dict(),
-            "suiteSaveRoots": sweetconfig.saving_roots(),
+            "suiteSaveRoots": sweetconfig.suite_roots(),
             "recentSavedSuites": None,
             # these will be updated from preference
             "recentSuiteCount": int(storage.value("recentSuiteCount", 10)),
