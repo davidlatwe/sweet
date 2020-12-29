@@ -106,12 +106,6 @@ class Controller(QtCore.QObject):
         self._timers = timers
         self._models = models
 
-        # trim down recent path count on launch
-        # self._state.store(
-        #     "recentSavedSuites",
-        #     os.pathsep.join(self.iter_recent_suites(fetch_all=False))
-        # )
-
     @property
     def state(self):  # state is also like a model and good to be exposed
         return self._state
