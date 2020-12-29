@@ -13,3 +13,16 @@ def suite_roots():
         ("local", util.normpath("~/rez/sweet/local")),
         ("release", util.normpath("~/rez/sweet/release")),
     ])
+
+
+def on_suite_saved_callback(suite_dir):
+    """A callback that runs after suite saved
+
+    Args:
+        suite_dir (str): suite saved path
+
+    Returns:
+        None
+
+    """
+    return None
