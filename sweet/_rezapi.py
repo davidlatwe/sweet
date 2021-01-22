@@ -20,6 +20,7 @@ class SweetSuite(Suite):
         super(SweetSuite, self).__init__()
         self.description = ""
         self._is_live = live
+        self._requests = None
         # TODO: Implementing `live` checkBox, and it should reflect loaded
         #   suite's "live_resolve" value.
 
@@ -44,11 +45,13 @@ class SweetSuite(Suite):
             return context
 
         assert self.load_path
-        context_path = self._context_path(name)
-        context = ResolvedContext.load(context_path)
 
         if self._is_live:
-            context = ResolvedContext(context.requested_packages())
+            context = ResolvedContext(self._requests[name])
+            context._set_parent_suite(self.load_path, name)
+        else:
+            context_path = self._context_path(name)
+            context = ResolvedContext.load(context_path)
 
         data["context"] = context
         data["loaded"] = True
@@ -58,6 +61,10 @@ class SweetSuite(Suite):
         data = super(SweetSuite, self).to_dict()
         data["description"] = self.description
         data["live_resolve"] = self._is_live
+        data["requests"] = {
+            cname: [str(r) for r in self.context(cname).requested_packages()]
+            for cname in self.context_names
+        }
         return data
 
     @classmethod
@@ -66,6 +73,7 @@ class SweetSuite(Suite):
         s = super(SweetSuite, cls).from_dict(d)
         s.description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
+        s._requests = d.get("requests")
         return s
 
     def sorted_context_names(self):
