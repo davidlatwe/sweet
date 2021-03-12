@@ -3,47 +3,12 @@ import os
 import sys
 import logging
 from .vendor.Qt5 import QtCore, QtWidgets
-from . import control, view, resources, sweetconfig
+from . import control, view, resources
 
 log = logging.getLogger("sweet")
 log.setLevel(logging.DEBUG)
 
-
-UserError = type("UserError", (Exception,), {})
-
-
-def _load_userconfig(fname=None):
-    fname = fname or os.getenv(
-        "SWEET_CONFIG_FILE",
-        os.path.expanduser("~/sweetconfig.py")
-    )
-
-    mod = {
-        "__file__": fname,
-    }
-
-    try:
-        with open(fname) as f:
-            exec(compile(f.read(), f.name, "exec"), mod)
-
-    except IOError:
-        raise
-
-    except Exception:
-        raise UserError("Better double-check your sweet user config")
-
-    for key in dir(sweetconfig):
-        if key.startswith("__"):
-            continue
-
-        try:
-            value = mod[key]
-        except KeyError:
-            continue
-
-        setattr(sweetconfig, key, value)
-
-    return fname
+_APP_NAME = "Sweet"
 
 
 def init():
@@ -54,13 +19,8 @@ def init():
 
     storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
                                QtCore.QSettings.UserScope,
-                               "Sweet", "preferences")
+                               _APP_NAME, "preferences")
     print("Preference file: %s" % storage.fileName())
-
-    try:
-        _load_userconfig()
-    except IOError:
-        pass
 
     resources.load_themes()
     qss = resources.load_theme(name=storage.value("theme"))

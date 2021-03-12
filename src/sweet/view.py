@@ -1,14 +1,18 @@
 
 import os
+from rez.config import config as rezconfig
 from .vendor.Qt5 import QtCore, QtWidgets
-from .version import version
+from ._version import version
 from .common.view import Spoiler, SimpleDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
 from .suite.view import SuiteView
 from .preference import Preference
-from . import util, sweetconfig, resources as res
+from . import util, resources as res
+
+
+sweetconfig = rezconfig.plugins.application.sweet
 
 
 class Window(QtWidgets.QMainWindow):
