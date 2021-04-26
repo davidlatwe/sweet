@@ -202,7 +202,7 @@ class SweetSuite(Suite):
                 context = data["context"]
                 requests = [str(r) for r in context.requested_packages()]
                 kwargs = {
-                    "module": ("build_system", "sweety"),  # rez plugin
+                    "module": ("command", "sweet"),  # rez plugin
                     "func_name": "_FWD__invoke_suite_tool_alias_in_live",
                     "package_requests": requests,
                     "context_name": context_name,
