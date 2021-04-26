@@ -2,7 +2,7 @@
 import os
 from rez.config import config as rezconfig
 from .vendor.Qt5 import QtCore, QtWidgets
-from ._version import version
+from ._version import __version__
 from .common.view import Spoiler, SimpleDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
@@ -12,11 +12,11 @@ from .preference import Preference
 from . import util, resources as res
 
 
-sweetconfig = rezconfig.plugins.application.sweet
+sweetconfig = rezconfig.plugins.command.sweet
 
 
 class Window(QtWidgets.QMainWindow):
-    title = "Sweet %s" % version
+    title = "Sweet %s" % __version__
 
     def __init__(self, ctrl, parent=None):
         super(Window, self).__init__(parent)

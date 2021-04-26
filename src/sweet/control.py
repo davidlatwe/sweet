@@ -9,7 +9,7 @@ from .sphere.model import ToolModel
 from .suite.model import SavedSuiteModel, CapedSavedSuiteModel
 
 
-sweetconfig = rezconfig.plugins.application.sweet
+sweetconfig = rezconfig.plugins.command.sweet
 
 
 class State(dict):
