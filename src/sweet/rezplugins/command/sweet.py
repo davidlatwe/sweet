@@ -4,10 +4,31 @@ Rez suite composing GUI
 import os
 import sys
 import types
-from rez.command import Command
+import argparse
+try:
+    from rez.command import Command
+except ImportError:
+    Command = object
 
 
 command_behavior = {}
+
+
+def rez_cli():
+    from rez.cli._main import run
+    try:
+        return run("sweet")
+    except KeyError:
+        # for rez version that doesn't have Command type plugin
+        return standalone_cli()
+
+
+def standalone_cli():
+    # for running without rez's cli
+    parser = argparse.ArgumentParser("sweet")
+    setup_parser(parser)
+    opts = parser.parse_args()
+    return command(opts)
 
 
 def setup_parser(parser, completions=False):
