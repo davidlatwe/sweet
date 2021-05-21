@@ -49,6 +49,11 @@ class PackageModel(AbstractTreeModel):
             tools = item["tools"][:]
             initial = family_name[0].upper()
 
+            if item["timestamp"] is None:
+                # could be 'combined' package, or other that is not installed
+                # by rez build/release tool.
+                item["timestamp"] = 0
+
             item.update({
                 "_type": "version",
                 "_group": initial,
