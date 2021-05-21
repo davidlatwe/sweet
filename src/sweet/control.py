@@ -188,6 +188,7 @@ class Controller(QtCore.QObject):
             if not context.success:
                 # dirty context
                 print("Context resolving failed.")
+                context.print_info()
             else:
                 resolved.clear()
                 env.clear()
