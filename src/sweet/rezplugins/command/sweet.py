@@ -19,8 +19,9 @@ def rez_cli():
     try:
         return run("sweet")
     except KeyError:
+        pass
         # for rez version that doesn't have Command type plugin
-        return standalone_cli()
+    return standalone_cli()
 
 
 def standalone_cli():
