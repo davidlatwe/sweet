@@ -158,7 +158,7 @@ class SweetSuite(Suite):
         if verbose and self._is_live:
             print("saving live suite...")
 
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
 
         # write suite data
         data = self.to_dict()
