@@ -16,6 +16,8 @@ command_behavior = {}
 
 def rez_cli():
     from rez.cli._main import run
+    from rez.cli._entry_points import check_production_install
+    check_production_install()
     try:
         return run("sweet")
     except KeyError:
