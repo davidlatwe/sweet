@@ -322,7 +322,7 @@ class Controller(QtCore.QObject):
             suite.save(path)
             suite.load_path = os.path.realpath(path)
             self.update_suite_lists(root, name)
-            self.callback_on_suite_saved(path)
+            self.callback_on_suite_saved(suite, path)
 
         finally:
             # restore id naming
@@ -450,5 +450,5 @@ class Controller(QtCore.QObject):
             if os.path.isfile(filepath):
                 yield filepath
 
-    def callback_on_suite_saved(self, suite_dir):
-        sweetconfig.on_suite_saved_callback(suite_dir)
+    def callback_on_suite_saved(self, suite, suite_dir):
+        sweetconfig.on_suite_saved_callback(suite, suite_dir)

@@ -11,17 +11,19 @@ def suite_roots():
     ])
 
 
-def on_suite_saved_callback(suite_dir):
+def on_suite_saved_callback(suite, suite_dir):
     """A callback that runs after suite saved
 
     Args:
+        suite (sweet._rezapi.SweetSuite): A live suite object
         suite_dir (str): suite saved path
 
     Returns:
         None
 
     """
-    return None
+    print("Suite saved: %s\n" % suite_dir)
+    suite.print_tools()
 
 
 sweet = {
