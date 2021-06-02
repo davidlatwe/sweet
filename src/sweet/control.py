@@ -33,6 +33,22 @@ class State(dict):
 
         self._storage = storage
 
+    def _f(self, value):
+        # Account for poor serialisation format
+        true = ["2", "1", "true", True, 1, 2]
+        false = ["0", "false", False, 0]
+
+        if value in true:
+            value = True
+
+        if value in false:
+            value = False
+
+        if value and str(value).isnumeric():
+            value = float(value)
+
+        return value
+
     def store(self, key, value):
         """Write to persistent storage
 
@@ -57,20 +73,7 @@ class State(dict):
         if value is None:
             value = default
 
-        # Account for poor serialisation format
-        true = ["2", "1", "true", True, 1, 2]
-        false = ["0", "false", False, 0]
-
-        if value in true:
-            value = True
-
-        if value in false:
-            value = False
-
-        if value and str(value).isnumeric():
-            value = float(value)
-
-        return value
+        return self._f(value)
 
 
 class Controller(QtCore.QObject):
