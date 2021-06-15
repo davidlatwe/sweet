@@ -121,9 +121,6 @@ class Controller(QtCore.QObject):
     def models(self):
         return self._models
 
-    def default_root(self):
-        return self._state["suiteSaveRoots"][sweetconfig.default_root]
-
     def register_context_draft(self, id_):
         self._state["contextName"][id_] = ""
         self._state["contextRequests"][id_] = []
@@ -278,7 +275,7 @@ class Controller(QtCore.QObject):
         root = self._state["suiteSaveRoots"][name]
         self._state["rootKey"] = name
         self._state["suiteRoot"] = root
-        self.suite_changed.emit(root, None, None)
+        self.suite_changed.emit(name, None, None)
 
     def on_suite_commented(self, comment):
         self._state["suiteDescription"] = comment
@@ -286,8 +283,8 @@ class Controller(QtCore.QObject):
     def on_suite_saved(self):
         self.save_suite()
 
-    def on_suite_loaded(self, path, as_import):
-        self.load_suite(path, as_import)
+    def on_suite_loaded(self, root_key, path, as_import):
+        self.load_suite(root_key, path, as_import)
 
     def remove_context(self, id_):
         self.context_removed.emit(id_)
@@ -329,7 +326,7 @@ class Controller(QtCore.QObject):
             for id_, n in self._state["contextName"].items():
                 suite.rename_context(n, id_)
 
-    def load_suite(self, path, as_import):
+    def load_suite(self, root_key, path, as_import):
         suite = rez.SweetSuite.load(path)
 
         self.clear_suite()
@@ -357,20 +354,20 @@ class Controller(QtCore.QObject):
             tools[id_].load(hidden, aliases)
 
         if as_import:
-            root = ""
-            name = ""
+            root_key = sweetconfig.default_root
+            self.suite_changed.emit(root_key, "", suite.description)
         else:
             root, name = os.path.split(path)
+            self._state["suiteRoot"] = root
             self._state["suite"].load_path = os.path.realpath(path)
 
-        self._state["suiteRoot"] = root
-        self.suite_changed.emit(root, name, suite.description)
+            self.suite_changed.emit(root_key, name, suite.description)
 
     def clear_suite(self):
         for id_ in list(self._state["contextName"].keys()):
             self.remove_context(id_)
 
-        default_root = self.default_root()
+        default_root = sweetconfig.default_root
         self.suite_changed.emit(default_root, "", "")
         self._state["suite"] = rez.SweetSuite()
 

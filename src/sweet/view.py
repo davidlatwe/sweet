@@ -57,9 +57,9 @@ class Window(QtWidgets.QMainWindow):
         # setup..
         pages["package"].set_model(ctrl.models["package"])
         pages["suite"].add_suite_list("recent", ctrl.models["recent"])
-        for key in ctrl.state["suiteSaveRoots"].keys():
+        for key, root_path in ctrl.state["suiteSaveRoots"].items():
             is_default = key == sweetconfig.default_root
-            pages["suite"].add_suite_root(key, is_default)
+            pages["suite"].add_suite_root(key, root_path, is_default)
             pages["suite"].add_suite_list(key, ctrl.models["saved"][key])
 
         # signals..
@@ -122,7 +122,7 @@ class Window(QtWidgets.QMainWindow):
                 as_import = action == "Import"
 
             path = util.normpath(path)
-            self._ctrl.load_suite(path, as_import)
+            self._ctrl.load_suite(None, path, as_import)
 
     def on_context_drafted(self):
         self.add_context_draft(focus=True)

@@ -13,7 +13,7 @@ class SuiteView(QtWidgets.QWidget):
     newed = QtCore.Signal()
     saved = QtCore.Signal()
     opened = QtCore.Signal()
-    loaded = QtCore.Signal(str, bool)
+    loaded = QtCore.Signal(str, str, bool)  # root_key, path, as_import
 
     def __init__(self, parent=None):
         super(SuiteView, self).__init__(parent=parent)
@@ -105,18 +105,9 @@ class SuiteView(QtWidgets.QWidget):
         self._widgets = widgets
         self._panels = panels
 
-    def on_destination_changed(self, path):
-        self._widgets["dest"].setText(path)
-
     def on_description_changed(self):
         text = self._widgets["desc"].toPlainText()
         self.commented.emit(text)
-
-    def on_loaded(self, root_key, path, as_import):
-        self.loaded.emit(path, as_import)
-        for action in self._widgets["actions"].actions():
-            value = not as_import and (action.text() == root_key)
-            action.setChecked(value)
 
     def on_roots_clicked(self):
         menu = QtWidgets.QMenu(self)
@@ -129,28 +120,38 @@ class SuiteView(QtWidgets.QWidget):
 
     def on_suite_changed(self, root, name, description):
         if root is not None:
-            self._widgets["dest"].setText(root)
+            self.set_suite_root(root)
         if name is not None:
             self._widgets["name"].setText(name)
         if description is not None:
             self._widgets["desc"].setText(description)
 
     def add_suite_list(self, name, model):
-        title = name.capitalize()
-        view = SuiteLoadView(key=title)
+        view = SuiteLoadView(key=name)
         view.set_model(model)
-        view.loaded.connect(self.on_loaded)
-        self._widgets["suites"].addTab(view, title)
+        view.loaded.connect(self.loaded.emit)
+        self._widgets["suites"].addTab(view, name)
 
-    def add_suite_root(self, name, is_default):
-        title = name.capitalize()
-        action = QtWidgets.QAction(title)
+    def add_suite_root(self, name, path, is_default):
+        action = QtWidgets.QAction(name)
+        action.setData(path)
         action.setCheckable(True)
         action.setChecked(is_default)
 
         action.triggered.connect(lambda: self.rooted.emit(name))
 
         self._widgets["actions"].addAction(action)
+
+    def set_suite_root(self, root_key):
+        self._widgets["dest"].setText("")
+
+        for action in self._widgets["actions"].actions():
+            is_active_root = action.text() == root_key
+            if is_active_root:
+                root = action.data()
+
+                self._widgets["dest"].setText(root)
+            action.setChecked(is_active_root)
 
 
 class SuiteLoadView(QtWidgets.QWidget):
