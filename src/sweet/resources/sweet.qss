@@ -620,22 +620,11 @@ QTreeView::branch:hover {
 }
 
 #SphereAddContextButton {
-    max-width:20px;
-    max-height:20px;
-    min-width:20px;
-    min-height:20px;
-    border-radius: 16px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: %(secondary.dim)s;
-    background-color: %(secondary.bright)s;
-    image: url(%(res)s/plus.svg);
+    icon: url(%(res)s/plus.svg);
 }
 
 #SphereAddContextButton:hover {
-    border-color: %(on.bright.surface)s;
-    background-color: %(secondary.focus)s;
-    image: url(%(res)s/plus.svg);
+    icon: url(%(res)s/plus.svg);
 }
 
 #ContextOperationBar QPushButton {

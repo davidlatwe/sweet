@@ -5,12 +5,6 @@ from ..common.delegate import TableViewRowHover
 from .model import ToolModel
 
 
-class SphereAddContextButton(QtWidgets.QPushButton):
-    def __init__(self, parent=None):
-        super(SphereAddContextButton, self).__init__(parent=parent)
-        self.setObjectName("SphereAddContextButton")
-
-
 class SphereView(QtWidgets.QWidget):
     context_drafted = QtCore.Signal()
 
@@ -19,11 +13,13 @@ class SphereView(QtWidgets.QWidget):
         self.setObjectName("SphereView")
 
         widgets = {
-            "draft": SphereAddContextButton(),
+            "draft": QtWidgets.QPushButton(" Add Context"),
             "scroll": QtWidgets.QScrollArea(),
             "wrap": QtWidgets.QWidget(),
             "context": QtWidgets.QWidget(),
         }
+
+        widgets["draft"].setObjectName("SphereAddContextButton")
 
         widgets["scroll"].setWidget(widgets["wrap"])
         widgets["scroll"].setWidgetResizable(True)
