@@ -319,7 +319,9 @@ class Controller(QtCore.QObject):
         tools = self._models["contextTool"]
 
         for ctx_name in suite.sorted_context_names():
+            # TODO: Handling ResolvedContextError
             context = suite.context(ctx_name)
+
             requested = context.requested_packages()
             prefix = suite.read_context(ctx_name, "prefix", default="")
             suffix = suite.read_context(ctx_name, "suffix", default="")
