@@ -6,7 +6,7 @@ from . import _rezapi as rez, util
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel
-from .suite.model import SavedSuiteModel, CapedSavedSuiteModel
+from .suite.model import SavedSuiteModel
 
 
 sweetconfig = rezconfig.plugins.command.sweet
@@ -23,11 +23,9 @@ class State(dict):
             "contextName": dict(),
             "contextRequests": dict(),  # success requests history (not used)
             "suiteSaveRoots": sweetconfig.suite_roots(),
-            "recentSavedSuites": None,
             "rootKey": None,
 
             # Preferences, these will be updated on preference changed
-            "recentSuiteCount": int(storage.value("recentSuiteCount", 10)),
             "suiteOpenAs": storage.value("suiteOpenAs", "Ask"),
         })
 
@@ -90,12 +88,10 @@ class Controller(QtCore.QObject):
             "toolUpdate": QtCore.QTimer(self),
             "packageSearch": QtCore.QTimer(self),
             "savedSuites": QtCore.QTimer(self),
-            "maxRecent": QtCore.QTimer(self),
         }
 
         models = {
             "package": PackageModel(),
-            "recent": CapedSavedSuiteModel(max_=state["recentSuiteCount"]),
             # models per suite saving root
             "saved": {k: SavedSuiteModel() for k in state["suiteSaveRoots"]},
             # models per context
@@ -107,7 +103,6 @@ class Controller(QtCore.QObject):
         timers["packageSearch"].timeout.connect(self.on_package_searched)
         timers["savedSuites"].timeout.connect(self.on_saved_suite_listed)
         timers["toolUpdate"].timeout.connect(self.on_tool_updated)
-        timers["maxRecent"].timeout.connect(self.on_max_recent_changed)
 
         self._state = state
         self._timers = timers
@@ -149,24 +144,14 @@ class Controller(QtCore.QObject):
         timer.setSingleShot(True)
         timer.start(on_time)
 
-    def defer_change_max_recent(self, on_time=100):
-        timer = self._timers["maxRecent"]
-        timer.setSingleShot(True)
-        timer.start(on_time)
-
     def on_package_searched(self):
         self._models["package"].reset(self.iter_packages())
 
     def on_saved_suite_listed(self):
         # TODO: iter each in separate threads
-        self._models["recent"].add_files(self.iter_recent_suites())
         for key, model in self._models["saved"].items():
             root = self._state["suiteSaveRoots"][key]
             model.add_files(self.iter_suites_in_root(root))
-
-    def on_max_recent_changed(self):
-        value = self._state["recentSuiteCount"]
-        self._models["recent"].change_max_row(value)
 
     def on_context_requested(self, id_, requests):
         suite = self._state["suite"]
@@ -407,35 +392,10 @@ class Controller(QtCore.QObject):
         models = self._models
 
         newly_saved = util.normpath(os.path.join(root, name, "suite.yaml"))
-        valid_path = [util.normpath(p) for p in self.iter_recent_suites()]
-
-        if newly_saved in valid_path:
-            valid_path.remove(newly_saved)
-        valid_path.insert(0, newly_saved)
-
-        # store paths with no trimming just yet, for preference changing
-        state.store("recentSavedSuites", os.pathsep.join(valid_path))
-        # trim down in view
-        models["recent"].add_files(valid_path, clear=True)
 
         for key, _root in state["suiteSaveRoots"].items():
             if _root == root:
                 models["saved"][key].add_files([newly_saved], clear=False)
-                break
-
-    def iter_recent_suites(self, fetch_all=True):
-        state = self._state
-        recent = state.retrieve("recentSavedSuites", "").split(os.pathsep)
-        max_count = -1 if fetch_all else self._state["recentSuiteCount"]
-        count = 0
-
-        for filepath in recent:
-            if not filepath or not os.path.isfile(filepath):
-                continue
-            yield filepath
-
-            count += 1
-            if count == max_count:
                 break
 
     def iter_suites_in_root(self, root):

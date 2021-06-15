@@ -56,7 +56,6 @@ class Window(QtWidgets.QMainWindow):
 
         # setup..
         pages["package"].set_model(ctrl.models["package"])
-        pages["suite"].add_suite_list("recent", ctrl.models["recent"])
         for key, root_path in ctrl.state["suiteSaveRoots"].items():
             is_default = key == sweetconfig.default_root
             pages["suite"].add_suite_root(key, root_path, is_default)
@@ -194,10 +193,6 @@ class Window(QtWidgets.QMainWindow):
             self.setStyleSheet(qss)
             self.style().unpolish(self)
             self.style().polish(self)
-
-        elif name == "recentSuiteCount":
-            self._ctrl.state["recentSuiteCount"] = value
-            self._ctrl.defer_change_max_recent()
 
         elif name == "suiteOpenAs":
             self._ctrl.state["suiteOpenAs"] = value

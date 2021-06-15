@@ -30,11 +30,6 @@ class Preference(QtWidgets.QWidget):
 
             qargparse.Separator("Settings"),
 
-            qargparse.Integer("recentSuiteCount",
-                              min=1,
-                              default=10,
-                              initial=state.retrieve("recentSuiteCount")),
-
             qargparse.Enum("suiteOpenAs",
                            items=["Ask", "Loaded", "Import"],
                            default=0,
