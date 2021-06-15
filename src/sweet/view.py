@@ -85,8 +85,7 @@ class Window(QtWidgets.QMainWindow):
         self.setFocus()
 
         # set default root
-        default_root = ctrl.default_root()
-        self._pages["suite"].on_suite_changed(default_root, None, None)
+        ctrl.on_suite_rooted(sweetconfig.default_root)
         # adjust column
         self._pages["package"].init_column_width()
         # show suite page on launch
