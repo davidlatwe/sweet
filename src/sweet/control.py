@@ -164,8 +164,13 @@ class Controller(QtCore.QObject):
             print("Naming context first.")
             return
 
+        resolved.clear()
+        env.clear()
+        tool.clear()
+
         try:
             context = rez.ResolvedContext(requests)
+            env.load(context.get_environ())
         except Exception as e:
             print(e)
             # dirty context
@@ -175,9 +180,6 @@ class Controller(QtCore.QObject):
                 print("Context resolving failed.")
                 context.print_info()
             else:
-                resolved.clear()
-                env.clear()
-                tool.clear()
                 history.append(requests)
 
                 context_tools = context.get_tools(request_only=True)
@@ -185,7 +187,6 @@ class Controller(QtCore.QObject):
                     tool.add_items(tools)
 
                 resolved.add_items(context.resolved_packages)
-                env.load(context.get_environ())
 
                 # Use context id as name during suite editing to avoid name
                 # conflict when renaming context aggressively.
