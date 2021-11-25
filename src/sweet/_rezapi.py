@@ -8,7 +8,7 @@ from rez.resolved_context import ResolvedContext
 from rez import suite
 from rez.config import config
 from rez.vendor import yaml
-from rez.vendor.yaml.error import YAMLError
+from rez.vendor.yaml.error import YAMLError  # noqa
 
 Suite = suite.Suite
 SuiteError = suite.SuiteError
@@ -48,7 +48,7 @@ class SweetSuite(Suite):
 
         if self._is_live:
             context = ResolvedContext(self._requests[name])
-            context._set_parent_suite(self.load_path, name)
+            context._set_parent_suite(self.load_path, name)  # noqa
         else:
             context_path = self._context_path(name)
             context = ResolvedContext.load(context_path)
@@ -143,6 +143,7 @@ class SweetSuite(Suite):
             path (str): Path to save the suite to. If a suite is already saved
                 at `path`, then it will be overwritten. Otherwise, if `path`
                 exists, an error is raised.
+            verbose (bool): Show more messages.
         """
         path = os.path.realpath(path)
         if os.path.exists(path):
@@ -173,7 +174,7 @@ class SweetSuite(Suite):
 
             for context_name in self.context_names:
                 context = self.context(context_name)
-                context._set_parent_suite(path, context_name)
+                context._set_parent_suite(path, context_name)  # noqa
                 filepath = self._context_path(context_name, path)
                 if verbose:
                     print("writing %r..." % filepath)
@@ -230,7 +231,7 @@ def read_suite_description(filepath):
     """
     try:
         with open(filepath) as f:
-            data = yaml.load(f.read(), Loader=yaml.FullLoader)
+            data = yaml.load(f.read(), Loader=yaml.FullLoader)  # noqa
     except YAMLError:
         pass
     else:
