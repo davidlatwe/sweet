@@ -36,7 +36,8 @@ class SweetSuite(_Suite):
         super(SweetSuite, self).__init__()
         self.description = ""
         self._is_live = True
-        self._requests = None
+        self._saved_tools = None
+        self._saved_requests = None
 
     def context(self, name):
         """Get a context.
@@ -53,13 +54,28 @@ class SweetSuite(_Suite):
             return context
 
         assert self.load_path
+        context_path = self._context_path(name, self.load_path)
+        saved_context = None
+        if os.path.isfile(context_path):
+            saved_context = ResolvedContext.load(context_path)
 
         if self._is_live:
-            context = ResolvedContext(self._requests[name])
-            context._set_parent_suite(self.load_path, name)  # noqa
+            try:
+                # note: live resolved `context.load_path` is None
+                context = ResolvedContext(self._saved_requests[name])
+            except Exception as e:
+                if saved_context is None:
+                    raise e
+                # fallback to saved .rxt
+                context = saved_context
+
+            else:
+                context._set_parent_suite(self.load_path, name)  # noqa
+                if context != saved_context:
+                    self._save_context(name, context, self.load_path)
+
         else:
-            context_path = self._context_path(name)
-            context = ResolvedContext.load(context_path)
+            context = saved_context
 
         data["context"] = context
         data["loaded"] = True
@@ -74,6 +90,9 @@ class SweetSuite(_Suite):
                 exists, an error is raised.
             verbose (bool): Show more messages.
         """
+        if verbose and self._is_live:
+            print("saving live suite...")
+
         path = os.path.realpath(path)
         if os.path.exists(path):
             if self.load_path and self.load_path == path:
@@ -85,10 +104,8 @@ class SweetSuite(_Suite):
             else:
                 raise SuiteError("Cannot save, path exists: %r" % path)
 
-        if verbose and self._is_live:
-            print("saving live suite...")
-
-        os.makedirs(path, exist_ok=True)
+        else:
+            os.makedirs(path)
 
         # write suite data
         data = self.to_dict()
@@ -97,17 +114,12 @@ class SweetSuite(_Suite):
             f.write(dump_yaml(data))
 
         # write contexts
-        if not self._is_live:
-            contexts_path = os.path.join(path, "contexts")
-            os.makedirs(contexts_path)
-
-            for context_name in self.context_names:
-                context = self.context(context_name)
-                context._set_parent_suite(path, context_name)  # noqa
-                filepath = self._context_path(context_name, path)
-                if verbose:
-                    print("writing %r..." % filepath)
-                context.save(filepath)
+        for context_name in self.context_names:
+            context = self.context(context_name)
+            context._set_parent_suite(path, context_name)  # noqa
+            self._save_context(
+                context_name, context, path, verbose=verbose
+            )
 
         # create alias wrappers
         tools_path = os.path.join(path, "bin")
@@ -154,6 +166,10 @@ class SweetSuite(_Suite):
         data = super(SweetSuite, self).to_dict()
         data["description"] = self.description
         data["live_resolve"] = self._is_live
+        data["tools"] = {
+            tool_alias: d["context_name"]
+            for tool_alias, d in self.get_tools().items()
+        }
         data["requests"] = {
             cname: [str(r) for r in self.context(cname).requested_packages()]
             for cname in self.context_names
@@ -165,8 +181,26 @@ class SweetSuite(_Suite):
         s = super(SweetSuite, cls).from_dict(d)
         s.description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
-        s._requests = d.get("requests")
+        s._saved_tools = d.get("tools")
+        s._saved_requests = d.get("requests")
         return s
+
+    # New methods that are not in rez.suite.Suite
+    #
+
+    def _save_context(self, name, context, path, verbose=False):
+        filepath = self._context_path(name, path)
+        if verbose:
+            print("writing %r..." % filepath)
+
+        dir_path = os.path.dirname(filepath)
+        if not os.path.isdir(dir_path):
+            os.makedirs(dir_path)
+
+        context.save(filepath)
+
+    def saved_tools(self):
+        return self._saved_tools
 
     def is_live(self):
         return self._is_live
