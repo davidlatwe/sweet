@@ -167,11 +167,16 @@ class SweetSuite(_Suite):
         data["description"] = self.description
         data["live_resolve"] = self._is_live
         data["tools"] = {
-            tool_alias: d["context_name"]
-            for tool_alias, d in self.get_tools().items()
+            cname: [
+                tool_alias for tool_alias, d in self.get_tools().items()
+                if cname == d["context_name"]
+            ]
+            for cname in self.context_names
         }
         data["requests"] = {
-            cname: [str(r) for r in self.context(cname).requested_packages()]
+            cname: [
+                str(r) for r in self.context(cname).requested_packages()
+            ]
             for cname in self.context_names
         }
         return data
