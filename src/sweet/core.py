@@ -1,5 +1,7 @@
 
-from ._rezapi import SweetSuite, ResolvedContext
+from ._rezapi import SweetSuite
+from rez.resolved_context import ResolvedContext
+from rez.exceptions import RezError
 
 
 class SuiteOp(object):
@@ -85,7 +87,14 @@ class ContextOp(object):
 
     def resolve(self, requests):
         """"""
-        self._context = ResolvedContext(requests)
+        try:
+            context = ResolvedContext(requests)
+        except (RezError, Exception) as e:
+            context = ResolvedContext([])
+            # todo: emit error to error handler
+
+        self._context = context
+        # todo: emit context changed
 
     def set_prefix(self):
         """"""
