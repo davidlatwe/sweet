@@ -184,7 +184,7 @@ class SweetSuite(_Suite):
     @classmethod
     def from_dict(cls, d):
         s = super(SweetSuite, cls).from_dict(d)
-        s.description = d.get("description", "")
+        s._description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
         s._saved_tools = d.get("tools")
         s._saved_requests = d.get("requests")
