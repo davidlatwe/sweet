@@ -115,6 +115,11 @@ class SuiteOp(object):
             e = SuiteOpError("Context count mismatch, invalid suite.")
             _emit_err(self, e, fatal=True)
 
+        try:
+            self._suite.validate()
+        except SuiteError as e:
+            _emit_err(self, e, fatal=True)
+
     def set_name(self, text):
         """Set suite name"""
         self._name = text
