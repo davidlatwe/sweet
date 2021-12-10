@@ -100,12 +100,12 @@ class SweetSuite(_Suite):
                     print("saving over previous suite...")
                 for context_name in self.context_names:
                     self.context(context_name)  # load before dir deleted
+
                 forceful_rmtree(path)
             else:
                 raise SuiteError("Cannot save, path exists: %r" % path)
 
-        else:
-            os.makedirs(path)
+        os.makedirs(path)
 
         # write suite data
         data = self.to_dict()
