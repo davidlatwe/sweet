@@ -218,6 +218,7 @@ class SweetSuite(_Suite):
         self._description = text
 
     def sorted_context_names(self):
+        # deprecate this as a favor for SuiteOp.iter_contexts
         ctxs = self.contexts
         return sorted(ctxs.keys(), key=lambda x: ctxs[x]["priority"])
 
