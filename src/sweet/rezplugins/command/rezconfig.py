@@ -37,3 +37,8 @@ sweet = {
     "on_suite_saved_callback": on_suite_saved_callback,
 
 }
+
+# wip:
+#   If not empty, internal package version will be omitted
+#   in package versions' auto completion list.
+omit_internal_version = ""
