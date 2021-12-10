@@ -179,7 +179,7 @@ class SuiteOp(object):
 
     def update_context(self, ctx_id, requests=None, prefix=None, suffix=None):
         if requests is not None:
-            pass
+            self._suite.update_context(ctx_id, _resolved_ctx(requests))
         if prefix is not None:
             self._suite.set_context_prefix(ctx_id, prefix)
         if suffix is not None:
