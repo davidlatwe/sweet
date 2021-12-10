@@ -248,7 +248,7 @@ class SweetSuite(_Suite):
         self._flush_tools()
 
     def update_context(self, name, context):
-        """Add or update a context to the suite
+        """Update one context in the suite
 
         If `name` exist in suite, `context` will be replaced and tools
         be reset. This is to avoid removing and adding back context under
@@ -260,7 +260,6 @@ class SweetSuite(_Suite):
             context (ResolvedContext): Context to add/update.
 
         """
-        # so we don't need to worry about priority change if remove and re-add
         if not context.success:
             raise SuiteError("Context is not resolved: %r" % name)
 
@@ -272,7 +271,7 @@ class SweetSuite(_Suite):
             data["hidden_tools"] = set()
             self._flush_tools()
         else:
-            self.add_context(name, context)
+            raise SuiteError("Context not in suite: %r" % name)
 
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
