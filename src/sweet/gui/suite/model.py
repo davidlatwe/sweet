@@ -2,7 +2,8 @@
 import os
 from ..vendor.Qt5 import QtCore
 from ..common.model import AbstractTableModel
-from .. import _rezapi as rez, util
+from ... import _rezapi as rez
+from ... import util
 
 
 class SavedSuiteItem(dict):

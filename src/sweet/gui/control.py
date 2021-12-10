@@ -2,7 +2,8 @@
 import os
 from .vendor.Qt5 import QtCore
 from rez.config import config as rezconfig
-from . import _rezapi as rez, util
+from .. import _rezapi as rez
+from .. import util
 from .search.model import PackageModel
 from .solve.model import ResolvedPackageModel, EnvironmentModel
 from .sphere.model import ToolModel

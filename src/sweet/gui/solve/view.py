@@ -1,7 +1,7 @@
 
 import os
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
-from .. import util
+from ... import util
 from .model import ResolvedPackageModel
 from ..common.delegate import TableViewRowHover
 from ..common.model import CompleterProxyModel

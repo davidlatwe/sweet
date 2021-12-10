@@ -2,8 +2,8 @@
 import os
 import sys
 import logging
-from ..vendor.Qt5 import QtCore, QtWidgets
-from .. import control, view, resources
+from ..gui.vendor.Qt5 import QtCore, QtWidgets
+from ..gui import resources, control, view
 
 log = logging.getLogger("sweet")
 log.setLevel(logging.DEBUG)

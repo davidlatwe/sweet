@@ -1,8 +1,8 @@
 
 from ..vendor.Qt5 import QtCore, QtGui, QtWidgets
-from ..common.view import SlimTableView, QArgParserDialog
+from ..common.view import SlimTableView
 from .model import SavedSuiteModel
-from .. import util
+from ... import util
 
 
 class SuiteView(QtWidgets.QWidget):

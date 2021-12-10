@@ -2,15 +2,15 @@
 import os
 from rez.config import config as rezconfig
 from .vendor.Qt5 import QtCore, QtWidgets
-from ._version import __version__
+from .._version import __version__
 from .common.view import Spoiler, SimpleDialog
 from .search.view import PackageView
 from .sphere.view import SphereView, ContextView
 from .solve.view import SuiteContextTab, ContextResolveView
 from .suite.view import SuiteView
 from .preference import Preference
-from . import util, resources as res
-
+from . import resources as res
+from .. import util
 
 sweetconfig = rezconfig.plugins.command.sweet
 
