@@ -274,6 +274,11 @@ class SweetSuite(_Suite):
         else:
             raise SuiteError("Context not in suite: %r" % name)
 
+    def refresh_tools(self):
+        """Actively flush and update tools"""
+        self._flush_tools()
+        self._update_tools()
+
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
 

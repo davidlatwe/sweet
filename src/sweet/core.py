@@ -52,6 +52,10 @@ SuiteCtx = namedtuple(
     "SuiteCtx",
     ["name", "ctx_id", "context", "priority"]
 )
+SuiteTool = namedtuple(
+    "SuiteTool",
+    ["alias", "hidden", "shadowed", "ctx_name", "ctx_id", "variant", "exec"]
+)
 
 
 class SuiteOp(object):
@@ -82,7 +86,7 @@ class SuiteOp(object):
         self._ctx_names = ctx_names
 
         self.sanity_check()
-        self.update_tools()
+        self.refresh_tools()
 
     @classmethod
     def from_dict(cls, suite_dict):
@@ -185,14 +189,72 @@ class SuiteOp(object):
         if suffix is not None:
             self._suite.set_context_suffix(ctx_id, suffix)
 
-    def hide_tool(self):
-        pass
+    def lookup_tool(self, ctx_id, tool_alias):
+        """Query tool's real name in specific context by alias
 
-    def alias_tool(self):
-        pass
+        Args:
+            ctx_id (str): context Id
+            tool_alias (str): tool alias
 
-    def update_tools(self):
+        Returns:
+            str: tool name if found else None
+
+        """
         self._suite.update_tools()
+
+        def match(d):
+            return d["context_name"] == ctx_id and d["tool_alias"] == tool_alias
+
+        def find(entries):
+            return next(filter(match, entries), None)
+
+        in_shadowed = (find(x) for x in self._suite.tool_conflicts.values())
+        matched = find(self._suite.tools.values()) \
+            or find(self._suite.hidden_tools) \
+            or next(filter(None, in_shadowed), None)
+
+        return matched["tool_name"] if matched else None
+
+    def update_tool(self, ctx_id, tool_alias, new_alias=None, set_hidden=None):
+        tool_name = self.lookup_tool(ctx_id, tool_alias)
+        if tool_name is None:
+            e = SuiteOpError("Tool %r not in context %r" % (tool_alias, ctx_id))
+            _emit_err(self, e)
+
+        if new_alias is not None:
+            if new_alias:
+                self._suite.alias_tool(ctx_id, tool_name, new_alias)
+            else:
+                self._suite.unalias_tool(ctx_id, tool_name)
+
+        if set_hidden is not None:
+            if set_hidden:
+                self._suite.hide_tool(ctx_id, tool_name)
+            else:
+                self._suite.unhide_tool(ctx_id, tool_name)
+
+    def refresh_tools(self):
+        self._suite.refresh_tools()
+
+    def iter_tools(self):
+        self._suite.update_tools()
+
+        def read(d):
+            return dict(
+                alias=d["tool_alias"],
+                ctx_name=self.lookup_context(d["context_name"]),
+                ctx_id=d["context_name"],
+                variant=d["variant"],
+                exec=self._suite.get_tool_filepath(d["tool_alias"]),
+            )
+
+        for data in self._suite.tools.values():
+            yield SuiteTool(hidden=False, shadowed=False, **read(data))
+        for data in self._suite.hidden_tools:
+            yield SuiteTool(hidden=True, shadowed=False, **read(data))
+        for entries in self._suite.tool_conflicts.values():
+            for data in entries:
+                yield SuiteTool(hidden=False, shadowed=True, **read(data))
 
 
 class Storage(object):
