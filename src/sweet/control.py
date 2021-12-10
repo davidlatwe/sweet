@@ -300,7 +300,7 @@ class Controller(QtCore.QObject):
         for id_, n in self._state["contextName"].items():
             suite.rename_context(id_, n)
 
-        suite.add_description(comment)
+        suite.set_description(comment)
         try:
             suite.save(path)
             suite.load_path = os.path.realpath(path)

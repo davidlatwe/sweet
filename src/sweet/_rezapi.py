@@ -34,7 +34,7 @@ class SweetSuite(_Suite):
 
     def __init__(self):
         super(SweetSuite, self).__init__()
-        self.description = ""
+        self._description = ""
         self._is_live = True
         self._saved_tools = None
         self._saved_requests = None
@@ -164,7 +164,7 @@ class SweetSuite(_Suite):
 
     def to_dict(self):
         data = super(SweetSuite, self).to_dict()
-        data["description"] = self.description
+        data["description"] = self._description
         data["live_resolve"] = self._is_live
         data["tools"] = {
             cname: [
@@ -210,8 +210,12 @@ class SweetSuite(_Suite):
     def is_live(self):
         return self._is_live
 
-    def add_description(self, text):
-        self.description = text
+    @property
+    def description(self):
+        return self._description
+
+    def set_description(self, text):
+        self._description = text
 
     def sorted_context_names(self):
         ctxs = self.contexts
