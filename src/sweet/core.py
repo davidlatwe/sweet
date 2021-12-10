@@ -1,6 +1,7 @@
 """
 Main business logic, with event notification
 """
+import os
 import uuid
 from collections import namedtuple
 from blinker import signal
@@ -81,7 +82,6 @@ class SuiteOp(object):
         for ctx_id, name in ctx_names.items():
             suite.rename_context(name, ctx_id)
 
-        self._name = ""
         self._suite = suite
         self._ctx_names = ctx_names
 
@@ -124,13 +124,12 @@ class SuiteOp(object):
         except SuiteError as e:
             _emit_err(self, e, fatal=True)
 
-    def set_name(self, text):
-        """Set suite name"""
-        self._name = text
-
     def set_description(self, text):
         """Set suite description"""
         self._suite.set_description(text)
+
+    def set_load_path(self, path):
+        self._suite.load_path = path
 
     def add_context(self, name, requests=None):
         """Add one resolved context to suite"""
@@ -257,5 +256,54 @@ class SuiteOp(object):
                 yield SuiteTool(hidden=False, shadowed=True, **read(data))
 
 
+SavedSuite = namedtuple(
+    "SavedSuite",
+    ["name", "root", "bin", "filepath"]
+)
+
+
 class Storage(object):
     """Suite storage"""
+
+    def __init__(self, root):
+        self._root = root
+
+    @property
+    def root(self):
+        return self._root
+
+    def _suite_dir(self, name):
+        return os.path.join(self._root, name)
+
+    def _suite_bin(self, name):
+        return os.path.join(self._suite_dir(name), "bin")
+
+    def _suite_file(self, name):
+        return os.path.join(self._suite_dir(name), "suite.yaml")
+
+    def load(self, filepath):
+        return SweetSuite.load(filepath)
+
+    def save(self, suite_dict, name, callback=None):
+        suite_dir = self._suite_dir(name)
+        suite = SweetSuite.from_dict(suite_dict)
+        suite.save(suite_dir)
+
+        if callback is not None:
+            callback(suite, suite_dir)
+
+        return self._suite_file(name)
+
+    def iter_saved_suites(self):
+        if not os.path.isdir(self._root):
+            return
+
+        for name in os.listdir(self._root):
+            filepath = self._suite_file(name)
+            if os.path.isfile(filepath):
+                yield SavedSuite(
+                    name=name,
+                    root=self._root,
+                    bin=self._suite_bin(name),
+                    filepath=filepath,
+                )
