@@ -137,6 +137,11 @@ class SuiteOp(object):
 
     def add_context(self, name, requests=None):
         """Add one resolved context to suite"""
+        if name in self._ctx_names.values():
+            e = "Duplicated name %r, no context added." % name
+            _emit_err(self, SuiteOpError(e))
+            return
+
         context = _resolved_ctx(requests)
 
         ctx_id = _gen_ctx_id()
