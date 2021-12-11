@@ -258,19 +258,24 @@ class SuiteOp(object):
 
 SavedSuite = namedtuple(
     "SavedSuite",
-    ["name", "root", "bin", "filepath"]
+    ["name", "branch", "root", "bin", "filepath"]
 )
 
 
 class Storage(object):
     """Suite storage"""
 
-    def __init__(self, root):
+    def __init__(self, root, branch=None):
         self._root = root
+        self._branch = branch or os.path.basename(root)
 
     @property
     def root(self):
         return self._root
+
+    @property
+    def branch(self):
+        return self._branch
 
     def _suite_dir(self, name):
         return os.path.join(self._root, name)
@@ -303,6 +308,7 @@ class Storage(object):
             if os.path.isfile(filepath):
                 yield SavedSuite(
                     name=name,
+                    branch=self._branch,
                     root=self._root,
                     bin=self._suite_bin(name),
                     filepath=filepath,
