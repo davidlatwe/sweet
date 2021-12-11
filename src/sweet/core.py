@@ -254,11 +254,11 @@ class SuiteOp(object):
 
     def _ctx_data_to_tuple(self, d, as_resolved=False):
         n = d["name"]
-        c = self._suite.context(n).copy() if as_resolved else d.get("context")
+        c = self._suite.context(n) if as_resolved else d.get("context")
         return SuiteCtx(
             name=self.lookup_context(n),
             ctx_id=n,
-            context=c,
+            context=None if c is None else c.copy(),
             priority=d["priority"],
             prefix=d.get("prefix", ""),
             suffix=d.get("suffix", ""),
