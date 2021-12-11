@@ -217,12 +217,12 @@ class SweetSuite(_Suite):
     def set_description(self, text):
         self._description = text
 
-    def sorted_context_names(self):
+    def sorted_context_names(self):  # todo: deprecate this
         # deprecate this as a favor for SuiteOp.iter_contexts
         ctxs = self.contexts
         return sorted(ctxs.keys(), key=lambda x: ctxs[x]["priority"])
 
-    def read_context(self, name, entry, default=None):
+    def read_context(self, name, entry, default=None):  # todo: deprecate this
         data = self._context(name)
         return data.get(entry, default)
 
