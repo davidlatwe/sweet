@@ -193,32 +193,6 @@ class SuiteOp(object):
         if suffix is not None:
             self._suite.set_context_suffix(ctx_id, suffix)
 
-    def lookup_tool(self, ctx_id, tool_alias):
-        """Query tool's real name in specific context by alias
-
-        Args:
-            ctx_id (str): context Id
-            tool_alias (str): tool alias
-
-        Returns:
-            str: tool name if found else None
-
-        """
-        self._suite.update_tools()
-
-        def match(d):
-            return d["context_name"] == ctx_id and d["tool_alias"] == tool_alias
-
-        def find(entries):
-            return next(filter(match, entries), None)
-
-        in_shadowed = (find(x) for x in self._suite.tool_conflicts.values())
-        matched = find(self._suite.tools.values()) \
-            or find(self._suite.hidden_tools) \
-            or next(filter(None, in_shadowed), None)
-
-        return matched["tool_name"] if matched else None
-
     def update_tool(self, ctx_id, tool_name, new_alias=None, set_hidden=None):
         try:
             self._suite.validate_tool(ctx_id, tool_name)
