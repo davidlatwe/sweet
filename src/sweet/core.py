@@ -142,7 +142,7 @@ class SuiteOp(object):
             _emit_err(self, SuiteOpError(e))
             return
 
-        context = _resolved_ctx(requests)
+        context = _resolved_ctx(requests or [])
 
         ctx_id = _gen_ctx_id()
         self._ctx_names[ctx_id] = name
