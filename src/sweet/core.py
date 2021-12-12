@@ -25,6 +25,7 @@ sweetconfig = rezconfig.plugins.command.sweet
 __all__ = (
     "SuiteOp",
     "Storage",
+    "Constants",
 
     "SuiteCtx",
     "SuiteTool",
