@@ -36,11 +36,11 @@ __all__ = (
 
 SuiteCtx = namedtuple(
     "SuiteCtx",
-    ["name", "ctx_id", "context", "priority", "prefix", "suffix"]
+    ["name", "context", "priority", "prefix", "suffix"]
 )
 SuiteTool = namedtuple(
     "SuiteTool",
-    ["name", "alias", "invalid", "ctx_name", "ctx_id", "variant"]
+    ["name", "alias", "invalid", "ctx_name", "variant"]
 )
 SavedSuite = namedtuple(
     "SavedSuite",
@@ -53,10 +53,11 @@ OpenedSuite = namedtuple(
 
 
 class Constants(object):
-    # invalid tool (it) status code
-    it_hidden = 1
-    it_shadowed = 2
-    it_missing = -1
+    # suite tool (st) status code
+    st_valid = 0
+    st_hidden = 1
+    st_shadowed = 2
+    st_missing = -1
 
 
 class Session(object):
@@ -133,15 +134,7 @@ class SuiteOp(object):
         if not isinstance(suite, SweetSuite):
             suite = SweetSuite.from_dict(suite.to_dict())
 
-        ctx_names = {
-            _unique_id(): c["name"] for c in suite.contexts.keys()
-        }
-        # rename context name to ctx_id
-        for ctx_id, name in ctx_names.items():
-            suite.rename_context(name, ctx_id)
-
         self._suite = suite
-        self._ctx_names = ctx_names
 
         self.sanity_check()
         self.refresh_tools()
@@ -153,30 +146,10 @@ class SuiteOp(object):
 
     def to_dict(self):
         self.sanity_check()
-
-        # swap ctx_id to name
-        for ctx_id, name in self._ctx_names.items():
-            self._suite.rename_context(ctx_id, name)
-
         suite_dict = self._suite.to_dict()
-
-        # restore ctx_id
-        for ctx_id, name in self._ctx_names.items():
-            self._suite.rename_context(name, ctx_id)
-
         return suite_dict
 
     def sanity_check(self):
-        for ctx_id in self._ctx_names.keys():
-            if not self._suite.has_context(ctx_id):
-                e = SuiteOpError("Context Id mismatch, invalid suite.")
-                _emit_err(self, e, fatal=True)
-
-        all_names = self._ctx_names.values()
-        if len(all_names) != len(set(all_names)):
-            e = SuiteOpError("Context name duplicated, invalid suite.")
-            _emit_err(self, e, fatal=True)
-
         try:
             self._suite.validate()
         except SuiteError as e:
@@ -191,41 +164,34 @@ class SuiteOp(object):
 
     def add_context(self, name, requests=None):
         """Add one resolved context to suite"""
-        if name in self._ctx_names.values():
+        if self._suite.has_context(name):
             e = "Duplicated name %r, no context added." % name
             _emit_err(self, SuiteOpError(e))
             return
 
         context = _resolved_ctx(requests or [])
+        self._suite.add_context(name=name, context=context)
 
-        ctx_id = _unique_id()
-        self._ctx_names[ctx_id] = name
-        self._suite.add_context(name=ctx_id, context=context)
-
-        data = self._suite.contexts[ctx_id]
+        data = self._suite.contexts[name]
         return self._ctx_data_to_tuple(data)
 
-    def drop_context(self, ctx_id):
+    def drop_context(self, name):
         """Remove context from suite"""
-        self._ctx_names.pop(ctx_id, None)
         try:
-            self._suite.remove_context(ctx_id)
+            self._suite.remove_context(name)
         except SuiteError:
             pass  # no such context, should be okay to forgive
 
-    def rename_context(self, ctx_id, new_name):
-        if self._suite.has_context(ctx_id):
-            if new_name not in self._ctx_names.values():
-                self._ctx_names[ctx_id] = new_name
+    def rename_context(self, old_name, new_name):
+        if self._suite.has_context(old_name):
+            if not self._suite.has_context(new_name):
+                self._suite.rename_context(old_name, new_name)
             else:
                 e = "Duplicated name %r, no context renamed." % new_name
                 _emit_err(self, SuiteOpError(e))
         else:
-            e = "Context Id %r not exists, no context renamed." % ctx_id
+            e = "Context %r not exists, no context renamed." % old_name
             _emit_err(self, SuiteOpError(e))
-
-    def lookup_context(self, ctx_id):
-        return self._ctx_names.get(ctx_id)
 
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria."""
@@ -239,31 +205,31 @@ class SuiteOp(object):
         for d in ctx_data:
             yield self._ctx_data_to_tuple(d, as_resolved=as_resolved)
 
-    def update_context(self, ctx_id, requests=None, prefix=None, suffix=None):
+    def update_context(self, name, requests=None, prefix=None, suffix=None):
         if requests is not None:
-            self._suite.update_context(ctx_id, _resolved_ctx(requests))
+            self._suite.update_context(name, _resolved_ctx(requests))
         if prefix is not None:
-            self._suite.set_context_prefix(ctx_id, prefix)
+            self._suite.set_context_prefix(name, prefix)
         if suffix is not None:
-            self._suite.set_context_suffix(ctx_id, suffix)
+            self._suite.set_context_suffix(name, suffix)
 
-    def update_tool(self, ctx_id, tool_name, new_alias=None, set_hidden=None):
+    def update_tool(self, ctx_name, tool_name, new_alias=None, set_hidden=None):
         try:
-            self._suite.validate_tool(ctx_id, tool_name)
+            self._suite.validate_tool(ctx_name, tool_name)
         except SuiteError as e:
             _emit_err(self, e)
             return
 
         if new_alias is not None:
-            self._suite.unalias_tool(ctx_id, tool_name)
+            self._suite.unalias_tool(ctx_name, tool_name)
             if new_alias:  # must unalias before set new alias or SuiteError
-                self._suite.alias_tool(ctx_id, tool_name, new_alias)
+                self._suite.alias_tool(ctx_name, tool_name, new_alias)
 
         if set_hidden is not None:
             if set_hidden:
-                self._suite.hide_tool(ctx_id, tool_name)
+                self._suite.hide_tool(ctx_name, tool_name)
             else:
-                self._suite.unhide_tool(ctx_id, tool_name)
+                self._suite.unhide_tool(ctx_name, tool_name)
 
     def refresh_tools(self):
         self._suite.refresh_tools()
@@ -272,23 +238,23 @@ class SuiteOp(object):
         self._suite.update_tools()
         seen = set()
 
-        invalid = 0
+        invalid = Constants.st_valid
         for d in self._suite.tools.values():
             seen.add(d["tool_alias"])
             yield self._tool_data_to_tuple(d, invalid=invalid)
 
-        invalid = Constants.it_hidden
+        invalid = Constants.st_hidden
         for d in self._suite.hidden_tools:
             seen.add(d["tool_alias"])
             yield self._tool_data_to_tuple(d, invalid=invalid)
 
-        invalid = Constants.it_shadowed
+        invalid = Constants.st_shadowed
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
                 seen.add(d["tool_alias"])
                 yield self._tool_data_to_tuple(d, invalid=invalid)
 
-        invalid = Constants.it_missing
+        invalid = Constants.st_missing
         for ctx_name, cached_d in self._suite.saved_tools.items():
             for t_alias, t_name in cached_d.items():
                 if t_alias not in seen:
@@ -304,8 +270,7 @@ class SuiteOp(object):
         n = d["name"]
         c = self._suite.context(n) if as_resolved else d.get("context")
         return SuiteCtx(
-            name=self.lookup_context(n),
-            ctx_id=n,
+            name=n,
             context=None if c is None else c.copy(),
             priority=d["priority"],
             prefix=d.get("prefix", ""),
@@ -317,8 +282,7 @@ class SuiteOp(object):
             name=d["tool_name"],
             alias=d["tool_alias"],
             invalid=invalid,
-            ctx_name=self.lookup_context(d["context_name"]),
-            ctx_id=d["context_name"],
+            ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )
 

@@ -187,9 +187,16 @@ class SweetSuite(_Suite):
         s = super(SweetSuite, cls).from_dict(d)
         s._description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
-        s._saved_tools = d.get("tools") or dict()
-        s._saved_requests = d.get("requests") or dict()
+        s._saved_tools = d.get("tools")
+        s._saved_requests = d.get("requests")
         return s
+
+    def remove_context(self, name):
+        super(SweetSuite, self).remove_context(name)
+        if name in self.saved_requests:
+            del self._saved_requests[name]
+        if name in self.saved_tools:
+            del self._saved_tools[name]
 
     # New methods that are not in rez.suite.Suite
     #
@@ -210,11 +217,11 @@ class SweetSuite(_Suite):
 
     @property
     def saved_tools(self):
-        return self._saved_tools
+        return self._saved_tools or dict()
 
     @property
     def saved_requests(self):
-        return self._saved_requests
+        return self._saved_requests or dict()
 
     @property
     def description(self):
@@ -252,6 +259,12 @@ class SweetSuite(_Suite):
         data = self.contexts.pop(old_name)
         data["name"] = new_name
         self.contexts[new_name] = data
+
+        if old_name in self.saved_requests:
+            self._saved_requests[new_name] = self._saved_requests.pop(old_name)
+        if old_name in self.saved_tools:
+            self._saved_tools[new_name] = self._saved_tools.pop(old_name)
+
         self._flush_tools()
 
     def update_context(self, name, context):
