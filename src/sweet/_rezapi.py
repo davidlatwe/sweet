@@ -265,11 +265,24 @@ class SweetSuite(_Suite):
             raise SuiteError("Context is not resolved: %r" % name)
 
         if name in self.contexts:
-            # update with priority preserved
             data = self.contexts[name]
+            aliases = dict()
+            hidden = set()
+
+            # preserving context priority, prefix, suffix, and tools'
+            # aliases/hidden state
+            context_tools = context.get_tools(request_only=True)
+            for _, tool_names in context_tools.values():
+                for tool_name in tool_names:
+                    if tool_name in data["tool_aliases"]:
+                        aliases[tool_name] = data["tool_aliases"][tool_name]
+                    if tool_name in data["hidden_tools"]:
+                        hidden.add(tool_name)
+
             data["context"] = context.copy()
-            data["tool_aliases"] = {}
-            data["hidden_tools"] = set()
+            data["tool_aliases"] = aliases
+            data["hidden_tools"] = hidden
+
             self._flush_tools()
         else:
             raise SuiteError("Context not in suite: %r" % name)
@@ -281,6 +294,7 @@ class SweetSuite(_Suite):
 
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
+    validate_tool = Suite._validate_tool
 
 
 def read_suite_description(filepath):

@@ -59,7 +59,7 @@ SuiteCtx = namedtuple(
 )
 SuiteTool = namedtuple(
     "SuiteTool",
-    ["name", "aliased", "hidden", "shadowed", "ctx_name", "variant", "exec"]
+    ["name", "alias", "hidden", "shadowed", "ctx_name", "ctx_id", "variant"]
 )
 
 
@@ -177,9 +177,10 @@ class SuiteOp(object):
         """Find contexts in the suite based on search criteria."""
         return self._suite.find_contexts(in_request, in_resolve)
 
-    def iter_contexts(self, as_resolved=False):
+    def iter_contexts(self, as_resolved=False, ascending=False):
         ctx_data = sorted(
-            self._suite.contexts.values(), key=lambda x: x["priority"]
+            self._suite.contexts.values(), key=lambda x: x["priority"],
+            reverse=not ascending
         )
         for d in ctx_data:
             yield self._ctx_data_to_tuple(d, as_resolved=as_resolved)
@@ -218,17 +219,17 @@ class SuiteOp(object):
 
         return matched["tool_name"] if matched else None
 
-    def update_tool(self, ctx_id, tool_alias, new_alias=None, set_hidden=None):
-        tool_name = self.lookup_tool(ctx_id, tool_alias)
-        if tool_name is None:
-            e = SuiteOpError("Tool %r not in context %r" % (tool_alias, ctx_id))
+    def update_tool(self, ctx_id, tool_name, new_alias=None, set_hidden=None):
+        try:
+            self._suite.validate_tool(ctx_id, tool_name)
+        except SuiteError as e:
             _emit_err(self, e)
+            return
 
         if new_alias is not None:
-            if new_alias:
+            self._suite.unalias_tool(ctx_id, tool_name)
+            if new_alias:  # must unalias before set new alias or SuiteError
                 self._suite.alias_tool(ctx_id, tool_name, new_alias)
-            else:
-                self._suite.unalias_tool(ctx_id, tool_name)
 
         if set_hidden is not None:
             if set_hidden:
@@ -266,13 +267,13 @@ class SuiteOp(object):
 
     def _tool_data_to_tuple(self, d, hidden=False, shadowed=False):
         return SuiteTool(
-            name=d["tool_alias"],
-            aliased=d["tool_name"] != d["tool_alias"],
+            name=d["tool_name"],
+            alias=d["tool_alias"],
             hidden=hidden,
             shadowed=shadowed,
             ctx_name=self.lookup_context(d["context_name"]),
-            variant=d["variant"],
-            exec=self._suite.get_tool_filepath(d["tool_alias"]),
+            ctx_id=d["context_name"],
+            variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )
 
 

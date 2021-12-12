@@ -1,5 +1,6 @@
 
 from .util import TestBase, MemPkgRepo
+from rez.packages import Variant
 from sweet.core import SuiteOp
 
 
@@ -58,14 +59,76 @@ class TestCore(TestBase):
         self.assertEqual(bar.name, food_1.ctx_name)
         self.assertFalse(food_1.shadowed)
         self.assertEqual("food", food_2.name)
+        self.assertEqual("food", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
         self.assertTrue(food_2.shadowed)
-        self.assertFalse(food_2.aliased)
 
         sop.update_tool(foo.ctx_id, "food", new_alias="fruit")
 
         beer, food_1, food_2 = list(sop.iter_tools())
-        self.assertEqual("fruit", food_2.name)
-        self.assertTrue(food_2.aliased)
+        self.assertEqual("food", food_2.name)
+        self.assertEqual("fruit", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
         self.assertFalse(food_2.shadowed)
+
+    def test_update_tool_2(self):
+        """Test updating context with tool alias/hidden preserved"""
+        self.repo.add("foo", tools=["food", "fuzz"])
+        self.repo.add("bar", tools=["beer"])
+
+        sop = SuiteOp()
+        foo = sop.add_context("foo", requests=["foo"])
+
+        food, fuzz = list(sop.iter_tools())
+        self.assertEqual("food", food.name)
+
+        sop.update_tool(foo.ctx_id, food.name, new_alias="fruit")
+        sop.update_tool(foo.ctx_id, fuzz.name, set_hidden=True)
+
+        food, fuzz = list(sop.iter_tools())
+        self.assertEqual("fruit", food.alias)
+        self.assertTrue(fuzz.hidden)
+
+        sop.update_context(foo.ctx_id, requests=["foo", "bar"])
+
+        food, beer, fuzz = list(sop.iter_tools())
+        self.assertEqual("fruit", food.alias)
+        self.assertEqual("beer", beer.alias)
+        self.assertTrue(fuzz.hidden)
+
+    def test_iterating_contexts(self):
+        """Test contexts iterated by priority"""
+        self.repo.add("bee", tools=["honey"])
+
+        sop = SuiteOp()
+        sop.add_context("a", requests=["bee"])
+        sop.add_context("b", requests=["bee"])
+        sop.add_context("c", requests=["bee"])
+
+        c, b, a = list(sop.iter_contexts())
+        self.assertEqual("a", a.name)
+        self.assertEqual("b", b.name)
+        self.assertEqual("c", c.name)
+
+        a, b, c = list(sop.iter_contexts(ascending=True))
+        self.assertEqual("a", a.name)
+        self.assertEqual("b", b.name)
+        self.assertEqual("c", c.name)
+
+        honey = next(t for t in sop.iter_tools() if not t.shadowed)
+        self.assertEqual(c.ctx_id, honey.ctx_id)
+
+    def test_tool_by_multi_packages(self):
+        """Test tool that provided by more than one package"""
+        self.repo.add("foo", tools=["fruit"])
+        self.repo.add("bee", tools=["honey"])
+        self.repo.add("bez", tools=["honey"])
+
+        sop = SuiteOp()
+        sop.add_context("B", requests=["bee", "bez"])
+        sop.add_context("F", requests=["foo"])
+
+        fruit, honey = list(sop.iter_tools())
+        self.assertTrue(type(fruit.variant) is Variant)
+        self.assertTrue(type(honey.variant) is set)
+        self.assertTrue(type(honey.variant.pop()) is Variant)
