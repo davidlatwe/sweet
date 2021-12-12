@@ -7,8 +7,19 @@ from collections import namedtuple
 from blinker import signal
 from ._rezapi import SweetSuite
 from rez.suite import Suite
+from rez.config import config as rezconfig
 from rez.resolved_context import ResolvedContext
 from rez.exceptions import RezError, SuiteError
+
+
+sweetconfig = rezconfig.plugins.command.sweet
+
+
+# TODO:
+#     * live/bake per context
+#     * use signal to set suite dirty ?
+#     * do we need SuiteOp.from_dict() ?
+#     * do we need foolproof SweetSuite.from_dict() ?
 
 
 __all__ = (
@@ -21,6 +32,52 @@ __all__ = (
 
     "SuiteOpError",
 )
+
+
+SuiteCtx = namedtuple(
+    "SuiteCtx",
+    ["name", "ctx_id", "context", "priority", "prefix", "suffix"]
+)
+SuiteTool = namedtuple(
+    "SuiteTool",
+    ["name", "alias", "hidden", "shadowed", "ctx_name", "ctx_id", "variant"]
+)
+SavedSuite = namedtuple(
+    "SavedSuite",
+    ["name", "branch", "root", "bin", "filepath"]
+)
+OpenedSuite = namedtuple(
+    "OpenedSuite",
+    []
+)
+
+
+class Session(object):
+
+    def __init__(self):
+        self._storages = [
+            (branch, Storage(root, branch))
+            for branch, root in sweetconfig.suite_roots().items()
+        ]
+        self._suites = dict()
+
+    def iter_saved_suites(self, branch=None):
+        # type: (str) -> [SavedSuite]
+        for b, storage in self._storages:
+            if branch and b != branch:
+                continue
+            for saved_suite in storage.iter_saved_suites():
+                yield saved_suite
+
+    def load(self, saved_suite):
+        pass
+
+    def save(self, name):
+        pass  # return SavedSuite
+
+    def new(self):
+        self._suites["*"] = SuiteOp()
+        # connect signals
 
 
 class SuiteOpError(SuiteError):
@@ -51,16 +108,6 @@ def _resolved_ctx(requests):
 
 def _unique_id():
     return uuid.uuid4().hex
-
-
-SuiteCtx = namedtuple(
-    "SuiteCtx",
-    ["name", "ctx_id", "context", "priority", "prefix", "suffix"]
-)
-SuiteTool = namedtuple(
-    "SuiteTool",
-    ["name", "alias", "hidden", "shadowed", "ctx_name", "ctx_id", "variant"]
-)
 
 
 class SuiteOp(object):
@@ -249,12 +296,6 @@ class SuiteOp(object):
             ctx_id=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )
-
-
-SavedSuite = namedtuple(
-    "SavedSuite",
-    ["name", "branch", "root", "bin", "filepath"]
-)
 
 
 class Storage(object):
