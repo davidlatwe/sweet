@@ -40,7 +40,7 @@ SuiteCtx = namedtuple(
 )
 SuiteTool = namedtuple(
     "SuiteTool",
-    ["name", "alias", "hidden", "shadowed", "ctx_name", "ctx_id", "variant"]
+    ["name", "alias", "invalid", "ctx_name", "ctx_id", "variant"]
 )
 SavedSuite = namedtuple(
     "SavedSuite",
@@ -50,6 +50,13 @@ OpenedSuite = namedtuple(
     "OpenedSuite",
     []
 )
+
+
+class Constants(object):
+    # invalid tool (it) status code
+    it_hidden = 1
+    it_shadowed = 2
+    it_missing = -1
 
 
 class Session(object):
@@ -263,16 +270,35 @@ class SuiteOp(object):
 
     def iter_tools(self):
         self._suite.update_tools()
+        seen = set()
 
+        invalid = 0
         for d in self._suite.tools.values():
-            yield self._tool_data_to_tuple(d)
+            seen.add(d["tool_alias"])
+            yield self._tool_data_to_tuple(d, invalid=invalid)
 
+        invalid = Constants.it_hidden
         for d in self._suite.hidden_tools:
-            yield self._tool_data_to_tuple(d, hidden=True)
+            seen.add(d["tool_alias"])
+            yield self._tool_data_to_tuple(d, invalid=invalid)
 
+        invalid = Constants.it_shadowed
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
-                yield self._tool_data_to_tuple(d, shadowed=True)
+                seen.add(d["tool_alias"])
+                yield self._tool_data_to_tuple(d, invalid=invalid)
+
+        invalid = Constants.it_missing
+        for ctx_name, cached_d in self._suite.saved_tools.items():
+            for t_alias, t_name in cached_d.items():
+                if t_alias not in seen:
+                    d = {
+                        "tool_name": t_name,
+                        "tool_alias": t_alias,
+                        "context_name": ctx_name,
+                        "variant": None,
+                    }
+                    yield self._tool_data_to_tuple(d, invalid=invalid)
 
     def _ctx_data_to_tuple(self, d, as_resolved=False):
         n = d["name"]
@@ -286,12 +312,11 @@ class SuiteOp(object):
             suffix=d.get("suffix", ""),
         )
 
-    def _tool_data_to_tuple(self, d, hidden=False, shadowed=False):
+    def _tool_data_to_tuple(self, d, invalid=0):
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
-            hidden=hidden,
-            shadowed=shadowed,
+            invalid=invalid,
             ctx_name=self.lookup_context(d["context_name"]),
             ctx_id=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages

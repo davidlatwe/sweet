@@ -167,10 +167,11 @@ class SweetSuite(_Suite):
         data["description"] = self._description
         data["live_resolve"] = self._is_live
         data["tools"] = {
-            cname: [
-                tool_alias for tool_alias, d in self.get_tools().items()
+            cname: {
+                tool_alias: d["tool_name"]
+                for tool_alias, d in self.get_tools().items()
                 if cname == d["context_name"]
-            ]
+            }
             for cname in self.context_names
         }
         data["requests"] = {
@@ -186,8 +187,8 @@ class SweetSuite(_Suite):
         s = super(SweetSuite, cls).from_dict(d)
         s._description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
-        s._saved_tools = d.get("tools")
-        s._saved_requests = d.get("requests")
+        s._saved_tools = d.get("tools") or dict()
+        s._saved_requests = d.get("requests") or dict()
         return s
 
     # New methods that are not in rez.suite.Suite
@@ -204,11 +205,16 @@ class SweetSuite(_Suite):
 
         context.save(filepath)
 
+    def is_live(self):
+        return self._is_live
+
+    @property
     def saved_tools(self):
         return self._saved_tools
 
-    def is_live(self):
-        return self._is_live
+    @property
+    def saved_requests(self):
+        return self._saved_requests
 
     @property
     def description(self):
