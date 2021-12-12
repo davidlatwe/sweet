@@ -49,7 +49,7 @@ def _resolved_ctx(requests):
     return context
 
 
-def _gen_ctx_id():
+def _unique_id():
     return uuid.uuid4().hex
 
 
@@ -80,7 +80,7 @@ class SuiteOp(object):
             suite = SweetSuite.from_dict(suite.to_dict())
 
         ctx_names = {
-            _gen_ctx_id(): c["name"] for c in suite.contexts.keys()
+            _unique_id(): c["name"] for c in suite.contexts.keys()
         }
         # rename context name to ctx_id
         for ctx_id, name in ctx_names.items():
@@ -144,7 +144,7 @@ class SuiteOp(object):
 
         context = _resolved_ctx(requests or [])
 
-        ctx_id = _gen_ctx_id()
+        ctx_id = _unique_id()
         self._ctx_names[ctx_id] = name
         self._suite.add_context(name=ctx_id, context=context)
 
