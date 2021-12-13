@@ -132,9 +132,6 @@ class SuiteOp(object):
 
         self._suite = suite
 
-        self.sanity_check()
-        self.refresh_tools()
-
     @classmethod
     def from_dict(cls, suite_dict):  # do we need this ?
         suite = SweetSuite.from_dict(suite_dict)
