@@ -104,18 +104,6 @@ def _warn(message, category=None):
     warnings.warn(message, category=category, stacklevel=2)
 
 
-def _resolved_ctx(requests):
-    """"""
-    try:
-        context = ResolvedContext(requests)
-    except (RezError, Exception) as e:
-        context = ResolvedContext([])
-        _warn(str(e), category=ContextBrokenWarning)
-
-    # todo: emit context resolved
-    return context
-
-
 class SuiteOp(object):
     """Suite operator"""
 
@@ -161,7 +149,7 @@ class SuiteOp(object):
                   category=ContextNameWarning)
             return
 
-        context = _resolved_ctx(requests or [])
+        context = self._resolved_ctx(requests or [])
         self._suite.add_context(name=name, context=context)
 
         data = self._suite.contexts[name]
@@ -199,7 +187,7 @@ class SuiteOp(object):
 
     def update_context(self, name, requests=None, prefix=None, suffix=None):
         if requests is not None:
-            self._suite.update_context(name, _resolved_ctx(requests))
+            self._suite.update_context(name, self._resolved_ctx(requests))
         if prefix is not None:
             self._suite.set_context_prefix(name, prefix)
         if suffix is not None:
@@ -277,6 +265,17 @@ class SuiteOp(object):
             ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )
+
+    def _resolved_ctx(self, requests):
+        """"""
+        try:
+            context = ResolvedContext(requests)
+        except (RezError, Exception) as e:
+            context = ResolvedContext([])
+            _warn(str(e), category=ContextBrokenWarning)
+
+        # todo: emit context resolved
+        return context
 
 
 class Storage(object):
