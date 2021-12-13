@@ -1,24 +1,24 @@
 
 from .util import TestBase, MemPkgRepo
 from rez.packages import Variant
-from sweet.core import SuiteOp, Constants
+from sweet.core import Constants, SuiteOp, Storage
 
 
-class TestCore(TestBase):
+class TestSuiteOp(TestBase):
 
     def __init__(self, *args, **kwargs):
-        super(TestCore, self).__init__(*args, **kwargs)
+        super(TestSuiteOp, self).__init__(*args, **kwargs)
         self.repo = MemPkgRepo("memory@any")
 
     def setUp(self):
         self.settings = {
             "packages_path": [self.repo.path],
         }
-        super(TestCore, self).setUp()
+        super(TestSuiteOp, self).setUp()
 
     def tearDown(self):
         self.repo.flush()
-        super(TestCore, self).tearDown()
+        super(TestSuiteOp, self).tearDown()
 
     def test_empty_suite_dict(self):
         sop = SuiteOp()
@@ -132,3 +132,38 @@ class TestCore(TestBase):
         self.assertTrue(type(fruit.variant) is Variant)
         self.assertTrue(type(honey.variant) is set)
         self.assertTrue(type(honey.variant.pop()) is Variant)
+
+
+class TestStorage(TestBase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestStorage, self).__init__(*args, **kwargs)
+        self.repo = MemPkgRepo("memory@any")
+
+    def setUp(self):
+        self.settings = {
+            "packages_path": [self.repo.path],
+        }
+        super(TestStorage, self).setUp()
+
+    def tearDown(self):
+        self.repo.flush()
+        super(TestStorage, self).tearDown()
+
+    def test_suite_storage(self):
+        tempdir = self.make_tempdir()
+        storage = Storage(roots={"test": tempdir})
+
+        self.repo.add("foo", tools=["fruit"])
+        sop = SuiteOp()
+        sop.add_context("FOO", requests=["foo"])
+        d_save = sop.to_dict()
+
+        path = storage.suite_path("test", "my-foo")
+        storage.save(d_save, path)
+        d_load = storage.load(path)
+
+        sop = SuiteOp.from_dict(d_load)
+        sop.refresh_tools()  # test fail without refresh, not good..
+
+        self.assertDictEqual(d_save, d_load)

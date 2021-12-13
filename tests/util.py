@@ -1,5 +1,9 @@
 
+import os
+import time
+import shutil
 import unittest
+import tempfile
 from rez.config import config, _create_locked_config
 from rez.package_repository import package_repository_manager as prm
 from rezplugins.package_repository.memory import MemoryPackageRepository
@@ -9,6 +13,7 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._tempdir = None
         cls.settings = dict()
 
     def setUp(self):
@@ -16,6 +21,7 @@ class TestBase(unittest.TestCase):
 
     def tearDown(self):
         self.teardown_config()
+        self.teardown_tempdir()
 
     def setup_config(self):
         self._config = _create_locked_config(dict(self.settings))
@@ -24,6 +30,24 @@ class TestBase(unittest.TestCase):
     def teardown_config(self):
         config._swap(self._config)
         self._config = None
+
+    def teardown_tempdir(self):
+        if not self._tempdir:
+            return
+        # cleanup tempdir
+        retries = 5
+        if os.path.exists(self._tempdir):
+            for i in range(retries):
+                try:
+                    shutil.rmtree(self._tempdir)
+                    break
+                except Exception:
+                    if i < (retries - 1):
+                        time.sleep(0.2)
+
+    def make_tempdir(self):
+        self._tempdir = tempfile.mkdtemp(prefix="sweet_test_")
+        return self._tempdir
 
 
 class MemPkgRepo(object):
