@@ -3,13 +3,22 @@ Main business logic, with event notification
 """
 import os
 import sys
+import warnings
 from collections import namedtuple
 from blinker import signal
-from ._rezapi import SweetSuite
 from rez.suite import Suite
 from rez.config import config as rezconfig
 from rez.resolved_context import ResolvedContext
-from rez.exceptions import RezError, SuiteError
+from ._rezapi import SweetSuite
+from .exceptions import (
+    RezError,
+    SuiteError,
+    SuiteOpError,
+    SuiteIOError,
+    SuiteOpWarning,
+    ContextNameWarning,
+    ContextBrokenWarning,
+)
 
 if sys.version_info.major == 3:
     from rez.vendor.yaml import lib3 as yaml
@@ -35,8 +44,6 @@ __all__ = (
     "SuiteCtx",
     "SuiteTool",
     "SavedSuite",
-
-    "SuiteOpError",
 )
 
 
@@ -82,10 +89,6 @@ class Session(object):
         # connect signals
 
 
-class SuiteOpError(SuiteError):
-    """Suite operation error"""
-
-
 def _emit_err(sender, err, fatal=False):
     sig_err = signal("sweet:error")
     if bool(sig_err.receivers):
@@ -96,13 +99,18 @@ def _emit_err(sender, err, fatal=False):
         raise err
 
 
+def _warn(message, category=None):
+    category = category or SuiteOpWarning
+    warnings.warn(message, category=category, stacklevel=2)
+
+
 def _resolved_ctx(requests):
     """"""
     try:
         context = ResolvedContext(requests)
     except (RezError, Exception) as e:
         context = ResolvedContext([])
-        _emit_err("ResolvedContext", e)
+        _warn(str(e), category=ContextBrokenWarning)
 
     # todo: emit context resolved
     return context
@@ -115,10 +123,7 @@ class SuiteOp(object):
         suite = suite or SweetSuite()
 
         if not isinstance(suite, Suite):
-            t = type(suite)
-            e = SuiteOpError("Expecting 'Suite' or 'SweetSuite', got %r." % t)
-            _emit_err(self, e)
-
+            _warn("Expecting 'Suite' or 'SweetSuite', got %r." % type(suite))
             suite = SweetSuite()
 
         if not isinstance(suite, SweetSuite):
@@ -140,7 +145,7 @@ class SuiteOp(object):
         try:
             self._suite.validate()
         except SuiteError as e:
-            _emit_err(self, e, fatal=True)
+            raise SuiteOpError(e)
 
     def set_description(self, text):
         """Set suite description"""
@@ -152,8 +157,8 @@ class SuiteOp(object):
     def add_context(self, name, requests=None):
         """Add one resolved context to suite"""
         if self._suite.has_context(name):
-            e = "Duplicated name %r, no context added." % name
-            _emit_err(self, SuiteOpError(e))
+            _warn("Duplicated name %r, no context added." % name,
+                  category=ContextNameWarning)
             return
 
         context = _resolved_ctx(requests or [])
@@ -174,11 +179,11 @@ class SuiteOp(object):
             if not self._suite.has_context(new_name):
                 self._suite.rename_context(old_name, new_name)
             else:
-                e = "Duplicated name %r, no context renamed." % new_name
-                _emit_err(self, SuiteOpError(e))
+                _warn("Duplicated name %r, no context renamed." % new_name,
+                      category=ContextNameWarning)
         else:
-            e = "Context %r not exists, no context renamed." % old_name
-            _emit_err(self, SuiteOpError(e))
+            _warn("Context %r not exists, no context renamed." % old_name,
+                  category=SuiteOpWarning)
 
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria."""
@@ -204,7 +209,7 @@ class SuiteOp(object):
         try:
             self._suite.validate_tool(ctx_name, tool_name)
         except SuiteError as e:
-            _emit_err(self, e)
+            _warn(str(e), category=SuiteOpWarning)
             return
 
         if new_alias is not None:
@@ -288,7 +293,7 @@ class Storage(object):
         try:
             root = self._roots[branch]
         except KeyError:
-            raise Exception("Unknown storage branch: %r" % branch)
+            raise SuiteIOError("Unknown storage branch: %r" % branch)
 
         return os.path.join(root, name)
 
@@ -297,13 +302,13 @@ class Storage(object):
 
         filepath = os.path.join(path, "suite.yaml")
         if not os.path.exists(filepath):
-            raise SuiteError("Not a suite: %r" % path)
+            raise SuiteIOError("Not a suite: %r" % path)
 
         try:
             with open(filepath, "rb") as f:
                 suite_dict = yaml.load(f, Loader=yaml.FullLoader)
         except yaml.YAMLError as e:
-            raise SuiteError("Failed loading suite: %s" % str(e))
+            raise SuiteIOError("Failed loading suite: %s" % str(e))
         else:
             return suite_dict
 
