@@ -2,7 +2,6 @@
 Main business logic, with event notification
 """
 import os
-import uuid
 from collections import namedtuple
 from blinker import signal
 from ._rezapi import SweetSuite
@@ -113,10 +112,6 @@ def _resolved_ctx(requests):
 
     # todo: emit context resolved
     return context
-
-
-def _unique_id():
-    return uuid.uuid4().hex
 
 
 class SuiteOp(object):
