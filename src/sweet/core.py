@@ -2,11 +2,11 @@
 Main business logic, with event notification
 """
 import os
-import sys
 import warnings
 from collections import namedtuple
 from blinker import signal
 from rez.suite import Suite
+from rez.vendor import yaml
 from rez.config import config as rezconfig
 from rez.resolved_context import ResolvedContext
 from ._rezapi import SweetSuite
@@ -19,11 +19,6 @@ from .exceptions import (
     ContextNameWarning,
     ContextBrokenWarning,
 )
-
-if sys.version_info.major == 3:
-    from rez.vendor.yaml import lib3 as yaml
-else:
-    from rez.vendor.yaml import lib as yaml
 
 
 sweetconfig = rezconfig.plugins.command.sweet
@@ -305,8 +300,8 @@ class Storage(object):
 
         try:
             with open(filepath, "rb") as f:
-                suite_dict = yaml.load(f, Loader=yaml.FullLoader)
-        except yaml.YAMLError as e:
+                suite_dict = yaml.load(f, Loader=yaml.FullLoader)  # noqa
+        except yaml.YAMLError as e:  # noqa
             raise SuiteIOError("Failed loading suite: %s" % str(e))
         else:
             return suite_dict
