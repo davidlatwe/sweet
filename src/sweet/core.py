@@ -2,6 +2,7 @@
 Main business logic, with event notification
 """
 import os
+import sys
 from collections import namedtuple
 from blinker import signal
 from ._rezapi import SweetSuite
@@ -9,6 +10,11 @@ from rez.suite import Suite
 from rez.config import config as rezconfig
 from rez.resolved_context import ResolvedContext
 from rez.exceptions import RezError, SuiteError
+
+if sys.version_info.major == 3:
+    from rez.vendor.yaml import lib3 as yaml
+else:
+    from rez.vendor.yaml import lib as yaml
 
 
 sweetconfig = rezconfig.plugins.command.sweet
@@ -44,7 +50,7 @@ SuiteTool = namedtuple(
 )
 SavedSuite = namedtuple(
     "SavedSuite",
-    ["name", "branch", "root", "bin", "filepath"]
+    ["name", "branch", "path"]
 )
 OpenedSuite = namedtuple(
     "OpenedSuite",
@@ -63,19 +69,7 @@ class Constants(object):
 class Session(object):
 
     def __init__(self):
-        self._storages = [
-            (branch, Storage(root, branch))
-            for branch, root in sweetconfig.suite_roots().items()
-        ]
         self._suites = dict()
-
-    def iter_saved_suites(self, branch=None):
-        # type: (str) -> [SavedSuite]
-        for b, storage in self._storages:
-            if branch and b != branch:
-                continue
-            for saved_suite in storage.iter_saved_suites():
-                yield saved_suite
 
     def load(self, saved_suite):
         pass
@@ -283,51 +277,59 @@ class SuiteOp(object):
 class Storage(object):
     """Suite storage"""
 
-    def __init__(self, root, branch=None):
-        self._root = root
-        self._branch = branch or os.path.basename(root)
+    def __init__(self, roots):
+        roots = roots or sweetconfig.suite_roots()  # type: dict
+        assert isinstance(roots, dict)
+        self._roots = roots
 
-    @property
-    def root(self):
-        return self._root
+    def suite_path(self, branch, name):
+        # type: (str, str) -> str
 
-    @property
-    def branch(self):
-        return self._branch
+        try:
+            root = self._roots[branch]
+        except KeyError:
+            raise Exception("Unknown storage branch: %r" % branch)
 
-    def _suite_dir(self, name):
-        return os.path.join(self._root, name)
+        return os.path.join(root, name)
 
-    def _suite_bin(self, name):
-        return os.path.join(self._suite_dir(name), "bin")
+    def load(self, path):
+        # type: (str) -> dict
 
-    def _suite_file(self, name):
-        return os.path.join(self._suite_dir(name), "suite.yaml")
+        filepath = os.path.join(path, "suite.yaml")
+        if not os.path.exists(filepath):
+            raise SuiteError("Not a suite: %r" % path)
 
-    def load(self, filepath):
-        return SweetSuite.load(filepath)
+        try:
+            with open(filepath, "rb") as f:
+                suite_dict = yaml.load(f, Loader=yaml.FullLoader)
+        except yaml.YAMLError as e:
+            raise SuiteError("Failed loading suite: %s" % str(e))
+        else:
+            return suite_dict
 
-    def save(self, suite_dict, name, callback=None):
-        suite_dir = self._suite_dir(name)
+    def save(self, suite_dict, path):
+        # type: (dict, str) -> None
+
         suite = SweetSuite.from_dict(suite_dict)
-        suite.save(suite_dir)
+        suite.save(path)
 
-        if callback is not None:
-            callback(suite, suite_dir)
+    def iter_saved_suites(self, branch=None):
+        # type: (str) -> [SavedSuite]
 
-        return self._suite_file(name)
+        for b, root in self._roots.items():
+            if branch and b != branch:
+                continue
 
-    def iter_saved_suites(self):
-        if not os.path.isdir(self._root):
-            return
+            if not os.path.isdir(root):
+                continue
 
-        for name in os.listdir(self._root):
-            filepath = self._suite_file(name)
-            if os.path.isfile(filepath):
-                yield SavedSuite(
-                    name=name,
-                    branch=self._branch,
-                    root=self._root,
-                    bin=self._suite_bin(name),
-                    filepath=filepath,
-                )
+            for name in os.listdir(root):
+                path = os.path.join(root, name)
+                filepath = os.path.join(path, "suite.yaml")
+
+                if os.path.isfile(filepath):
+                    yield SavedSuite(
+                        name=name,
+                        branch=b,
+                        path=path,
+                    )
