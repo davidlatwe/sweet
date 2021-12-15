@@ -26,10 +26,7 @@ sweetconfig = rezconfig.plugins.command.sweet
 
 
 # TODO:
-#     * live/bake per context
 #     * use signal to set suite dirty ?
-#     * do we need SuiteOp.from_dict() ?
-#     * do we need foolproof SweetSuite.from_dict() ?
 
 
 __all__ = (
@@ -54,10 +51,6 @@ SuiteTool = namedtuple(
 SavedSuite = namedtuple(
     "SavedSuite",
     ["name", "branch", "path"]
-)
-OpenedSuite = namedtuple(
-    "OpenedSuite",
-    []
 )
 
 
