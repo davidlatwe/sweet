@@ -105,20 +105,7 @@ class SuiteOp(object):
             self._working_suite = SweetSuite()
         return self._working_suite
 
-    def load(self, suite_dict, with_contexts=False):
-        suite_dict = copy.deepcopy(suite_dict)
-
-        suite = SweetSuite.from_dict(suite_dict)
-        suite.load_path = suite_dict.get("load_path")
-
-        if with_contexts:
-            for name in suite.contexts.keys():
-                suite.context(name)
-
-        self._working_suite = suite
-
     def dump(self):
-        self.sanity_check()
         suite_dict = self._suite.to_dict()
 
         for name, data in self._suite.contexts.items():
@@ -129,10 +116,38 @@ class SuiteOp(object):
             if loaded:
                 suite_dict["contexts"][name]["loaded"] = True
 
-        if self._suite.load_path:
-            suite_dict["load_path"] = self._suite.load_path
-
         return suite_dict
+
+    def load(self, path):
+        # type: (str) -> None
+
+        filepath = os.path.join(path, "suite.yaml")
+        if not os.path.exists(filepath):
+            raise SuiteIOError("Not a suite: %r" % path)
+
+        try:
+            with open(filepath, "rb") as f:
+                suite_dict = yaml.load(f, Loader=yaml.FullLoader)  # noqa
+        except yaml.YAMLError as e:  # noqa
+            raise SuiteIOError("Failed loading suite: %s" % str(e))
+
+        suite = SweetSuite.from_dict(suite_dict)
+        suite.load_path = os.path.realpath(path)
+
+        self._working_suite = suite
+
+    def save(self, path):
+        # type: (str) -> None
+
+        self.sanity_check()
+        # note: cannot save over if load_path is None
+        self._suite.save(path)
+
+    def loaded_from(self):
+        return self._suite.load_path
+
+    def refresh(self):
+        self._suite.refresh_tools()
 
     def sanity_check(self):
         try:
@@ -216,9 +231,6 @@ class SuiteOp(object):
             else:
                 self._suite.unhide_tool(ctx_name, tool_name)
 
-    def refresh_tools(self):
-        self._suite.refresh_tools()
-
     def iter_tools(self):
         self._suite.update_tools()
         seen = set()
@@ -291,6 +303,12 @@ class Storage(object):
         assert isinstance(roots, dict)
         self._roots = roots
 
+    def __repr__(self):
+        return "%s(%s)" % (
+            self.__class__.__name__,
+            ", ".join("%s=%s" % (b, path) for b, path in self._roots)
+        )
+
     def suite_path(self, branch, name):
         # type: (str, str) -> str
 
@@ -300,30 +318,6 @@ class Storage(object):
             raise SuiteIOError("Unknown storage branch: %r" % branch)
 
         return os.path.join(root, name)
-
-    def load(self, path):  # SuiteSpec
-        # type: (str) -> dict
-
-        filepath = os.path.join(path, "suite.yaml")
-        if not os.path.exists(filepath):
-            raise SuiteIOError("Not a suite: %r" % path)
-
-        try:
-            with open(filepath, "rb") as f:
-                suite_dict = yaml.load(f, Loader=yaml.FullLoader)  # noqa
-        except yaml.YAMLError as e:  # noqa
-            raise SuiteIOError("Failed loading suite: %s" % str(e))
-        else:
-            suite_dict["load_path"] = os.path.realpath(path)
-            return suite_dict
-
-    def save(self, suite_dict, path):  # SuiteDump
-        # type: (dict, str) -> None
-
-        suite = SweetSuite.from_dict(suite_dict)
-        # note: cannot save over if load_path is None
-        suite.load_path = suite_dict.get("load_path")
-        suite.save(path)
 
     def iter_saved_suites(self, branch=None):
         # type: (str) -> [SavedSuite]

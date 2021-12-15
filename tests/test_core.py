@@ -4,21 +4,21 @@ from rez.packages import Variant
 from sweet.core import Constants, SuiteOp, Storage
 
 
-class TestSuiteOp(TestBase):
+class TestCore(TestBase):
 
     def __init__(self, *args, **kwargs):
-        super(TestSuiteOp, self).__init__(*args, **kwargs)
+        super(TestCore, self).__init__(*args, **kwargs)
         self.repo = MemPkgRepo("memory@any")
 
     def setUp(self):
         self.settings = {
             "packages_path": [self.repo.path],
         }
-        super(TestSuiteOp, self).setUp()
+        super(TestCore, self).setUp()
 
     def tearDown(self):
         self.repo.flush()
-        super(TestSuiteOp, self).tearDown()
+        super(TestCore, self).tearDown()
 
     def test_empty_suite_dict(self):
         sop = SuiteOp()
@@ -133,23 +133,6 @@ class TestSuiteOp(TestBase):
         self.assertTrue(type(honey.variant) is set)
         self.assertTrue(type(honey.variant.pop()) is Variant)
 
-
-class TestStorage(TestBase):
-
-    def __init__(self, *args, **kwargs):
-        super(TestStorage, self).__init__(*args, **kwargs)
-        self.repo = MemPkgRepo("memory@any")
-
-    def setUp(self):
-        self.settings = {
-            "packages_path": [self.repo.path],
-        }
-        super(TestStorage, self).setUp()
-
-    def tearDown(self):
-        self.repo.flush()
-        super(TestStorage, self).tearDown()
-
     def test_suite_storage(self):
         tempdir = self.make_tempdir()
         storage = Storage(roots={"test": tempdir})
@@ -159,13 +142,8 @@ class TestStorage(TestBase):
         sop.add_context("FOO", requests=["foo"])
 
         path = storage.suite_path("test", "my-foo")
+        sop.save(path)
 
-        d_save = sop.dump()
-        storage.save(d_save, path)
-
-        d_load = storage.load(path)
-        d_load.pop("load_path")  # just for comparison
-        sop.load(d_load, with_contexts=True)
-
-        self.maxDiff = None
-        self.assertDictEqual(d_save, sop.dump())
+        saved = next(storage.iter_saved_suites())
+        self.assertEqual("test", saved.branch)
+        self.assertEqual("my-foo", saved.name)
