@@ -305,6 +305,10 @@ class SweetSuite(_Suite):
             data["context"] = context.copy()
             data["tool_aliases"] = aliases
             data["hidden_tools"] = hidden
+            if context.load_path:
+                data["loaded"] = True
+            else:
+                data.pop("loaded", None)
 
             self._flush_tools()
         else:

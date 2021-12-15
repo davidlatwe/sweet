@@ -42,7 +42,7 @@ __all__ = (
 
 SuiteCtx = namedtuple(
     "SuiteCtx",
-    ["name", "context", "priority", "prefix", "suffix"]
+    ["name", "context", "priority", "prefix", "suffix", "loaded", "from_rxt"]
 )
 SuiteTool = namedtuple(
     "SuiteTool",
@@ -272,6 +272,8 @@ class SuiteOp(object):
             priority=d["priority"],
             prefix=d.get("prefix", ""),
             suffix=d.get("suffix", ""),
+            loaded=d.get("loaded"),
+            from_rxt=c.load_path if c else None,
         )
 
     def _tool_data_to_tuple(self, d, invalid=0):
