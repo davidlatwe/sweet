@@ -2,6 +2,7 @@
 Main business logic, with event notification
 """
 import os
+import copy
 import warnings
 from collections import namedtuple
 from blinker import signal
@@ -102,26 +103,42 @@ def _warn(message, category=None):
 class SuiteOp(object):
     """Suite operator"""
 
-    def __init__(self, suite=None):
-        suite = suite or SweetSuite()
+    def __init__(self):
+        self._working_suite = None
 
-        if not isinstance(suite, Suite):
-            _warn("Expecting 'Suite' or 'SweetSuite', got %r." % type(suite))
-            suite = SweetSuite()
+    @property
+    def _suite(self):
+        if self._working_suite is None:
+            self._working_suite = SweetSuite()
+        return self._working_suite
 
-        if not isinstance(suite, SweetSuite):
-            suite = SweetSuite.from_dict(suite.to_dict())
+    def load(self, suite_dict, with_contexts=False):
+        suite_dict = copy.deepcopy(suite_dict)
 
-        self._suite = suite
-
-    @classmethod
-    def from_dict(cls, suite_dict):  # do we need this ?
         suite = SweetSuite.from_dict(suite_dict)
-        return cls(suite)
+        suite.load_path = suite_dict.get("load_path")
 
-    def to_dict(self):
+        if with_contexts:
+            for name in suite.contexts.keys():
+                suite.context(name)
+
+        self._working_suite = suite
+
+    def dump(self):
         self.sanity_check()
         suite_dict = self._suite.to_dict()
+
+        for name, data in self._suite.contexts.items():
+            context = data.get("context")
+            if context:
+                suite_dict["contexts"][name]["context"] = context.copy()
+            loaded = data.get("loaded")
+            if loaded:
+                suite_dict["contexts"][name]["loaded"] = True
+
+        if self._suite.load_path:
+            suite_dict["load_path"] = self._suite.load_path
+
         return suite_dict
 
     def sanity_check(self):
@@ -246,7 +263,7 @@ class SuiteOp(object):
         c = self._suite.context(n) if as_resolved else d.get("context")
         return SuiteCtx(
             name=n,
-            context=None if c is None else c.copy(),
+            context=c.copy() if c else None,
             priority=d["priority"],
             prefix=d.get("prefix", ""),
             suffix=d.get("suffix", ""),
@@ -291,7 +308,7 @@ class Storage(object):
 
         return os.path.join(root, name)
 
-    def load(self, path):
+    def load(self, path):  # SuiteSpec
         # type: (str) -> dict
 
         filepath = os.path.join(path, "suite.yaml")
@@ -304,12 +321,15 @@ class Storage(object):
         except yaml.YAMLError as e:  # noqa
             raise SuiteIOError("Failed loading suite: %s" % str(e))
         else:
+            suite_dict["load_path"] = os.path.realpath(path)
             return suite_dict
 
-    def save(self, suite_dict, path):
+    def save(self, suite_dict, path):  # SuiteDump
         # type: (dict, str) -> None
 
         suite = SweetSuite.from_dict(suite_dict)
+        # note: cannot save over if load_path is None
+        suite.load_path = suite_dict.get("load_path")
         suite.save(path)
 
     def iter_saved_suites(self, branch=None):

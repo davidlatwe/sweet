@@ -22,7 +22,7 @@ class TestSuiteOp(TestBase):
 
     def test_empty_suite_dict(self):
         sop = SuiteOp()
-        s_dict = sop.to_dict()
+        s_dict = sop.dump()
 
         expected = {
             "contexts": {},
@@ -40,7 +40,7 @@ class TestSuiteOp(TestBase):
         ctx = sop.add_context("foo", requests=["foo"])
         self.assertEqual("foo", ctx.name)
 
-        s_dict = sop.to_dict()
+        s_dict = sop.dump()
         self.assertIn("foo", s_dict["contexts"])
 
     def test_update_tool_1(self):
@@ -157,13 +157,15 @@ class TestStorage(TestBase):
         self.repo.add("foo", tools=["fruit"])
         sop = SuiteOp()
         sop.add_context("FOO", requests=["foo"])
-        d_save = sop.to_dict()
 
         path = storage.suite_path("test", "my-foo")
+
+        d_save = sop.dump()
         storage.save(d_save, path)
+
         d_load = storage.load(path)
+        d_load.pop("load_path")  # just for comparison
+        sop.load(d_load, with_contexts=True)
 
-        sop = SuiteOp.from_dict(d_load)
-        sop.refresh_tools()  # test fail without refresh, not good..
-
-        self.assertDictEqual(d_save, d_load)
+        self.maxDiff = None
+        self.assertDictEqual(d_save, sop.dump())

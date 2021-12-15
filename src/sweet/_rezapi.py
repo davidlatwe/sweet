@@ -53,32 +53,36 @@ class SweetSuite(_Suite):
         if context:
             return context
 
-        assert self.load_path
-        context_path = self._context_path(name, self.load_path)
-        saved_context = None
-        if os.path.isfile(context_path):
-            saved_context = ResolvedContext.load(context_path)
+        _saved_context = None
+
+        if self.load_path:
+            context_path = self._context_path(name, self.load_path)
+            if os.path.isfile(context_path):
+                _saved_context = ResolvedContext.load(context_path)
 
         if self._is_live:
             try:
                 # note: live resolved `context.load_path` is None
                 context = ResolvedContext(self._saved_requests[name])
             except Exception as e:
-                if saved_context is None:
+                if _saved_context is None:
                     raise e
                 # fallback to saved .rxt
-                context = saved_context
+                context = _saved_context
+                # todo: should have a warning.
 
-            else:
-                context._set_parent_suite(self.load_path, name)  # noqa
-                if context != saved_context:
+            context._set_parent_suite(self.load_path, name)  # noqa
+            if _saved_context is not None:
+                if context != _saved_context:
                     self._save_context(name, context, self.load_path)
 
         else:
-            context = saved_context
+            assert self.load_path
+            context = _saved_context
 
         data["context"] = context
-        data["loaded"] = True
+        if context.load_path:
+            data["loaded"] = True
         return context
 
     def save(self, path, verbose=False):
