@@ -145,22 +145,45 @@ class SuiteOp(object):
         self._suite.save(path)
 
     def loaded_from(self):
+        """Returns location where suite previously saved at
+
+        :return: Suite's load_path, if any.
+        :rtype: str or None
+        """
         return self._suite.load_path
 
     def refresh(self):
+        """Flush and update all tools in suite
+
+        :return: None
+        """
         self._suite.refresh_tools()
 
     def sanity_check(self):
+        """Ensure suite is valid.
+
+        :return: None
+        :raise SuiteOpError: If suite validation failed.
+        """
         try:
             self._suite.validate()
         except SuiteError as e:
             raise SuiteOpError(e)
 
     def set_description(self, text):
-        """Set suite description"""
+        """Set suite description
+
+        :param str text: The description (comment) string for the suite.
+        :return: None
+        """
         self._suite.set_description(text)
 
     def set_load_path(self, path):
+        """Explicitly set suite's load_path
+
+        :param str path: The location where suite saved at.
+        :return: None
+        """
         self._suite.load_path = path
 
     def add_context(self, name, context):
