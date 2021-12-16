@@ -123,6 +123,33 @@ class TestCore(TestBase):
         honey = next(t for t in sop.iter_tools() if not t.invalid)
         self.assertEqual(c.name, honey.ctx_name)
 
+    def test_context_reordering(self):
+        """Test entire suite contexts can be reordered as expected"""
+        sop = SuiteOp()
+        sop.add_context("a", ResolvedContext([]))
+        sop.add_context("b", ResolvedContext([]))
+        sop.add_context("c", ResolvedContext([]))
+
+        c, b, a = list(sop.iter_contexts())
+        self.assertEqual("a", a.name)
+        self.assertEqual("b", b.name)
+        self.assertEqual("c", c.name)
+
+        sop.reorder_contexts(["b", "a", "c"])
+
+        b, a, c = list(sop.iter_contexts())
+        self.assertEqual("a", a.name)
+        self.assertEqual("b", b.name)
+        self.assertEqual("c", c.name)
+
+        sop.add_context("d", ResolvedContext([]))
+
+        d, b, a, c = list(sop.iter_contexts())
+        self.assertEqual("a", a.name)
+        self.assertEqual("b", b.name)
+        self.assertEqual("c", c.name)
+        self.assertEqual("d", d.name)
+
     def test_tool_by_multi_packages(self):
         """Test tool that provided by more than one package"""
         self.repo.add("foo", tools=["fruit"])

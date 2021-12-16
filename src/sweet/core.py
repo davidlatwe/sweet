@@ -211,6 +211,35 @@ class SuiteOp(object):
         except SuiteError:
             pass  # no such context, should be okay to forgive
 
+    def reorder_contexts(self, new_order):
+        """Reorder contexts in new priority
+
+        The `new_order` must contains the name of all contexts in suite.
+
+        Preceding context name in the `new_order` list will have a higher
+        priority than the latter ones.
+
+        Suite tools will be refreshed after reordered.
+
+        :param new_order: A list of all context names to represent new order.
+        :type new_order: list
+        :return: None
+        :rtype: None
+        :raises SuiteOpError: If `new_order` not matching all context names
+            in suite.
+        """
+        if set(new_order) != set(self._suite.contexts.keys()):
+            raise SuiteOpError("Input context names not matching current "
+                               "suites.")
+
+        new_priority = 0
+        for new_priority, name in enumerate(reversed(new_order)):
+            data = self._suite.contexts[name]
+            data["priority"] = new_priority
+
+        self._suite.next_priority = new_priority + 1
+        self.refresh()
+
     def update_context(
             self,
             name,
