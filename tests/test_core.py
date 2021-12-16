@@ -1,6 +1,7 @@
 
 from .util import TestBase, MemPkgRepo
 from rez.packages import Variant
+from rez.resolved_context import ResolvedContext
 from sweet.core import Constants, SuiteOp, Storage
 
 
@@ -37,7 +38,7 @@ class TestCore(TestBase):
         self.repo.add("foo")
 
         sop = SuiteOp()
-        ctx = sop.add_context("foo", requests=["foo"])
+        ctx = sop.add_context("foo", ResolvedContext(["foo"]))
         self.assertEqual("foo", ctx.name)
 
         s_dict = sop.dump()
@@ -48,8 +49,8 @@ class TestCore(TestBase):
         self.repo.add("bar", tools=["beer"])
 
         sop = SuiteOp()
-        foo = sop.add_context("foo", requests=["foo"])
-        bar = sop.add_context("bar", requests=["bar", "foo"])
+        foo = sop.add_context("foo", ResolvedContext(["foo"]))
+        bar = sop.add_context("bar", ResolvedContext(["bar", "foo"]))
 
         beer, food_1, food_2 = list(sop.iter_tools())
         self.assertEqual("beer", beer.name)
@@ -63,9 +64,10 @@ class TestCore(TestBase):
         self.assertEqual(foo.name, food_2.ctx_name)
         self.assertEqual(Constants.st_shadowed, food_2.invalid)
 
-        sop.update_tool(foo.name, "food", new_alias="fruit")
+        _, food_2 = sop.update_context(foo.name,
+                                       tool_name="food",
+                                       new_alias="fruit")
 
-        beer, food_1, food_2 = list(sop.iter_tools())
         self.assertEqual("food", food_2.name)
         self.assertEqual("fruit", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
@@ -77,19 +79,22 @@ class TestCore(TestBase):
         self.repo.add("bar", tools=["beer"])
 
         sop = SuiteOp()
-        foo = sop.add_context("foo", requests=["foo"])
+        foo = sop.add_context("foo", ResolvedContext(["foo"]))
 
         food, fuzz = list(sop.iter_tools())
         self.assertEqual("food", food.name)
 
-        sop.update_tool(foo.name, food.name, new_alias="fruit")
-        sop.update_tool(foo.name, fuzz.name, set_hidden=True)
+        _, food = sop.update_context(foo.name,
+                                     tool_name=food.name,
+                                     new_alias="fruit")
+        _, fuzz = sop.update_context(foo.name,
+                                     tool_name=fuzz.name,
+                                     set_hidden=True)
 
-        food, fuzz = list(sop.iter_tools())
         self.assertEqual("fruit", food.alias)
         self.assertEqual(Constants.st_hidden, fuzz.invalid)
 
-        sop.update_context(foo.name, requests=["foo", "bar"])
+        sop.update_context(foo.name, context=ResolvedContext(["foo", "bar"]))
 
         food, beer, fuzz = list(sop.iter_tools())
         self.assertEqual("fruit", food.alias)
@@ -101,9 +106,9 @@ class TestCore(TestBase):
         self.repo.add("bee", tools=["honey"])
 
         sop = SuiteOp()
-        sop.add_context("a", requests=["bee"])
-        sop.add_context("b", requests=["bee"])
-        sop.add_context("c", requests=["bee"])
+        sop.add_context("a", ResolvedContext(["bee"]))
+        sop.add_context("b", ResolvedContext(["bee"]))
+        sop.add_context("c", ResolvedContext(["bee"]))
 
         c, b, a = list(sop.iter_contexts())
         self.assertEqual("a", a.name)
@@ -125,8 +130,8 @@ class TestCore(TestBase):
         self.repo.add("bez", tools=["honey"])
 
         sop = SuiteOp()
-        sop.add_context("B", requests=["bee", "bez"])
-        sop.add_context("F", requests=["foo"])
+        sop.add_context("B", ResolvedContext(["bee", "bez"]))
+        sop.add_context("F", ResolvedContext(["foo"]))
 
         fruit, honey = list(sop.iter_tools())
         self.assertTrue(type(fruit.variant) is Variant)
@@ -139,7 +144,7 @@ class TestCore(TestBase):
 
         self.repo.add("foo", tools=["fruit"])
         sop = SuiteOp()
-        sop.add_context("FOO", requests=["foo"])
+        sop.add_context("FOO", ResolvedContext(["foo"]))
 
         path = storage.suite_path("test", "my-foo")
         sop.save(path)

@@ -195,6 +195,11 @@ class SweetSuite(_Suite):
         s._saved_requests = d.get("requests")
         return s
 
+    def add_context(self, name, context, prefix_char=None):
+        if not name:
+            raise SuiteError("Invalid context name.")
+        super(SweetSuite, self).add_context(name, context, prefix_char)
+
     def remove_context(self, name):
         super(SweetSuite, self).remove_context(name)
         if name in self.saved_requests:
@@ -258,7 +263,11 @@ class SweetSuite(_Suite):
 
         """
         if old_name not in self.contexts:
-            raise SuiteError("Context not in suite: %r" % old_name)
+            raise SuiteError("No such context in suite: %r" % old_name)
+        if new_name in self.contexts:
+            raise SuiteError("Duplicated name in suite: %r" % new_name)
+        if not new_name:
+            raise SuiteError("Invalid context name.")
 
         data = self.contexts.pop(old_name)
         data["name"] = new_name
@@ -287,32 +296,32 @@ class SweetSuite(_Suite):
         if not context.success:
             raise SuiteError("Context is not resolved: %r" % name)
 
-        if name in self.contexts:
-            data = self.contexts[name]
-            aliases = dict()
-            hidden = set()
+        if name not in self.contexts:
+            raise SuiteError("No such context in suite: %r" % name)
 
-            # preserving context priority, prefix, suffix, and tools'
-            # aliases/hidden state
-            context_tools = context.get_tools(request_only=True)
-            for _, tool_names in context_tools.values():
-                for tool_name in tool_names:
-                    if tool_name in data["tool_aliases"]:
-                        aliases[tool_name] = data["tool_aliases"][tool_name]
-                    if tool_name in data["hidden_tools"]:
-                        hidden.add(tool_name)
+        data = self.contexts[name]
+        aliases = dict()
+        hidden = set()
 
-            data["context"] = context.copy()
-            data["tool_aliases"] = aliases
-            data["hidden_tools"] = hidden
-            if context.load_path:
-                data["loaded"] = True
-            else:
-                data.pop("loaded", None)
+        # preserving context priority, prefix, suffix, and tools'
+        # aliases/hidden state
+        context_tools = context.get_tools(request_only=True)
+        for _, tool_names in context_tools.values():
+            for tool_name in tool_names:
+                if tool_name in data["tool_aliases"]:
+                    aliases[tool_name] = data["tool_aliases"][tool_name]
+                if tool_name in data["hidden_tools"]:
+                    hidden.add(tool_name)
 
-            self._flush_tools()
+        data["context"] = context.copy()
+        data["tool_aliases"] = aliases
+        data["hidden_tools"] = hidden
+        if context.load_path:
+            data["loaded"] = True
         else:
-            raise SuiteError("Context not in suite: %r" % name)
+            data.pop("loaded", None)
+
+        self._flush_tools()
 
     def refresh_tools(self):
         """Actively flush and update tools"""
@@ -321,7 +330,6 @@ class SweetSuite(_Suite):
 
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
-    validate_tool = Suite._validate_tool
 
 
 def read_suite_description(filepath):
