@@ -9,6 +9,7 @@ from blinker import signal
 from rez.suite import Suite
 from rez.vendor import yaml
 from rez.config import config as rezconfig
+from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from ._rezapi import SweetSuite
 from .exceptions import (
@@ -196,7 +197,15 @@ class SuiteOp(object):
         return self._ctx_data_to_tuple(data)
 
     def drop_context(self, name):
-        """Remove context from suite"""
+        """Remove context from suite
+
+        Dropping context that is not exists in suite will be forgiven (no
+        error raised).
+
+        :param name: The name of context to remove.
+        :return: None
+        :rtype: None
+        """
         try:
             self._suite.remove_context(name)
         except SuiteError:
@@ -314,10 +323,34 @@ class SuiteOp(object):
         return updated_ctx, updated_tool
 
     def find_contexts(self, in_request=None, in_resolve=None):
-        """Find contexts in the suite based on search criteria."""
+        """Find contexts in the suite based on search criteria
+
+        :param in_request: Match contexts that contain the given package in
+            their request.
+        :param in_resolve: Match contexts that contain the given package in
+            their resolve. You can also supply a conflict requirement '!foo'
+            which will match any contexts whose resolve does not contain any
+            version of package 'foo'.
+        :type in_request: str or None
+        :type in_resolve: str or PackageRequest or None
+        :return: List of context names that match the search criteria.
+        :rtype: list[str]
+        """
         return self._suite.find_contexts(in_request, in_resolve)
 
     def iter_contexts(self, as_resolved=False, ascending=False):
+        """Iterate contexts in suite in priority ordered
+
+        By default (descending ordered), the context that has higher priority
+        will be iterated first.
+
+        :param as_resolved: Ensure context resolved if True.
+        :param ascending: Iter contexts by priority in ascending order.
+        :type as_resolved: bool or False
+        :type ascending: bool or False
+        :return: An `SuiteCtx` iterator
+        :rtype: collections.Iterator[SuiteCtx]
+        """
         ctx_data = sorted(
             self._suite.contexts.values(), key=lambda x: x["priority"],
             reverse=not ascending
@@ -326,6 +359,22 @@ class SuiteOp(object):
             yield self._ctx_data_to_tuple(d, as_resolved=as_resolved)
 
     def iter_tools(self, context_name=None):
+        """Iterate all tools in suite
+
+        Suite tools will be iterated in following order:
+            - Valid, not being hidden, not in conflict
+            - Hidden
+            - Shadowed (name/alias conflicts with other tool)
+            - Missing (due to failed context resolved)
+
+        A previously saved suite may have missing tools due to the request
+        of the context is no longer resolvable in current condition.
+
+        :param context_name: Only yield tools in this context.
+        :type context_name: str or None
+        :return: An `SuiteTool` iterator
+        :rtype: collections.Iterator[SuiteTool]
+        """
         self._suite.update_tools()
         seen = set()
 
