@@ -494,6 +494,26 @@ class SuiteOp(object):
         )
 
 
+class SuiteState(object):  # or ContextState ?
+
+    class CtxPkgs(object):
+        pass
+
+    class CtxEnv(object):
+        pass
+
+    class CtxTools(object):
+        pass
+
+    def __init__(self, sop):
+        """
+
+        :param sop:
+        :type sop: SuiteOp
+        """
+        self._sop = sop
+
+
 class Storage(object):
     """Suite storage"""
 
