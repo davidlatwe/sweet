@@ -157,7 +157,8 @@ class SuiteOp(object):
 
         :return: None
         """
-        self._suite.refresh_tools()
+        self._suite.flush_tools()
+        self._suite.update_tools()
 
     def sanity_check(self):
         """Ensure suite is valid.
@@ -242,8 +243,6 @@ class SuiteOp(object):
         Preceding context name in the `new_order` list will have a higher
         priority than the latter ones.
 
-        Suite tools will be refreshed after reordered.
-
         :param new_order: A list of all context names to represent new order.
         :type new_order: list
         :return: None
@@ -261,7 +260,7 @@ class SuiteOp(object):
             data["priority"] = new_priority
 
         self._suite.next_priority = new_priority + 1
-        self.refresh()
+        self._suite.flush_tools()
 
     def update_context(
             self,
@@ -365,7 +364,7 @@ class SuiteOp(object):
                 self._suite.unhide_tool(ctx_name, tool_name)
 
         # results
-
+        # todo: this will flush & update tool, not good enough.
         updated_ctx = self._ctx_data_to_tuple(self._suite.contexts[ctx_name])
         updated_tool = next((
             t for t in self.iter_tools(context_name=ctx_name)

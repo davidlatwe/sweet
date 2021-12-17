@@ -323,13 +323,9 @@ class SweetSuite(_Suite):
 
         self._flush_tools()
 
-    def refresh_tools(self):
-        """Actively flush and update tools"""
-        self._flush_tools()
-        self._update_tools()
-
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
+    flush_tools = Suite._flush_tools
 
 
 def read_suite_description(filepath):
