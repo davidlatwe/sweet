@@ -205,7 +205,7 @@ class Window(QtWidgets.QMainWindow):
             dialog.setDirectory(state.retrieve("%s/directory" % namespace))
             dialog.restoreState(state.retrieve("%s/windowState" % namespace))
 
-        path = dialog.getExistingDirectory()
+        path = dialog.getExistingDirectory(options=dialog.ShowDirsOnly)
         if namespace:
             state.store("%s/directory" % namespace, dialog.directory())
             state.store("%s/windowState" % namespace, dialog.saveState())
