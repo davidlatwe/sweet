@@ -78,6 +78,8 @@ class SweetSuite(_Suite):
                     # todo: save previous context for future diff (into a
                     #  sqlite db maybe), but in what perspective ? context
                     #  or tool ?
+                    #  - on context, and purge record if no match context
+                    #    during suite save.
 
         else:
             assert self.load_path
