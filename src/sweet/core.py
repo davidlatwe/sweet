@@ -289,8 +289,8 @@ class SuiteOp(object):
         and returns `None` with `SuiteOpWarning` issued (or error raised if
         warnings are being treated as error).
 
-        If update success, a `SuiteCtx` and a `SuiteTool` (if a tool updated
-        or `None`) instance will be return in a tuple as an update record.
+        If update success, a `SuiteCtx` instance will be returned as update
+        record.
 
         :param str name: The name of existing suite context.
         :param new_name: Rename context.
@@ -307,9 +307,8 @@ class SuiteOp(object):
         :type tool_name: str or None
         :type new_alias: str or None
         :type set_hidden: bool or None
-        :return: None if invalid inputs, or, a suite context representation
-            and a tool representation (if tool updated) in a tuple.
-        :rtype: None or tuple[SuiteCtx, None] or tuple[SuiteCtx, SuiteTool]
+        :return: None if invalid inputs, or, a suite context representation.
+        :rtype: None or SuiteCtx
         """
         ctx_name = name
 
@@ -364,14 +363,9 @@ class SuiteOp(object):
                 self._suite.unhide_tool(ctx_name, tool_name)
 
         # results
-        # todo: this will flush & update tool, not good enough.
-        updated_ctx = self._ctx_data_to_tuple(self._suite.contexts[ctx_name])
-        updated_tool = next((
-            t for t in self.iter_tools(context_name=ctx_name)
-            if t.name == tool_name
-        ), None)
 
-        return updated_ctx, updated_tool
+        data = self._suite.contexts[name]
+        return self._ctx_data_to_tuple(data)
 
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria

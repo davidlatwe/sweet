@@ -64,9 +64,8 @@ class TestCore(TestBase):
         self.assertEqual(foo.name, food_2.ctx_name)
         self.assertEqual(Constants.st_shadowed, food_2.invalid)
 
-        _, food_2 = sop.update_context(foo.name,
-                                       tool_name="food",
-                                       new_alias="fruit")
+        sop.update_context(foo.name, tool_name="food", new_alias="fruit")
+        food_2 = next(t for t in sop.iter_tools(foo.name) if t.name == "food")
 
         self.assertEqual("food", food_2.name)
         self.assertEqual("fruit", food_2.alias)
@@ -84,12 +83,9 @@ class TestCore(TestBase):
         food, fuzz = list(sop.iter_tools())
         self.assertEqual("food", food.name)
 
-        _, food = sop.update_context(foo.name,
-                                     tool_name=food.name,
-                                     new_alias="fruit")
-        _, fuzz = sop.update_context(foo.name,
-                                     tool_name=fuzz.name,
-                                     set_hidden=True)
+        sop.update_context(foo.name, tool_name=food.name, new_alias="fruit")
+        sop.update_context(foo.name, tool_name=fuzz.name, set_hidden=True)
+        food, fuzz = list(sop.iter_tools())
 
         self.assertEqual("fruit", food.alias)
         self.assertEqual(Constants.st_hidden, fuzz.invalid)
