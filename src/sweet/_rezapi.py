@@ -75,6 +75,9 @@ class SweetSuite(_Suite):
             if _saved_context is not None:
                 if context != _saved_context:
                     self._save_context(name, context, self.load_path)
+                    # todo: save previous context for future diff (into a
+                    #  sqlite db maybe), but in what perspective ? context
+                    #  or tool ?
 
         else:
             assert self.load_path
