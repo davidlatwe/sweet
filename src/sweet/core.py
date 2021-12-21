@@ -11,6 +11,7 @@ from rez.vendor import yaml
 from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
+from rez.resolver import ResolverStatus
 from ._rezapi import SweetSuite
 from .exceptions import (
     RezError,
@@ -187,7 +188,7 @@ class SuiteOp(object):
         """
         self._suite.load_path = path
 
-    def add_context(self, name, context):
+    def add_context(self, name, requests):
         """Add one resolved context to suite
 
         The context `name` must not exists in suite nor an empty string. And
@@ -198,7 +199,9 @@ class SuiteOp(object):
         warnings are being treated as error).
 
         :param str name: Name to store the context under.
-        :param ResolvedContext context: A resolved-context to add.
+        :param requests: List of strings or PackageRequest objects representing
+            the request for resolving a context to add.
+        :type requests: list[str or PackageRequest]
         :return: None if failed, or a SuiteCtx that represents the context
             just being added.
         :rtype: None or SuiteCtx
@@ -207,8 +210,12 @@ class SuiteOp(object):
             _warn("Context already in suite: %r" % name)
             return
 
+        context = self._resolve_context(requests)
+
         if not context.success:
-            _warn("Context is not resolved: %r" % name)
+            _d = context.failure_description
+            _m = "Context %r not resolved: %s" % (name, _d)
+            _warn(_m, category=ContextBrokenWarning)
             return
 
         try:
@@ -266,7 +273,7 @@ class SuiteOp(object):
             self,
             name,
             new_name=None,
-            context=None,
+            requests=None,
             prefix=None,
             suffix=None,
             tool_name=None,
@@ -294,14 +301,15 @@ class SuiteOp(object):
 
         :param str name: The name of existing suite context.
         :param new_name: Rename context.
-        :param context: Replace resolved-context.
+        :param requests: List of strings or PackageRequest objects representing
+            the request for resolving a context to replace one if given.
         :param prefix: Change context prefix.
         :param suffix: Change context suffix.
         :param tool_name: The name of the tool in context `name`.
         :param new_alias: Change tool alias, `tool_name` must be given.
         :param set_hidden: Change tool visibility, `tool_name` must be given.
         :type new_name: str or None
-        :type context: ResolvedContext or None
+        :type requests: list[str or PackageRequest] or None
         :type prefix: str or None
         :type suffix: str or None
         :type tool_name: str or None
@@ -316,8 +324,12 @@ class SuiteOp(object):
             _warn("No such context in suite: %r" % ctx_name)
             return
 
-        if context and not context.success:
-            _warn("Context is not resolved: %r" % ctx_name)
+        context = None if requests is None else self._resolve_context(requests)
+
+        if context is not None and not context.success:
+            _d = context.failure_description
+            _m = "Context %r not resolved: %s" % (name, _d)
+            _warn(_m, category=ContextBrokenWarning)
             return
 
         updating_tool = new_alias is not None or set_hidden is not None
@@ -486,6 +498,36 @@ class SuiteOp(object):
             ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )
+
+    def _resolve_context(self, requests):
+        """Try resolving a context
+
+        :param requests: List of strings or PackageRequest objects representing
+            the request for resolving a context.
+        :type requests: list[str or PackageRequest]
+        :return: A ResolvedContext object if succeed or BrokenContext if not.
+        :rtype: ResolvedContext or BrokenContext
+        """
+        try:
+            context = ResolvedContext(requests)
+        except RezError as e:
+            context = BrokenContext(str(e))
+
+        return context
+
+
+class BrokenContext(object):
+    """A simple representation of a failed context"""
+    def __init__(self, failure_description):
+        self.failure_description = failure_description
+
+    @property
+    def success(self):
+        return False
+
+    @property
+    def status(self):
+        return ResolverStatus.failed
 
 
 class SuiteState(object):  # or ContextState ?
