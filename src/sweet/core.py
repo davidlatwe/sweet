@@ -199,7 +199,7 @@ class SuiteOp(object):
 
         :param str name: Name to store the context under.
         :param ResolvedContext context: A resolved-context to add.
-        :return: `None` if failed, or a `SuiteCtx` that represents the context
+        :return: None if failed, or a SuiteCtx that represents the context
             just being added.
         :rtype: None or SuiteCtx
         """
@@ -393,7 +393,7 @@ class SuiteOp(object):
         :param ascending: Iter contexts by priority in ascending order.
         :type as_resolved: bool or False
         :type ascending: bool or False
-        :return: An `SuiteCtx` iterator
+        :return: An SuiteCtx object iterator
         :rtype: collections.Iterator[SuiteCtx]
         """
         ctx_data = sorted(
@@ -417,7 +417,7 @@ class SuiteOp(object):
 
         :param context_name: Only yield tools in this context.
         :type context_name: str or None
-        :return: An `SuiteTool` iterator
+        :return: An SuiteTool object iterator
         :rtype: collections.Iterator[SuiteTool]
         """
         self._suite.update_tools()
