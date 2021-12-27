@@ -11,6 +11,12 @@ from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
 from ._rezapi import SweetSuite
+from .constants import (
+    TOOL_VALID,
+    TOOL_HIDDEN,
+    TOOL_SHADOWED,
+    TOOL_MISSING,
+)
 from .exceptions import (
     RezError,
     SuiteError,
@@ -32,7 +38,6 @@ sweetconfig = rezconfig.plugins.command.sweet
 __all__ = (
     "SuiteOp",
     "Storage",
-    "Constants",
 
     "SuiteCtx",
     "SuiteTool",
@@ -52,14 +57,6 @@ SavedSuite = namedtuple(
     "SavedSuite",
     ["name", "branch", "path"]
 )
-
-
-class Constants(object):
-    # suite tool (st) status code
-    st_valid = 0
-    st_hidden = 1
-    st_shadowed = 2
-    st_missing = -1
 
 
 def _warn(message, category=None):
@@ -410,26 +407,26 @@ class SuiteOp(object):
         def _match_context(d_):
             return context_name is None or context_name == d_["context_name"]
 
-        status = Constants.st_valid
+        status = TOOL_VALID
         for d in self._suite.tools.values():
             seen.add(d["tool_alias"])
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
-        status = Constants.st_hidden
+        status = TOOL_HIDDEN
         for d in self._suite.hidden_tools:
             seen.add(d["tool_alias"])
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
-        status = Constants.st_shadowed
+        status = TOOL_SHADOWED
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
                 seen.add(d["tool_alias"])
                 if _match_context(d):
                     yield self._tool_data_to_tuple(d, status=status)
 
-        status = Constants.st_missing
+        status = TOOL_MISSING
         for ctx_name, cached_d in self._suite.saved_tools.items():
             for t_alias, t_name in cached_d.items():
                 if t_alias not in seen:
