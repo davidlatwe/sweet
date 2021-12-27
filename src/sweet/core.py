@@ -80,9 +80,9 @@ class SuiteOp(object):
             s = SweetSuite()
 
             # Attach signal senders
-            s.flush_tools = attach_sender(
+            s.flush_tools = s._flush_tools = attach_sender(
                 sender=self, func=s.flush_tools, sig=sig_tool_flushed)
-            s.update_tools = attach_sender(
+            s.update_tools = s._update_tools = attach_sender(
                 sender=self, func=s.update_tools, sig=sig_tool_updated)
 
             self._working_suite = s
