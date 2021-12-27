@@ -15,36 +15,56 @@ def launch(app_name="sweet-gui"):
     :return: QApplication exit code
     :rtype: int
     """
-    if sys.platform == "darwin":
-        os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
-
-    app = QtWidgets.QApplication.instance() # noqa
-    app = app or QtWidgets.QApplication([])
-
-    storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
-                               QtCore.QSettings.UserScope,
-                               app_name, "preferences")
-    print("Preference file: %s" % storage.fileName())
-
-    state = State(storage=storage)
-    ctrl = control.Controller(state=state)
-    window = view.MainWindow(ctrl=ctrl)
-
-    resources.load_themes()
-    qss = resources.load_theme(name=state.retrieve("theme"))
-    window.setStyleSheet(qss)
-
-    window.show()
-
-    return app.exec_()
+    ses = Session(app_name=app_name)
+    return ses.app.exec_()
 
 
-def init():
-    # todo: init controller and stuff here, good for testing.
-    pass
+class Session(object):
+
+    def __init__(self, app_name="sweet-gui"):
+
+        if sys.platform == "darwin":
+            os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
+
+        app = QtWidgets.QApplication.instance()  # noqa
+        app = app or QtWidgets.QApplication([])
+
+        storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
+                                   QtCore.QSettings.UserScope,
+                                   app_name, "preferences")
+        print("Preference file: %s" % storage.fileName())
+
+        state = State(storage=storage)
+        ctrl = control.Controller(state=state)
+        view_ = view.MainWindow(ctrl=ctrl)
+
+        resources.load_themes()
+        qss = resources.load_theme(name=state.retrieve("theme"))
+        view_.setStyleSheet(qss)
+
+        self._app = app
+        self._ctrl = ctrl
+        self._view = view_
+
+        self._build_connections()
+
+    @property
+    def app(self):
+        return self._app
+
+    @property
+    def ctrl(self):
+        return self._ctrl
+
+    @property
+    def view(self):
+        return self._view
+
+    def _build_connections(self):
+        pass
 
 
-class State(object):  # todo: or this should be "Session" ?
+class State(object):
     """Store/re-store Application status in/between sessions"""
 
     _non = object()  # no value
