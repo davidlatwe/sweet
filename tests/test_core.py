@@ -1,5 +1,7 @@
 
 from .util import TestBase, MemPkgRepo
+from contextlib import contextmanager
+from threading import Event
 from rez.packages import Variant
 from sweet.core import SuiteOp, Storage
 from sweet.constants import (
@@ -7,6 +9,10 @@ from sweet.constants import (
     TOOL_HIDDEN,
     TOOL_SHADOWED,
     TOOL_MISSING,
+)
+from sweet.signals import (
+    sig_tool_flushed,
+    sig_tool_updated,
 )
 
 
@@ -180,3 +186,28 @@ class TestCore(TestBase):
         saved = next(storage.iter_saved_suites())
         self.assertEqual("test", saved.branch)
         self.assertEqual("my-foo", saved.name)
+
+    def test_signals(self):
+        self.repo.add("foo", tools=["fruit"])
+
+        sop = SuiteOp()
+        with self.wait_signal(sig_tool_flushed):
+            sop.add_context("B", ["bee", "bez"])
+
+    @contextmanager
+    def wait_signal(self, sig, timeout=100):
+        event = Event()
+
+        def receiver(sender):
+            print("DONE")
+            event.set()
+
+        sig.connect(receiver)
+
+        try:
+            yield
+        finally:
+            print("WAITING")
+            event.wait(timeout=timeout)
+            if not event.is_set():
+                self.fail("Not emitted.")

@@ -4,13 +4,17 @@ Main business logic, with event notification
 import os
 import warnings
 from collections import namedtuple
-from blinker import signal
 from rez.vendor import yaml
 from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
 from ._rezapi import SweetSuite
+from .signals import (
+    attach_sender,
+    sig_tool_flushed,
+    sig_tool_updated,
+)
 from .constants import (
     TOOL_VALID,
     TOOL_HIDDEN,
@@ -73,7 +77,15 @@ class SuiteOp(object):
     @property
     def _suite(self):
         if self._working_suite is None:
-            self._working_suite = SweetSuite()
+            s = SweetSuite()
+
+            # Attach signal senders
+            s.flush_tools = attach_sender(
+                sender=self, func=s.flush_tools, sig=sig_tool_flushed)
+            s.update_tools = attach_sender(
+                sender=self, func=s.update_tools, sig=sig_tool_updated)
+
+            self._working_suite = s
         return self._working_suite
 
     def dump(self):
