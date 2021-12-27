@@ -2,11 +2,9 @@
 Main business logic, with event notification
 """
 import os
-import copy
 import warnings
 from collections import namedtuple
 from blinker import signal
-from rez.suite import Suite
 from rez.vendor import yaml
 from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
@@ -62,32 +60,6 @@ class Constants(object):
     st_hidden = 1
     st_shadowed = 2
     st_missing = -1
-
-
-class Session(object):
-
-    def __init__(self):
-        self._suites = dict()
-
-    def load(self, saved_suite):
-        pass
-
-    def save(self, name):
-        pass  # return SavedSuite
-
-    def new(self):
-        self._suites["*"] = SuiteOp()
-        # connect signals
-
-
-def _emit_err(sender, err, fatal=False):
-    sig_err = signal("sweet:error")
-    if bool(sig_err.receivers):
-        sig_err.send(sender, err=err)
-        if fatal:
-            raise err
-    else:
-        raise err
 
 
 def _warn(message, category=None):
