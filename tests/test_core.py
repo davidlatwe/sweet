@@ -192,14 +192,13 @@ class TestCore(TestBase):
 
         sop = SuiteOp()
         with self.wait_signal(sig_tool_flushed):
-            sop.add_context("B", ["bee", "bez"])
+            sop.add_context("FOO", ["foo"])
 
     @contextmanager
     def wait_signal(self, sig, timeout=100):
         event = Event()
 
         def receiver(sender):
-            print("DONE")
             event.set()
 
         sig.connect(receiver)
@@ -207,7 +206,6 @@ class TestCore(TestBase):
         try:
             yield
         finally:
-            print("WAITING")
             event.wait(timeout=timeout)
             if not event.is_set():
                 self.fail("Not emitted.")
