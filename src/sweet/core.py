@@ -46,7 +46,7 @@ SuiteCtx = namedtuple(
 )
 SuiteTool = namedtuple(
     "SuiteTool",
-    ["name", "alias", "invalid", "ctx_name", "variant"]
+    ["name", "alias", "status", "ctx_name", "variant"]
 )
 SavedSuite = namedtuple(
     "SavedSuite",
@@ -410,26 +410,26 @@ class SuiteOp(object):
         def _match_context(d_):
             return context_name is None or context_name == d_["context_name"]
 
-        invalid = Constants.st_valid
+        status = Constants.st_valid
         for d in self._suite.tools.values():
             seen.add(d["tool_alias"])
             if _match_context(d):
-                yield self._tool_data_to_tuple(d, invalid=invalid)
+                yield self._tool_data_to_tuple(d, status=status)
 
-        invalid = Constants.st_hidden
+        status = Constants.st_hidden
         for d in self._suite.hidden_tools:
             seen.add(d["tool_alias"])
             if _match_context(d):
-                yield self._tool_data_to_tuple(d, invalid=invalid)
+                yield self._tool_data_to_tuple(d, status=status)
 
-        invalid = Constants.st_shadowed
+        status = Constants.st_shadowed
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
                 seen.add(d["tool_alias"])
                 if _match_context(d):
-                    yield self._tool_data_to_tuple(d, invalid=invalid)
+                    yield self._tool_data_to_tuple(d, status=status)
 
-        invalid = Constants.st_missing
+        status = Constants.st_missing
         for ctx_name, cached_d in self._suite.saved_tools.items():
             for t_alias, t_name in cached_d.items():
                 if t_alias not in seen:
@@ -440,7 +440,7 @@ class SuiteOp(object):
                         "variant": None,
                     }
                     if _match_context(d):
-                        yield self._tool_data_to_tuple(d, invalid=invalid)
+                        yield self._tool_data_to_tuple(d, status=status)
 
     def _ctx_tool_exists(self, context, tool_name):
         context_tools = context.get_tools(request_only=True)
@@ -462,11 +462,11 @@ class SuiteOp(object):
             from_rxt=c.load_path if c else None,
         )
 
-    def _tool_data_to_tuple(self, d, invalid=0):
+    def _tool_data_to_tuple(self, d, status=0):
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
-            invalid=invalid,
+            status=status,
             ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
         )

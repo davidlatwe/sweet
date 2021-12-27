@@ -51,17 +51,17 @@ class TestCore(TestBase):
         foo = sop.add_context("foo", ["foo"])
         bar = sop.add_context("bar", ["bar", "foo"])
 
-        beer, food_1, food_2 = list(sop.iter_tools())
+        beer, food_1, food_2 = sop.iter_tools()
         self.assertEqual("beer", beer.name)
         self.assertEqual(bar.name, beer.ctx_name)
-        self.assertEqual(Constants.st_valid, beer.invalid)
+        self.assertEqual(Constants.st_valid, beer.status)
         self.assertEqual("food", food_1.name)
         self.assertEqual(bar.name, food_1.ctx_name)
-        self.assertEqual(Constants.st_valid, food_1.invalid)
+        self.assertEqual(Constants.st_valid, food_1.status)
         self.assertEqual("food", food_2.name)
         self.assertEqual("food", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
-        self.assertEqual(Constants.st_shadowed, food_2.invalid)
+        self.assertEqual(Constants.st_shadowed, food_2.status)
 
         sop.update_context(foo.name, tool_name="food", new_alias="fruit")
         food_2 = next(t for t in sop.iter_tools(foo.name) if t.name == "food")
@@ -69,7 +69,7 @@ class TestCore(TestBase):
         self.assertEqual("food", food_2.name)
         self.assertEqual("fruit", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
-        self.assertEqual(Constants.st_valid, food_2.invalid)
+        self.assertEqual(Constants.st_valid, food_2.status)
 
     def test_update_tool_2(self):
         """Test updating context with tool alias/hidden preserved"""
@@ -79,22 +79,22 @@ class TestCore(TestBase):
         sop = SuiteOp()
         foo = sop.add_context("foo", ["foo"])
 
-        food, fuzz = list(sop.iter_tools())
+        food, fuzz = sop.iter_tools()
         self.assertEqual("food", food.name)
 
         sop.update_context(foo.name, tool_name=food.name, new_alias="fruit")
         sop.update_context(foo.name, tool_name=fuzz.name, set_hidden=True)
-        food, fuzz = list(sop.iter_tools())
+        food, fuzz = sop.iter_tools()
 
         self.assertEqual("fruit", food.alias)
-        self.assertEqual(Constants.st_hidden, fuzz.invalid)
+        self.assertEqual(Constants.st_hidden, fuzz.status)
 
         sop.update_context(foo.name, requests=["foo", "bar"])
 
-        food, beer, fuzz = list(sop.iter_tools())
+        food, beer, fuzz = sop.iter_tools()
         self.assertEqual("fruit", food.alias)
         self.assertEqual("beer", beer.alias)
-        self.assertEqual(Constants.st_hidden, fuzz.invalid)
+        self.assertEqual(Constants.st_hidden, fuzz.status)
 
     def test_iterating_contexts(self):
         """Test contexts iterated by priority"""
@@ -115,7 +115,7 @@ class TestCore(TestBase):
         self.assertEqual("b", b.name)
         self.assertEqual("c", c.name)
 
-        honey = next(t for t in sop.iter_tools() if not t.invalid)
+        honey = next(t for t in sop.iter_tools() if not t.status)
         self.assertEqual(c.name, honey.ctx_name)
 
     def test_context_reordering(self):
@@ -155,7 +155,7 @@ class TestCore(TestBase):
         sop.add_context("B", ["bee", "bez"])
         sop.add_context("F", ["foo"])
 
-        fruit, honey = list(sop.iter_tools())
+        fruit, honey = sop.iter_tools()
         self.assertTrue(type(fruit.variant) is Variant)
         self.assertTrue(type(honey.variant) is set)
         self.assertTrue(type(honey.variant.pop()) is Variant)
