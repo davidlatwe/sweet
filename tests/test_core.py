@@ -1,7 +1,7 @@
 
-from .util import TestBase, MemPkgRepo
+import blinker
 from contextlib import contextmanager
-from threading import Event
+from threading import Timer
 from rez.packages import Variant
 from sweet.core import SuiteOp, Storage
 from sweet.constants import (
@@ -14,6 +14,7 @@ from sweet.signals import (
     sig_tool_flushed,
     sig_tool_updated,
 )
+from .util import TestBase, MemPkgRepo
 
 
 class TestCore(TestBase):
@@ -191,21 +192,35 @@ class TestCore(TestBase):
         self.repo.add("foo", tools=["fruit"])
 
         sop = SuiteOp()
-        with self.wait_signal(sig_tool_flushed):
+        with self.wait_signals([sig_tool_flushed]):
             sop.add_context("FOO", ["foo"])
 
+        with self.wait_signals([sig_tool_flushed, sig_tool_updated]):
+            sop.refresh()
+
     @contextmanager
-    def wait_signal(self, sig, timeout=100):
-        event = Event()
+    def wait_signals(self, signals, timeout=5.0):
+        """
 
-        def receiver(sender):
-            event.set()
+        :param signals:
+        :param timeout:
+        :type signals: list[blinker.NamedSignal]
+        :return:
+        """
+        events = []
+        receivers = []
 
-        sig.connect(receiver)
+        for sig in signals:
+            receivers.append(lambda s, n=sig.name: events.append(n))
+            sig.connect(receivers[-1])
+
+        timer = Timer(timeout, self.fail, ["Time out"])
+        timer.start()
 
         try:
             yield
         finally:
-            event.wait(timeout=timeout)
-            if not event.is_set():
-                self.fail("Not emitted.")
+            while len(events) != len(signals) and timer.is_alive():
+                pass
+            timer.cancel()
+            receivers.clear()
