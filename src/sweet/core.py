@@ -9,12 +9,8 @@ from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
+from . import signals
 from ._rezapi import SweetSuite
-from .signals import (
-    attach_sender,
-    sig_tool_flushed,
-    sig_tool_updated,
-)
 from .constants import (
     TOOL_VALID,
     TOOL_HIDDEN,
@@ -80,10 +76,10 @@ class SuiteOp(object):
             s = SweetSuite()
 
             # Attach signal senders
-            s.flush_tools = s._flush_tools = attach_sender(
-                sender=self, func=s.flush_tools, sig=sig_tool_flushed)
-            s.update_tools = s._update_tools = attach_sender(
-                sender=self, func=s.update_tools, sig=sig_tool_updated)
+            s.flush_tools = s._flush_tools = signals.attach_sender(
+                sender=self, func=s.flush_tools, sig=signals.SIG_TOOL_FLUSHED)
+            s.update_tools = s._update_tools = signals.attach_sender(
+                sender=self, func=s.update_tools, sig=signals.SIG_TOOL_UPDATED)
 
             self._working_suite = s
         return self._working_suite
@@ -325,6 +321,7 @@ class SuiteOp(object):
                 return
 
         # updating context
+        signals.SIG_CTX_UPDATING.send(self)
 
         if new_name is not None:
             try:
@@ -354,6 +351,8 @@ class SuiteOp(object):
                 self._suite.hide_tool(ctx_name, tool_name)
             else:
                 self._suite.unhide_tool(ctx_name, tool_name)
+
+        signals.SIG_CTX_UPDATED.send(self)
 
         # results
 
@@ -494,6 +493,8 @@ class SuiteOp(object):
         except RezError as e:
             context = BrokenContext(str(e))
 
+        signals.SIG_CTX_RESOLVED.send(self, success=context.success)
+
         return context
 
 
@@ -509,26 +510,6 @@ class BrokenContext(object):
     @property
     def status(self):
         return ResolverStatus.failed
-
-
-class SuiteState(object):  # or ContextState ?
-
-    class CtxPkgs(object):
-        pass
-
-    class CtxEnv(object):
-        pass
-
-    class CtxTools(object):
-        pass
-
-    def __init__(self, sop):
-        """
-
-        :param sop:
-        :type sop: SuiteOp
-        """
-        self._sop = sop
 
 
 class Storage(object):

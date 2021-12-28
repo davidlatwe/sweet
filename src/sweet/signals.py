@@ -2,9 +2,17 @@
 import functools
 from blinker import signal
 
+SIG_TOOL_FLUSHED = signal("sop.tool.flushed")
 
-sig_tool_flushed = signal("sop.tool.flushed")
-sig_tool_updated = signal("sop.tool.updated")
+SIG_TOOL_UPDATED = signal("sop.tool.updated")
+
+SIG_CTX_UPDATING = signal("sop.ctx.updating")
+
+SIG_CTX_UPDATED = signal("sop.ctx.updated")
+
+SIG_CTX_RESOLVED = signal("sop.ctx.resolved")
+"""Context resolved signal.
+"""
 
 
 def attach_sender(sender, func, sig):

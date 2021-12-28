@@ -7,10 +7,7 @@ from sweet.constants import (
     TOOL_SHADOWED,
     TOOL_MISSING,
 )
-from sweet.signals import (
-    sig_tool_flushed,
-    sig_tool_updated,
-)
+from sweet import signals
 from .util import TestBase, MemPkgRepo
 
 
@@ -189,8 +186,9 @@ class TestCore(TestBase):
         self.repo.add("foo", tools=["fruit"])
 
         sop = SuiteOp()
-        with self.wait_signals([sig_tool_flushed]):
+        with self.wait_signals([signals.SIG_TOOL_FLUSHED]):
             sop.add_context("FOO", ["foo"])
 
-        with self.wait_signals([sig_tool_flushed, sig_tool_updated]):
+        with self.wait_signals([signals.SIG_TOOL_FLUSHED,
+                                signals.SIG_TOOL_UPDATED]):
             sop.refresh()
