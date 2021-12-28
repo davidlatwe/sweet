@@ -1,7 +1,4 @@
 
-import blinker
-from contextlib import contextmanager
-from threading import Timer
 from rez.packages import Variant
 from sweet.core import SuiteOp, Storage
 from sweet.constants import (
@@ -197,30 +194,3 @@ class TestCore(TestBase):
 
         with self.wait_signals([sig_tool_flushed, sig_tool_updated]):
             sop.refresh()
-
-    @contextmanager
-    def wait_signals(self, signals, timeout=5.0):
-        """
-
-        :param signals:
-        :param timeout:
-        :type signals: list[blinker.NamedSignal]
-        :return:
-        """
-        events = []
-        receivers = []
-
-        for sig in signals:
-            receivers.append(lambda s, n=sig.name: events.append(n))
-            sig.connect(receivers[-1])
-
-        timer = Timer(timeout, self.fail, ["Time out"])
-        timer.start()
-
-        try:
-            yield
-        finally:
-            while len(events) != len(signals) and timer.is_alive():
-                pass
-            timer.cancel()
-            receivers.clear()

@@ -2,8 +2,11 @@
 import os
 import time
 import shutil
+import blinker
 import unittest
 import tempfile
+from contextlib import contextmanager
+from threading import Timer
 from rez.config import config, _create_locked_config
 from rez.package_repository import package_repository_manager as prm
 from rezplugins.package_repository.memory import MemoryPackageRepository
@@ -48,6 +51,50 @@ class TestBase(unittest.TestCase):
     def make_tempdir(self):
         self._tempdir = tempfile.mkdtemp(prefix="sweet_test_")
         return self._tempdir
+
+    @contextmanager
+    def wait_signals(self, signals, exact=True, timeout=3.0):
+        """Wait for signals in specific interval or test failed.
+
+        :param signals: A list of signals that expected to receive in context.
+        :param exact: Check received signals in same order and exact amount if
+            True, or just checking with sets.
+        :param timeout: The interval for receiving signals.
+        :type signals: list[blinker.NamedSignal]
+        :type exact: bool
+        :type timeout: float
+        :return: None
+        """
+        received = []
+        receivers = []
+
+        for sig in signals:
+            receivers.append(lambda s, _n=sig.name, **kw: received.append(_n))
+            sig.connect(receivers[-1])
+
+        timer = Timer(timeout, print, ["Timeout."])
+        timer.start()
+
+        try:
+            yield
+        finally:
+            while len(received) != len(signals) and timer.is_alive():
+                continue
+
+            if not timer.is_alive():
+                missed = [s.name for s in signals if s.name not in received]
+                self.fail(
+                    "Timeout, not all signals received in %.02f seconds : %s" %
+                    (timeout, ", ".join(missed))
+                )
+
+            timer.cancel()
+            receivers.clear()
+
+            if exact:
+                self.assertListEqual(received, [s.name for s in signals])
+            else:
+                self.assertSetEqual(set(received), {s.name for s in signals})
 
 
 class MemPkgRepo(object):
