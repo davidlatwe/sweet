@@ -36,7 +36,7 @@ class Session(object):
 
         state = State(storage=storage)
         ctrl = control.Controller(state=state)
-        view_ = view.MainWindow(ctrl=ctrl)
+        view_ = view.MainWindow(state=state)
 
         resources.load_themes()
         qss = resources.load_theme(name=state.retrieve("theme"))
@@ -66,8 +66,6 @@ class Session(object):
 
 class State(object):
     """Store/re-store Application status in/between sessions"""
-
-    _non = object()  # no value
 
     def __init__(self, storage):
         """
@@ -101,10 +99,3 @@ class State(object):
         if value is None:
             value = default
         return self._f(value)
-
-    @property
-    def non(self):
-        return self._non
-
-    def s_geometry(self, val=_non):
-        pass
