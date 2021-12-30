@@ -1,5 +1,6 @@
 
 from ..gui.vendor.Qt5 import QtCore, QtWidgets
+from .app import State
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -8,23 +9,28 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(flags=QtCore.Qt.Window)
         self._state = state
 
+    @property
+    def state(self):
+        # type: () -> State
+        return self._state
+
     def showEvent(self, event):
         super(MainWindow, self).showEvent(event)
-        state = self._state
         # splitter = self._panels["split"]
-        state.store("default/geometry", self.saveGeometry())
-        state.store("default/windowState", self.saveState())
-        # state.store("default/windowSplitter", splitter.saveState())
 
-        if state.retrieve("geometry"):
-            self.restoreGeometry(state.retrieve("geometry"))
-            self.restoreState(state.retrieve("windowState"))
-            # splitter.restoreState(state.retrieve("windowSplitter"))
+        with self.state.group("default"):  # for resetting layout
+            self.state.preserve_layout(self, "mainWindow")
+            # self.state.preserve_layout(splitter, "mainSplitter")
+
+        with self.state.group("current"):
+            self.state.restore_layout(self, "mainWindow")
+            # self.state.restore_layout(splitter, "mainSplitter")
 
     def closeEvent(self, event):
-        state = self._state
         # splitter = self._panels["split"]
-        state.store("geometry", self.saveGeometry())
-        state.store("windowState", self.saveState())
-        # state.store("windowSplitter", splitter.saveState())
+
+        with self.state.group("current"):
+            self.state.preserve_layout(self, "mainWindow")
+            # self.state.preserve_layout(splitter, "mainSplitter")
+
         return super(MainWindow, self).closeEvent(event)

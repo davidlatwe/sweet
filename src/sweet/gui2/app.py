@@ -1,6 +1,7 @@
 
 import os
 import sys
+from contextlib import contextmanager
 from ..gui.vendor.Qt5 import QtCore, QtWidgets
 from ..gui import resources
 from . import control, view
@@ -91,6 +92,17 @@ class State(object):
 
         return value
 
+    @contextmanager
+    def group(self, key):
+        self._storage.beginGroup(key)
+        try:
+            yield
+        finally:
+            self._storage.endGroup()
+
+    def is_writeable(self):
+        return self._storage.isWritable()
+
     def store(self, key, value):
         self._storage.setValue(key, value)
 
@@ -99,3 +111,34 @@ class State(object):
         if value is None:
             value = default
         return self._f(value)
+
+    def preserve_layout(self, widget, group):
+        # type: (QtWidgets.QWidget, str) -> None
+        if not self.is_writeable():
+            # todo: prompt warning
+            return
+
+        self._storage.beginGroup(group)
+
+        self.store("geometry", widget.saveGeometry())
+        if hasattr(widget, "saveState"):
+            self.store("state", widget.saveState())
+        if hasattr(widget, "directory"):  # QtWidgets.QFileDialog
+            self.store("directory", widget.directory())
+
+        self._storage.endGroup()
+
+    def restore_layout(self, widget, group):
+        # type: (QtWidgets.QWidget, str) -> None
+        self._storage.beginGroup(group)
+
+        keys = self._storage.allKeys()
+
+        if "geometry" in keys:
+            widget.restoreGeometry(self.retrieve("geometry"))
+        if "state" in keys and hasattr(widget, "restoreState"):
+            widget.restoreState(self.retrieve("state"))
+        if "directory" in keys and hasattr(widget, "setDirectory"):
+            widget.setDirectory(self.retrieve("directory"))
+
+        self._storage.endGroup()
