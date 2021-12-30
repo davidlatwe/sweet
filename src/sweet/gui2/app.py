@@ -1,6 +1,7 @@
 
 import os
 import sys
+import signal as py_signal
 from contextlib import contextmanager
 from ..gui.vendor.Qt5 import QtCore, QtWidgets
 from ..gui import resources
@@ -17,12 +18,15 @@ def launch(app_name="sweet-gui"):
     :rtype: int
     """
     ses = Session(app_name=app_name)
+    ses.view.show()
     return ses.app.exec_()
 
 
 class Session(object):
 
     def __init__(self, app_name="sweet-gui"):
+        # allow user interrupt with Ctrl+C
+        py_signal.signal(py_signal.SIGINT, py_signal.SIG_DFL)
 
         if sys.platform == "darwin":
             os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
