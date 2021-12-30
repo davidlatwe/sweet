@@ -34,3 +34,16 @@ class MainWindow(QtWidgets.QMainWindow):
             # self.state.preserve_layout(splitter, "mainSplitter")
 
         return super(MainWindow, self).closeEvent(event)
+
+
+"""Notes
+
+Current Suite
+Suite View: context and tools
+Context Resolve
+Context View: packages, environment
+
+Saved Suites: with context-tool list, search bar (don't use tab)
+Preference
+Package Lookup
+"""
