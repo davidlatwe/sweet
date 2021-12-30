@@ -1,6 +1,6 @@
 
 from ..gui.vendor.Qt5 import QtCore, QtWidgets
-from .app import State
+from . import app
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -11,7 +11,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @property
     def state(self):
-        # type: () -> State
+        # type: () -> app.State
         return self._state
 
     def showEvent(self, event):
