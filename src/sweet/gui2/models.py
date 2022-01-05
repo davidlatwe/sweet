@@ -1,6 +1,6 @@
 
 
-from ..gui.vendor.Qt5 import QtCore, QtGui
+from ._vendor.Qt5 import QtCore, QtGui
 
 
 class SuiteModel(QtGui.QStandardItemModel):

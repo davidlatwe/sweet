@@ -1,8 +1,7 @@
 
 import re
-from ..gui.vendor.Qt5 import QtWidgets, QtGui, QtCore
-from ..gui import resources as res
-from . import models
+from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
+from . import models, resources as res
 
 
 class CurrentSuite(QtWidgets.QWidget):
@@ -294,8 +293,54 @@ class RequestEditor(QtWidgets.QWidget):
 
 
 class ResolvedPackages(QtWidgets.QWidget):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedPackages, self).__init__(*args, **kwargs)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.on_right_click)
+
+    def on_right_click(self, position):
+        index = self.indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        menu = QtWidgets.QMenu(self)
+        openfile = QtWidgets.QAction("Open file location", menu)
+        copyfile = QtWidgets.QAction("Copy file location", menu)
+
+        menu.addAction(openfile)
+        menu.addAction(copyfile)
+
+        def on_openfile():
+            package = index.data(role=ResolvedPackageModel.PackageRole)
+            pkg_uri = os.path.dirname(package.uri)
+            fname = os.path.join(pkg_uri, "package.py")
+            util.open_file_location(fname)
+
+        def on_copyfile():
+            package = index.data(role=ResolvedPackageModel.PackageRole)
+            pkg_uri = os.path.dirname(package.uri)
+            fname = os.path.join(pkg_uri, "package.py")
+            clipboard = QtWidgets.QApplication.instance().clipboard()
+            clipboard.setText(fname)
+
+        openfile.triggered.connect(on_openfile)
+        copyfile.triggered.connect(on_copyfile)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
 
 
 class ResolvedEnvironment(QtWidgets.QWidget):
     pass
+
+
+class ResolvedCode(QtWidgets.QWidget):
+    pass
+
+
+class ResolvedGraph(QtWidgets.QWidget):
+    pass
+

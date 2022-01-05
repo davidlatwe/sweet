@@ -1,5 +1,5 @@
 
-from ..gui.vendor.Qt5 import QtCore, QtWidgets
+from ._vendor.Qt5 import QtCore, QtWidgets
 from .widgets import (
     CurrentSuite,
     ContextStack,

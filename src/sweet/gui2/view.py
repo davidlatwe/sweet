@@ -1,6 +1,6 @@
 
-from ..gui.vendor.Qt5 import QtCore, QtWidgets
-from . import app, pages, widgets
+from ._vendor.Qt5 import QtCore, QtWidgets
+from . import app, pages
 
 
 class MainWindow(QtWidgets.QMainWindow):

@@ -3,9 +3,8 @@ import os
 import sys
 import signal as py_signal
 from contextlib import contextmanager
-from ..gui.vendor.Qt5 import QtCore, QtWidgets
-from ..gui import resources
-from . import control, view, widgets
+from ._vendor.Qt5 import QtCore, QtWidgets
+from . import control, view, widgets, resources
 
 
 def launch(app_name="sweet-gui"):

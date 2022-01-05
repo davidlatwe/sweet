@@ -1,7 +1,7 @@
 
-from ..gui.vendor.Qt5 import QtCore, QtGui
 from ..core import SuiteOp, SuiteCtx
 from .. import _rezapi as rez
+from ._vendor.Qt5 import QtCore
 
 
 class Controller(QtCore.QObject):
