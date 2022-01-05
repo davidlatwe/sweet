@@ -1,5 +1,6 @@
 
 import os
+import functools
 import webbrowser
 import subprocess
 
@@ -23,3 +24,12 @@ def normpath(path):
 
 def normpaths(*paths):
     return list(map(normpath, paths))
+
+
+def attach_sender(sender, func, signal):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        returned = func(*args, **kwargs)
+        signal.send(sender)
+        return returned
+    return wrapper

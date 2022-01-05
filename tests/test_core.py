@@ -186,9 +186,9 @@ class TestCore(TestBase):
         self.repo.add("foo", tools=["fruit"])
 
         sop = SuiteOp()
-        with self.wait_signals([signals.SIG_TOOL_FLUSHED]):
+        with self.wait_signals([signals.tool_flushed]):
             sop.add_context("FOO", ["foo"])
 
-        with self.wait_signals([signals.SIG_TOOL_FLUSHED,
-                                signals.SIG_TOOL_UPDATED]):
+        with self.wait_signals([signals.tool_flushed,
+                                signals.tool_updated]):
             sop.refresh()

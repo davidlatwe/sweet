@@ -9,7 +9,7 @@ from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
-from . import signals
+from . import signals, util
 from ._rezapi import SweetSuite
 from .constants import (
     TOOL_VALID,
@@ -76,13 +76,16 @@ class SuiteOp(object):
             s = SweetSuite()
 
             # Attach signal senders
-            s.flush_tools = s._flush_tools = signals.attach_sender(
-                sender=self, func=s.flush_tools, sig=signals.SIG_TOOL_FLUSHED)
-            s.update_tools = s._update_tools = signals.attach_sender(
-                sender=self, func=s.update_tools, sig=signals.SIG_TOOL_UPDATED)
+            s.flush_tools = s._flush_tools = util.attach_sender(
+                sender=self, func=s.flush_tools, signal=signals.tool_flushed)
+            s.update_tools = s._update_tools = util.attach_sender(
+                sender=self, func=s.update_tools, signal=signals.tool_updated)
 
             self._working_suite = s
         return self._working_suite
+
+    def reset(self):
+        self._working_suite = None
 
     def dump(self):
         suite_dict = self._suite.to_dict()
@@ -321,7 +324,7 @@ class SuiteOp(object):
                 return
 
         # updating context
-        signals.SIG_CTX_UPDATING.send(self)
+        signals.ctx_updating.send(self)
 
         if new_name is not None:
             try:
@@ -352,7 +355,7 @@ class SuiteOp(object):
             else:
                 self._suite.unhide_tool(ctx_name, tool_name)
 
-        signals.SIG_CTX_UPDATED.send(self)
+        signals.ctx_updated.send(self)
 
         # results
 
@@ -493,7 +496,7 @@ class SuiteOp(object):
         except RezError as e:
             context = BrokenContext(str(e))
 
-        signals.SIG_CTX_RESOLVED.send(self, success=context.success)
+        signals.ctx_resolved.send(self, success=context.success)
 
         return context
 
