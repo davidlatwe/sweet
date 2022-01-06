@@ -4,7 +4,7 @@ import sys
 import signal as py_signal
 from contextlib import contextmanager
 from ._vendor.Qt5 import QtCore, QtWidgets
-from . import control, view, widgets, resources
+from . import control, view, pages, widgets, resources
 
 
 def launch(app_name="sweet-gui"):
@@ -65,9 +65,12 @@ class Session(object):
         return self._view
 
     def _build_connections(self):
-        stack = self.view.find(widgets.ContextStack)
-        stack.added.connect(self.ctrl.on_stack_added)
-        self.ctrl.context_added.connect(stack.on_context_added)
+        ctx_stack = self.view.find(widgets.ContextStack)
+        ctx_stack.added.connect(self.ctrl.on_stack_added)
+        self.ctrl.context_added.connect(ctx_stack.on_context_added)
+
+        resolve_page = self.view.find(pages.ResolvePage)
+        self.ctrl.context_added.connect(resolve_page.on_context_added)
 
 
 class State(object):

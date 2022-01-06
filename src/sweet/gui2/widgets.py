@@ -1,5 +1,8 @@
 
 import re
+import os
+import json
+from .. import util
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from . import models, resources as res
 
@@ -275,8 +278,9 @@ class ToolStack(QtWidgets.QWidget):
 
 
 class RequestEditor(QtWidgets.QWidget):
+    requested = QtCore.Signal(str, list)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, context_name, *args, **kwargs):
         super(RequestEditor, self).__init__(*args, **kwargs)
 
         request = QtWidgets.QTextEdit()
@@ -291,22 +295,35 @@ class RequestEditor(QtWidgets.QWidget):
         layout.addWidget(request)
         layout.addWidget(resolve)
 
+        def resolved():
+            self.requested.emit(context_name, request.toPlainText().split())
+
+        resolve.clicked.connect(resolved)
+
 
 class ResolvedPackages(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(ResolvedPackages, self).__init__(*args, **kwargs)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.on_right_click)
+
+        view = QtWidgets.QTreeView()
+        view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        view.customContextMenuRequested.connect(self.on_right_click)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
+
+        self._view = view
 
     def on_right_click(self, position):
-        index = self.indexAt(position)
+        view = self._view
+        index = view.indexAt(position)
 
         if not index.isValid():
             # Clicked outside any item
             return
 
-        menu = QtWidgets.QMenu(self)
+        menu = QtWidgets.QMenu(view)
         openfile = QtWidgets.QAction("Open file location", menu)
         copyfile = QtWidgets.QAction("Copy file location", menu)
 
@@ -314,13 +331,13 @@ class ResolvedPackages(QtWidgets.QWidget):
         menu.addAction(copyfile)
 
         def on_openfile():
-            package = index.data(role=ResolvedPackageModel.PackageRole)
+            package = index.data(role=models.ResolvedPackagesModel.PackageRole)
             pkg_uri = os.path.dirname(package.uri)
             fname = os.path.join(pkg_uri, "package.py")
             util.open_file_location(fname)
 
         def on_copyfile():
-            package = index.data(role=ResolvedPackageModel.PackageRole)
+            package = index.data(role=models.ResolvedPackagesModel.PackageRole)
             pkg_uri = os.path.dirname(package.uri)
             fname = os.path.join(pkg_uri, "package.py")
             clipboard = QtWidgets.QApplication.instance().clipboard()
@@ -333,8 +350,63 @@ class ResolvedPackages(QtWidgets.QWidget):
         menu.show()
 
 
+class JsonView(QtWidgets.QTreeView):
+
+    def __init__(self, parent=None):
+        super(JsonView, self).__init__(parent)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.on_right_click)
+
+    def on_right_click(self, position):
+        index = self.indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        model_ = index.model()
+        menu = QtWidgets.QMenu(self)
+        copy = QtWidgets.QAction("Copy JSON", menu)
+        copy_full = QtWidgets.QAction("Copy full JSON", menu)
+
+        menu.addAction(copy)
+        menu.addAction(copy_full)
+        menu.addSeparator()
+
+        def on_copy():
+            text = str(model_.data(index, models.JsonModel.JsonRole))
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        def on_copy_full():
+            if isinstance(model_, QtCore.QSortFilterProxyModel):
+                data = model_.sourceModel().json()
+            else:
+                data = model_.json()
+
+            text = json.dumps(data,
+                              indent=4,
+                              sort_keys=True,
+                              ensure_ascii=False)
+
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        copy.triggered.connect(on_copy)
+        copy_full.triggered.connect(on_copy_full)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
+
 class ResolvedEnvironment(QtWidgets.QWidget):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedEnvironment, self).__init__(*args, **kwargs)
+
+        view = JsonView()
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
 
 
 class ResolvedCode(QtWidgets.QWidget):

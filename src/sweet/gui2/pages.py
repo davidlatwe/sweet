@@ -33,10 +33,13 @@ class ResolvePage(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvePage, self).__init__(*args, **kwargs)
 
-        request_editor = RequestEditor()
+        request_editor = RequestEditor()  # use StackWidget + ComboBox
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(request_editor)
+
+    def on_context_added(self, ctx):
+        pass
 
 
 class StoragePage(QtWidgets.QWidget):
