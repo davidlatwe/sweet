@@ -4,7 +4,41 @@ import os
 import json
 from .. import util
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
+from ._vendor import qoverview
 from . import models, resources as res
+
+
+class TreeView(qoverview.VerticalExtendedTreeView):
+
+    def __init__(self, *args, **kwargs):
+        super(TreeView, self).__init__(*args, **kwargs)
+        self.setAllColumnsShowFocus(True)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setStyleSheet("""
+            QTreeView::item{
+                padding: 5px 1px;
+                border: 0px;
+            }
+        """)
+
+
+class DragDropTreeView(TreeView):
+
+    def __init__(self, *args, **kwargs):
+        super(DragDropTreeView, self).__init__(*args, **kwargs)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(False)
+        self.setDragDropMode(self.InternalMove)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+
+    def dropEvent(self, event):
+        index = self.indexAt(event.pos())
+        print(index.column())
+        print(event.mimeData())
+        # self.model().moveRows(QModelIndex(), 0, 0, QModelIndex(), 1)
+        # event.accept()
+        return super(DragDropTreeView, self).dropEvent(event)
 
 
 class CurrentSuite(QtWidgets.QWidget):
@@ -45,7 +79,8 @@ class SuiteSavingDialog(QtWidgets.QDialog):
 
 class ContextStack(QtWidgets.QWidget):
     added = QtCore.Signal(str)
-    dropped = QtCore.Signal(str)
+    dropped = QtCore.Signal(list)
+    reordered = QtCore.Signal(list)
 
     def __init__(self, *args, **kwargs):
         super(ContextStack, self).__init__(*args, **kwargs)
@@ -59,15 +94,10 @@ class ContextStack(QtWidgets.QWidget):
         btn_rm = QtWidgets.QPushButton()
         btn_rm.setIcon(res.icon("images", "trash-fill-dim.svg"))
 
-        stack = QtWidgets.QTreeView()
-        stack.setDragEnabled(True)
-        stack.setAcceptDrops(True)
-        stack.setDropIndicatorShown(True)
-        stack.setDragDropMode(stack.InternalMove)
-        stack.setDefaultDropAction(QtCore.Qt.MoveAction)
+        view = DragDropTreeView()
 
         model = models.ContextStackModel()
-        stack.setModel(model)
+        view.setModel(model)
 
         # layout
 
@@ -78,7 +108,7 @@ class ContextStack(QtWidgets.QWidget):
 
         stack_layout = QtWidgets.QHBoxLayout()
         stack_layout.addLayout(action_layout)
-        stack_layout.addWidget(stack)
+        stack_layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(label)
@@ -87,23 +117,26 @@ class ContextStack(QtWidgets.QWidget):
         # signals
 
         btn_add.clicked.connect(self.add_context)
-        btn_rm.clicked.connect(self.drop_context)
+        btn_rm.clicked.connect(self.drop_contexts)
+        model.rowsMoved.connect(self.context_reordered)
 
-        self._stack = stack
+        self._view = view
         self._model = model
 
     def on_context_added(self, ctx):
         item = QtGui.QStandardItem(ctx.name)
+        item.setData(ctx, role=self._model.ItemRole)
         self._model.insertRow(0, item)
 
     def on_context_dropped(self, name):
-        pass
+        for item in self._model.findItems(name):
+            self._model.removeRow(item.row())
 
     def on_suite_reset(self):
         self._model.clear()
 
     def add_context(self):
-        existing_names = ["foo"]  # todo: get existing names from model
+        existing_names = self._model.context_names()
         widget = ContextNameEditor(existing_names=existing_names)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
@@ -115,13 +148,23 @@ class ContextStack(QtWidgets.QWidget):
         dialog.finished.connect(on_finished)
         dialog.open()
 
-    def drop_context(self):
-        pass
+    def drop_contexts(self):
+        names = self.selected_contexts()
+        if names:
+            self.dropped.emit(names)
 
-    def refresh(self, contexts):
-        for ctx in contexts:
-            item = QtGui.QStandardItem(ctx.name)
-            self._model.appendRow(item)
+    def selected_contexts(self):
+        return self._model.context_names(self._view.selectedIndexes())
+
+    def context_reordered(self, *args, **kwargs):
+        # _ = parent, start, end, destination, row
+        new_order = self._model.context_names()
+        self.reordered.emit(new_order)
+
+    # def refresh(self, contexts):
+    #     for ctx in contexts:
+    #         item = QtGui.QStandardItem(ctx.name)
+    #         self._model.appendRow(item)
 
 
 class YesNoDialog(QtWidgets.QDialog):
@@ -157,14 +200,15 @@ class ContextNameEditor(QtWidgets.QWidget):
 
     def __init__(self, existing_names, *args, **kwargs):
         super(ContextNameEditor, self).__init__(*args, **kwargs)
+        self.setMinimumWidth(300)
 
-        validator = RegExpValidator("^[a-zA-Z0-9_.]*$")
+        validator = RegExpValidator("^[a-zA-Z0-9_.-]*$")
 
         name = QtWidgets.QLineEdit()
         name.setValidator(validator)
         name.setPlaceholderText("Input context name..")
-        name.setToolTip("Only alphanumeric characters (A-Z a-z 0-9), "
-                        "'_' and '.' are allowed.")
+        name.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
+                        "_, -, . are allowed.")
 
         message = QtWidgets.QLabel()
 
@@ -255,7 +299,7 @@ class ToolStack(QtWidgets.QWidget):
         btn_filter = QtWidgets.QPushButton()  # toggleable
         btn_filter.setIcon(res.icon("images", "funnel-fill.svg"))
 
-        stack = QtWidgets.QTreeView()
+        stack = TreeView()
 
         model = models.ToolStackModel()
         stack.setModel(model)
@@ -277,13 +321,41 @@ class ToolStack(QtWidgets.QWidget):
         # signals
 
 
+class ResolvePanel(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvePanel, self).__init__(*args, **kwargs)
+
+        label = QtWidgets.QLabel()
+        request_editor = RequestEditor()
+        resolved_pkg = ResolvedPackages()
+        resolved_env = ResolvedEnvironment()
+
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(resolved_pkg, "Packages")
+        tabs.addTab(resolved_env, "Environment")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(label)
+        layout.addWidget(request_editor)
+        layout.addWidget(tabs)
+
+        self._label = label
+        self._editor = request_editor
+
+    def set_name(self, ctx_name):
+        self._editor.set_name(ctx_name)
+        self._label.setText("Context: %s" % ctx_name)
+
+
 class RequestEditor(QtWidgets.QWidget):
     requested = QtCore.Signal(str, list)
 
-    def __init__(self, context_name, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(RequestEditor, self).__init__(*args, **kwargs)
 
         request = QtWidgets.QTextEdit()
+        request.setObjectName("RequestTextEdit")
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
@@ -295,10 +367,16 @@ class RequestEditor(QtWidgets.QWidget):
         layout.addWidget(request)
         layout.addWidget(resolve)
 
-        def resolved():
-            self.requested.emit(context_name, request.toPlainText().split())
+        resolve.clicked.connect(self.on_resolve_clicked)
 
-        resolve.clicked.connect(resolved)
+        self._name = None
+        self._text = request
+
+    def on_resolve_clicked(self):
+        self.requested.emit(self._name, self._text.toPlainText().split())
+
+    def set_name(self, ctx_name):
+        self._name = ctx_name
 
 
 class ResolvedPackages(QtWidgets.QWidget):
@@ -306,7 +384,7 @@ class ResolvedPackages(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedPackages, self).__init__(*args, **kwargs)
 
-        view = QtWidgets.QTreeView()
+        view = TreeView()
         view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         view.customContextMenuRequested.connect(self.on_right_click)
 
@@ -350,7 +428,7 @@ class ResolvedPackages(QtWidgets.QWidget):
         menu.show()
 
 
-class JsonView(QtWidgets.QTreeView):
+class JsonView(TreeView):
 
     def __init__(self, parent=None):
         super(JsonView, self).__init__(parent)

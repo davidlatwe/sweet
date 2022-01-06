@@ -4,7 +4,7 @@ from .widgets import (
     CurrentSuite,
     ContextStack,
     ToolStack,
-    RequestEditor,
+    ResolvePanel,
 )
 
 
@@ -33,13 +33,55 @@ class ResolvePage(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvePage, self).__init__(*args, **kwargs)
 
-        request_editor = RequestEditor()  # use StackWidget + ComboBox
+        switch = QtWidgets.QComboBox()
+        stack = QtWidgets.QStackedWidget()
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(request_editor)
+        layout.addWidget(switch)
+        layout.addWidget(stack)
+
+        switch.currentIndexChanged.connect(stack.setCurrentIndex)
+
+        self._switch = switch
+        self._stack = stack
+
+        self._add_panel_0()
 
     def on_context_added(self, ctx):
-        pass
+        name = ctx.name
+        is_first = self._switch.count() == 0
+
+        self._switch.insertItem(0, name)
+        if is_first:
+            panel = self._stack.widget(0)
+            panel.set_name(name)
+            panel.setEnabled(True)
+        else:
+            self.add_panel(name)
+            self._switch.setCurrentIndex(0)
+
+    def on_context_dropped(self, name):
+        index = self._switch.findText(name)
+        if index < 0:
+            return  # should not happen
+
+        self._switch.removeItem(index)
+        is_empty = self._switch.count() == 0
+
+        panel = self._stack.widget(index)
+        self._stack.removeWidget(panel)
+        if is_empty:
+            self._add_panel_0()
+
+    def add_panel(self, name, enabled=True):
+        panel = ResolvePanel()
+        panel.set_name(name)
+        panel.setEnabled(enabled)
+
+        self._stack.insertWidget(0, panel)
+
+    def _add_panel_0(self):
+        self.add_panel("", enabled=False)
 
 
 class StoragePage(QtWidgets.QWidget):

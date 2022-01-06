@@ -24,14 +24,18 @@ def launch(app_name="sweet-gui"):
 class Session(object):
 
     def __init__(self, app_name="sweet-gui"):
-        # allow user interrupt with Ctrl+C
-        py_signal.signal(py_signal.SIGINT, py_signal.SIG_DFL)
-
         if sys.platform == "darwin":
             os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
 
         app = QtWidgets.QApplication.instance()  # noqa
         app = app or QtWidgets.QApplication([])
+
+        # allow user to interrupt with Ctrl+C
+        def sigint_handler(signals, frame):
+            sys.exit(app.exit(-1))
+        py_signal.signal(py_signal.SIGINT, sigint_handler)
+
+        # init
 
         storage = QtCore.QSettings(QtCore.QSettings.IniFormat,
                                    QtCore.QSettings.UserScope,
@@ -46,11 +50,24 @@ class Session(object):
         qss = resources.load_theme(name=state.retrieve("theme"))
         view_.setStyleSheet(qss)
 
+        # signals
+
+        ctx_stack = view_.find(widgets.ContextStack)
+        resolve_page = view_.find(pages.ResolvePage)
+
+        ctx_stack.added.connect(ctrl.on_stack_added)
+        ctrl.context_added.connect(ctx_stack.on_context_added)
+        ctrl.context_added.connect(resolve_page.on_context_added)
+
+        ctx_stack.dropped.connect(ctrl.on_stack_dropped)
+        ctrl.context_dropped.connect(ctx_stack.on_context_dropped)
+        ctrl.context_dropped.connect(resolve_page.on_context_dropped)
+
+        ctx_stack.reordered.connect(ctrl.on_stack_reordered)
+
         self._app = app
         self._ctrl = ctrl
         self._view = view_
-
-        self._build_connections()
 
     @property
     def app(self):
@@ -63,14 +80,6 @@ class Session(object):
     @property
     def view(self):
         return self._view
-
-    def _build_connections(self):
-        ctx_stack = self.view.find(widgets.ContextStack)
-        ctx_stack.added.connect(self.ctrl.on_stack_added)
-        self.ctrl.context_added.connect(ctx_stack.on_context_added)
-
-        resolve_page = self.view.find(pages.ResolvePage)
-        self.ctrl.context_added.connect(resolve_page.on_context_added)
 
 
 class State(object):

@@ -6,6 +6,7 @@ from ._vendor.Qt5 import QtCore
 
 class Controller(QtCore.QObject):
     context_added = QtCore.Signal(SuiteCtx)
+    context_dropped = QtCore.Signal(str)
 
     def __init__(self, state):
         super(Controller, self).__init__()
@@ -16,10 +17,25 @@ class Controller(QtCore.QObject):
     def on_stack_added(self, name):
         self.add_context(name)
 
+    def on_stack_dropped(self, names):
+        for name in names:
+            self.drop_context(name)
+
+    def on_stack_reordered(self, names):
+        self.reorder_contexts(names)
+
     def add_context(self, name, requests=None):
         requests = requests or []
         ctx = self._sop.add_context(name, requests=requests)
         self.context_added.emit(ctx)
+
+    def drop_context(self, name):
+        self._sop.drop_context(name)
+        self.context_dropped.emit(name)
+
+    def reorder_contexts(self, new_order):
+        print(new_order)
+        # self._sop.reorder_contexts(new_order)
 
     def iter_installed_packages(self, no_local=False):
         paths = None
