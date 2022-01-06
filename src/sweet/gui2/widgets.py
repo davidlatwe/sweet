@@ -33,6 +33,12 @@ class DragDropTreeView(TreeView):
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
 
     def dropEvent(self, event):
+        if not (
+            event.source() == self
+            and event.possibleActions() & QtCore.Qt.MoveAction
+        ):  # only accept internal move
+            return
+
         index = self.indexAt(event.pos())
         print(index.column())
         print(event.mimeData())
