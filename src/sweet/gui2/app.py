@@ -7,6 +7,10 @@ from ._vendor.Qt5 import QtCore, QtWidgets
 from . import control, view, pages, widgets, resources
 
 
+if sys.platform == "darwin":
+    os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
+
+
 def launch(app_name="sweet-gui"):
     """GUI entry point
 
@@ -24,16 +28,15 @@ def launch(app_name="sweet-gui"):
 class Session(object):
 
     def __init__(self, app_name="sweet-gui"):
-        if sys.platform == "darwin":
-            os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            app = QtWidgets.QApplication([])
 
-        app = QtWidgets.QApplication.instance()  # noqa
-        app = app or QtWidgets.QApplication([])
+            # allow user to interrupt with Ctrl+C
+            def sigint_handler(signals, frame):
+                sys.exit(app.exit(-1))
 
-        # allow user to interrupt with Ctrl+C
-        def sigint_handler(signals, frame):
-            sys.exit(app.exit(-1))
-        py_signal.signal(py_signal.SIGINT, sigint_handler)
+            py_signal.signal(py_signal.SIGINT, sigint_handler)
 
         # init
 
