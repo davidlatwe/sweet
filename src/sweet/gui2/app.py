@@ -21,7 +21,7 @@ def launch(app_name="sweet-gui"):
     :rtype: int
     """
     ses = Session(app_name=app_name)
-    ses.view.show()
+    ses.show()
     return ses.app.exec_()
 
 
@@ -118,6 +118,24 @@ class Session(object):
         view.setStyleSheet(qss)
         view.style().unpolish(view)
         view.style().polish(view)
+
+    def show(self):
+        view = self._view
+        view.show()
+
+        # If the window is minimized then un-minimize it.
+        if view.windowState() & QtCore.Qt.WindowMinimized:
+            view.setWindowState(QtCore.Qt.WindowActive)
+
+        view.raise_()  # for MacOS
+        view.activateWindow()  # for Windows
+
+    def process(self, events=QtCore.QEventLoop.AllEvents):
+        self._app.eventDispatcher().processEvents(events)
+
+    def close(self):
+        self._app.closeAllWindows()
+        self._app.quit()
 
 
 class State(object):
