@@ -50,6 +50,14 @@ class TestCore(TestBase):
         s_dict = sop.dump()
         self.assertIn("foo", s_dict["contexts"])
 
+    def test_rename_context(self):
+        sop = SuiteOp()
+        sop.add_context("foo", [])
+        sop.update_context("foo", new_name="bar")
+
+        ctx = next(sop.iter_contexts())
+        self.assertEqual("bar", ctx.name)
+
     def test_update_tool_1(self):
         self.repo.add("foo", tools=["food"])
         self.repo.add("bar", tools=["beer"])

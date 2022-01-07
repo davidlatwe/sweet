@@ -359,7 +359,7 @@ class SuiteOp(object):
 
         # results
 
-        data = self._suite.contexts[name]
+        data = self._suite.contexts[ctx_name]
         return self._ctx_data_to_tuple(data)
 
     def find_contexts(self, in_request=None, in_resolve=None):
