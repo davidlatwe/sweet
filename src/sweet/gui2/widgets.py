@@ -425,10 +425,15 @@ class ResolvePanel(QtWidgets.QWidget):
         request_editor = RequestEditor()
 
         resolved_info = QtWidgets.QWidget()
+        info = QtWidgets.QLabel("Resolved Context Info")
         tabs = QtWidgets.QTabWidget()
+        tabs.addTab(ResolvedTools(), "Tools")
         tabs.addTab(ResolvedPackages(), "Packages")
         tabs.addTab(ResolvedEnvironment(), "Environment")
+        tabs.addTab(ResolvedCode(), "Code")
+        tabs.addTab(ResolvedGraph(), "Graph")
         layout = QtWidgets.QVBoxLayout(resolved_info)
+        layout.addWidget(info)
         layout.addWidget(tabs)
 
         splitter = QtWidgets.QSplitter()
@@ -481,6 +486,10 @@ class RequestEditor(QtWidgets.QWidget):
 
     def set_name(self, ctx_name):
         self._name = ctx_name
+
+
+class ResolvedTools(QtWidgets.QWidget):
+    pass
 
 
 class ResolvedPackages(QtWidgets.QWidget):
@@ -598,3 +607,6 @@ class ResolvedCode(QtWidgets.QWidget):
 class ResolvedGraph(QtWidgets.QWidget):
     pass
 
+
+class InstalledPackagesView(QtWidgets.QWidget):
+    pass

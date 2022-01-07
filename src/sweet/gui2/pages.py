@@ -10,6 +10,9 @@ from .widgets import (
     StackedResolveView,
     ToolStack,
 
+    # packages page
+    InstalledPackagesView,
+
 )
 
 
@@ -75,6 +78,11 @@ class PackagesPage(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(PackagesPage, self).__init__(*args, **kwargs)
+
+        installed = InstalledPackagesView()
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(installed)
 
 
 class PreferencePage(QtWidgets.QWidget):
