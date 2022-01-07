@@ -53,34 +53,5 @@ class Controller(QtCore.QObject):
         self._sop.update_context(name, requests=requests)
         # todo: emit resolved signal
 
-    def iter_installed_packages(self, no_local=False):
-        paths = None
-        seen = dict()
-
-        if no_local:
-            paths = rez.config.nonlocal_packages_path
-
-        for family in rez.iter_package_families(paths=paths):
-            name = family.name
-            path = family.resource.location
-            path = "{}@{}".format(family.repository.name(), path)
-
-            for package in rez.iter_packages(name, paths=[path]):
-                qualified_name = package.qualified_name
-
-                if qualified_name in seen:
-                    seen[qualified_name]["locations"].append(path)
-                    continue
-
-                doc = {
-                    "family": name,
-                    "version": str(package.version),
-                    "uri": package.uri,
-                    "tools": package.tools or [],
-                    "qualified_name": qualified_name,
-                    "timestamp": package.timestamp,
-                    "locations": [path],
-                }
-                seen[qualified_name] = doc
-
-                yield doc
+    def iter_installed_packages(self):
+        pass

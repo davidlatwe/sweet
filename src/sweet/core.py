@@ -9,6 +9,9 @@ from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
+from rez.packages import PackageFamily, Package
+from rez.packages import iter_package_families, iter_packages
+from rez.package_repository import package_repository_manager
 from . import signals, util
 from ._rezapi import SweetSuite
 from .constants import (
@@ -559,3 +562,52 @@ class Storage(object):
                         branch=b,
                         path=path,
                     )
+
+
+class InstalledPackages(object):
+
+    def __init__(self, paths=None):
+        self._paths = paths or rezconfig.packages_path
+        self._families = []
+        self._packages = []
+
+    def refresh(self):
+        for path in self._paths:
+            repo = package_repository_manager.get_repository(path)
+            repo.clear_caches()
+
+    def iter_families(self):
+        for family in iter_package_families(paths=self._paths):
+            name = family.name
+            path = family.resource.location
+            path = "{}@{}".format(family.repository.name(), path)
+
+            doc = {
+                "name": name,
+                "path": path,
+            }
+
+            yield doc
+
+    def iter_packages(self, name, path):
+        seen = dict()
+
+        for package in iter_packages(name, paths=[path]):
+            qualified_name = package.qualified_name
+
+            if qualified_name in seen:
+                seen[qualified_name]["locations"].append(path)
+                continue
+
+            doc = {
+                "family": name,
+                "version": str(package.version),
+                "uri": package.uri,
+                "tools": package.tools or [],
+                "qualified_name": qualified_name,
+                "timestamp": package.timestamp,
+                "locations": [path],
+            }
+            seen[qualified_name] = doc
+
+            yield doc
