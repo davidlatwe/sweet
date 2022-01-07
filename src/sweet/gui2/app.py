@@ -69,11 +69,14 @@ class Session(object):
         context_list.added.connect(ctrl.on_add_context_clicked)
         context_list.dropped.connect(ctrl.on_drop_context_clicked)
         context_list.reordered.connect(ctrl.on_context_item_moved)
-        request_editor.requested.connect(ctrl.on_context_resolve_clicked)
+        context_list.renamed.connect(ctrl.on_rename_context_clicked)
+        request_editor.requested.connect(ctrl.on_resolve_context_clicked)
 
         # control -> view
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
+        ctrl.context_renamed.connect(context_list.on_context_renamed)
+        ctrl.context_renamed.connect(stacked_resolve.on_context_renamed)
         ctrl.context_dropped.connect(context_list.on_context_dropped)
         ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
         ctrl.context_reordered.connect(context_list.on_context_reordered)

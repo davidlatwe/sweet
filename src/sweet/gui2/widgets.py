@@ -78,6 +78,7 @@ class DragDropListWidget(QtWidgets.QListWidget):
 
 class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
+    renamed = QtCore.Signal(str, str)
     dropped = QtCore.Signal(list)
     reordered = QtCore.Signal(list)
     selected = QtCore.Signal(str)
@@ -111,6 +112,7 @@ class ContextListWidget(QtWidgets.QWidget):
         btn_rm.clicked.connect(self.drop_contexts)
         view.currentTextChanged.connect(self.selected)
         view.dropped.connect(self.context_reordered)
+        view.itemDoubleClicked.connect(self.rename_context)
 
         self._view = view
 
@@ -134,6 +136,10 @@ class ContextListWidget(QtWidgets.QWidget):
         for item in items:
             self._view.addItem(item)
 
+    def on_context_renamed(self, name, new_name):
+        item = self._find_item(name)
+        item.setText(new_name)
+
     def on_suite_reset(self):
         self._view.clear()
 
@@ -141,14 +147,37 @@ class ContextListWidget(QtWidgets.QWidget):
         return next(iter(self._view.findItems(name, QtCore.Qt.MatchExactly)))
 
     def add_context(self):
-        existing_names = self.context_names()
-        widget = ContextNameEditor(existing_names=existing_names)
+        existing = self.context_names()
+        widget = ContextNameEditor(existing=existing)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
 
         def on_finished(result):
             if result:
                 self.added.emit(widget.get_name())
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
+
+    def rename_context(self, item):
+        """
+        :param item:
+        :type item: QtWidgets.QListWidgetItem
+        :return:
+        """
+        old_name = item.text()
+        existing = self.context_names()
+        existing.remove(old_name)
+
+        widget = ContextNameEditor(existing=existing, default=old_name)
+        dialog = YesNoDialog(widget, parent=self)
+        dialog.setWindowTitle("Rename Context")
+
+        def on_finished(result):
+            if result:
+                new_name = widget.get_name()
+                if old_name != new_name:
+                    self.renamed.emit(old_name, new_name)
 
         dialog.finished.connect(on_finished)
         dialog.open()
@@ -205,13 +234,14 @@ class ContextNameEditor(QtWidgets.QWidget):
         "invalid": QtGui.QColor("#C84747"),
     }
 
-    def __init__(self, existing_names, *args, **kwargs):
+    def __init__(self, existing, default="", *args, **kwargs):
         super(ContextNameEditor, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
 
         validator = RegExpValidator("^[a-zA-Z0-9_.-]*$")
 
         name = QtWidgets.QLineEdit()
+        name.setText(default)
         name.setValidator(validator)
         name.setPlaceholderText("Input context name..")
         name.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
@@ -240,7 +270,7 @@ class ContextNameEditor(QtWidgets.QWidget):
         self._status_color = self.colors["ready"]
         self._name = ""
         self._message = message
-        self._existing_names = existing_names
+        self._existing_names = existing
 
         anim.setTargetObject(self)
         anim.setPropertyName(QtCore.QByteArray(b"status_color"))
@@ -347,6 +377,13 @@ class StackedResolveView(QtWidgets.QStackedWidget):
             self.setCurrentIndex(0)
 
         self._names.insert(0, name)
+
+    def on_context_renamed(self, name, new_name):
+        index = self._names.index(name)
+        panel = self.widget(index)
+        panel.set_name(new_name)
+        self._names.remove(name)
+        self._names.insert(index, new_name)
 
     def on_context_dropped(self, name):
         index = self._names.index(name)
