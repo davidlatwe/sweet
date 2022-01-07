@@ -12,7 +12,7 @@ class BaseItemModel(QtGui.QStandardItemModel):
         self.setColumnCount(len(self.Headers))
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole and section < len(self.Headers):
             return self.Headers[section]
         return super(BaseItemModel, self).headerData(
             section, orientation, role)
