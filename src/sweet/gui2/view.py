@@ -16,12 +16,22 @@ class MainWindow(QtWidgets.QMainWindow):
         suite_page = pages.SuitePage()
         resolve_page = pages.ResolvePage()
 
+        suite_tab = QtWidgets.QSplitter()
+        suite_tab.setOrientation(QtCore.Qt.Horizontal)
+        suite_tab.addWidget(resolve_page)
+        suite_tab.addWidget(suite_page)
+
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(suite_tab, "Suite Editor")
+
         layout = QtWidgets.QHBoxLayout(body)
-        layout.addWidget(resolve_page)
-        layout.addWidget(suite_page)
+        layout.addWidget(tabs)
 
         self._body = body
         self._state = state
+        self._splitters = {
+            "suiteEditSplit": suite_tab
+        }
 
         self.setCentralWidget(body)
 
@@ -30,22 +40,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def showEvent(self, event):
         super(MainWindow, self).showEvent(event)
-        # splitter = self._panels["split"]
 
         with self._state.group("default"):  # for resetting layout
             self._state.preserve_layout(self, "mainWindow")
-            # self._state.preserve_layout(splitter, "mainSplitter")
+            for key, split in self._splitters.items():
+                self._state.preserve_layout(split, key)
 
         with self._state.group("current"):
             self._state.restore_layout(self, "mainWindow")
-            # self._state.restore_layout(splitter, "mainSplitter")
+            for key, split in self._splitters.items():
+                self._state.restore_layout(split, key)
 
     def closeEvent(self, event):
-        # splitter = self._panels["split"]
-
         with self._state.group("current"):
             self._state.preserve_layout(self, "mainWindow")
-            # self._state.preserve_layout(splitter, "mainSplitter")
+            for key, split in self._splitters.items():
+                self._state.preserve_layout(split, key)
 
         return super(MainWindow, self).closeEvent(event)
 

@@ -341,10 +341,19 @@ class ResolvePanel(QtWidgets.QWidget):
         tabs.addTab(resolved_pkg, "Packages")
         tabs.addTab(resolved_env, "Environment")
 
+        splitter = QtWidgets.QSplitter()
+        splitter.addWidget(request_editor)
+        splitter.addWidget(tabs)
+
+        splitter.setOrientation(QtCore.Qt.Vertical)
+        splitter.setChildrenCollapsible(False)
+        splitter.setStretchFactor(0, 30)
+        splitter.setStretchFactor(1, 70)
+
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(label)
-        layout.addWidget(request_editor)
-        layout.addWidget(tabs)
+        layout.addWidget(splitter)
 
         self._label = label
         self._editor = request_editor

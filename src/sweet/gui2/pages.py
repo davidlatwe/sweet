@@ -18,13 +18,18 @@ class SuitePage(QtWidgets.QWidget):
         tool_stack = ToolStack()
 
         splitter = QtWidgets.QSplitter()
-        splitter.setOrientation(QtCore.Qt.Vertical)
-        splitter.setChildrenCollapsible(False)
         splitter.addWidget(current_suite)
         splitter.addWidget(context_stack)
         splitter.addWidget(tool_stack)
 
+        splitter.setOrientation(QtCore.Qt.Vertical)
+        splitter.setChildrenCollapsible(False)
+        splitter.setStretchFactor(0, 30)
+        splitter.setStretchFactor(1, 35)
+        splitter.setStretchFactor(2, 35)
+
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
 
 
