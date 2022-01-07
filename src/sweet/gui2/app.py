@@ -4,7 +4,7 @@ import sys
 import signal as py_signal
 from contextlib import contextmanager
 from ._vendor.Qt5 import QtCore, QtWidgets
-from . import control, view, pages, widgets, resources
+from . import control, window, pages, widgets, resources
 
 
 if sys.platform == "darwin":
@@ -47,7 +47,7 @@ class Session(object):
 
         state = State(storage=storage)
         ctrl = control.Controller(state=state)
-        view_ = view.MainWindow(state=state)
+        view_ = window.MainWindow(state=state)
 
         resources.load_themes()
         qss = resources.load_theme(name=state.retrieve("theme"))
@@ -55,18 +55,18 @@ class Session(object):
 
         # signals
 
-        ctx_stack = view_.find(widgets.ContextStack)
-        resolve_page = view_.find(pages.ResolvePage)
+        context_list = view_.find(widgets.ContextListWidget)
+        stacked_resolve = view_.find(widgets.StackedResolveView)
 
-        ctx_stack.added.connect(ctrl.on_stack_added)
-        ctrl.context_added.connect(ctx_stack.on_context_added)
-        ctrl.context_added.connect(resolve_page.on_context_added)
+        context_list.added.connect(ctrl.on_add_context_clicked)
+        ctrl.context_added.connect(context_list.on_context_added)
+        ctrl.context_added.connect(stacked_resolve.on_context_added)
 
-        ctx_stack.dropped.connect(ctrl.on_stack_dropped)
-        ctrl.context_dropped.connect(ctx_stack.on_context_dropped)
-        ctrl.context_dropped.connect(resolve_page.on_context_dropped)
+        context_list.dropped.connect(ctrl.on_drop_context_clicked)
+        ctrl.context_dropped.connect(context_list.on_context_dropped)
+        ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
 
-        ctx_stack.reordered.connect(ctrl.on_stack_reordered)
+        context_list.reordered.connect(ctrl.on_context_item_moved)
 
         self._app = app
         self._ctrl = ctrl

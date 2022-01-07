@@ -14,14 +14,14 @@ class Controller(QtCore.QObject):
         self._sop = SuiteOp()
         self._state = state
 
-    def on_stack_added(self, name):
+    def on_add_context_clicked(self, name):
         self.add_context(name)
 
-    def on_stack_dropped(self, names):
+    def on_drop_context_clicked(self, names):
         for name in names:
             self.drop_context(name)
 
-    def on_stack_reordered(self, names):
+    def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
     def add_context(self, name, requests=None):

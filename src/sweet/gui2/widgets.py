@@ -22,31 +22,6 @@ class TreeView(qoverview.VerticalExtendedTreeView):
         """)
 
 
-class DragDropTreeView(TreeView):
-
-    def __init__(self, *args, **kwargs):
-        super(DragDropTreeView, self).__init__(*args, **kwargs)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(False)
-        self.setDragDropMode(self.InternalMove)
-        self.setDefaultDropAction(QtCore.Qt.MoveAction)
-
-    def dropEvent(self, event):
-        if not (
-            event.source() == self
-            and event.possibleActions() & QtCore.Qt.MoveAction
-        ):  # only accept internal move
-            return
-
-        index = self.indexAt(event.pos())
-        print(index.column())
-        print(event.mimeData())
-        # self.model().moveRows(QModelIndex(), 0, 0, QModelIndex(), 1)
-        # event.accept()
-        return super(DragDropTreeView, self).dropEvent(event)
-
-
 class CurrentSuite(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
@@ -83,66 +58,62 @@ class SuiteSavingDialog(QtWidgets.QDialog):
     pass
 
 
-class ContextStack(QtWidgets.QWidget):
+class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
     dropped = QtCore.Signal(list)
     reordered = QtCore.Signal(list)
 
     def __init__(self, *args, **kwargs):
-        super(ContextStack, self).__init__(*args, **kwargs)
-        self.setObjectName("ContextStack")
+        super(ContextListWidget, self).__init__(*args, **kwargs)
+        self.setObjectName("ContextListWidget")
 
         label = QtWidgets.QLabel("Context Stack")
 
-        btn_add = QtWidgets.QPushButton()
-        btn_add.setIcon(res.icon("images", "plus.svg"))
+        view = QtWidgets.QListWidget()
+        view.setDragEnabled(True)
+        view.setAcceptDrops(True)
+        view.setDropIndicatorShown(True)
+        view.setDragDropMode(view.InternalMove)
+        view.setDefaultDropAction(QtCore.Qt.MoveAction)
 
-        btn_rm = QtWidgets.QPushButton()
-        btn_rm.setIcon(res.icon("images", "trash-fill-dim.svg"))
+        btn_add = QtWidgets.QPushButton("Add")
+        btn_add.setObjectName("ContextAddOpBtn")
 
-        view = DragDropTreeView()
-
-        model = models.ContextStackModel()
-        view.setModel(model)
+        btn_rm = QtWidgets.QPushButton("Remove")
+        btn_rm.setObjectName("ContextRemoveOpBtn")
 
         # layout
 
-        action_layout = QtWidgets.QVBoxLayout()
-        action_layout.addWidget(btn_add)
-        action_layout.addWidget(btn_rm)
-        action_layout.addStretch()
-
-        stack_layout = QtWidgets.QHBoxLayout()
-        stack_layout.addLayout(action_layout)
-        stack_layout.addWidget(view)
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(label)
-        layout.addLayout(stack_layout)
+        layout.addWidget(btn_add)
+        layout.addWidget(view, stretch=True)
+        layout.addWidget(btn_rm)
 
         # signals
 
         btn_add.clicked.connect(self.add_context)
         btn_rm.clicked.connect(self.drop_contexts)
-        model.rowsMoved.connect(self.context_reordered)
+        # model.rowsMoved.connect(self.context_reordered)
 
         self._view = view
-        self._model = model
+        self._model = view.model()
 
     def on_context_added(self, ctx):
-        item = QtGui.QStandardItem(ctx.name)
-        item.setData(ctx, role=self._model.ItemRole)
-        self._model.insertRow(0, item)
+        item = QtWidgets.QListWidgetItem(ctx.name)
+        # item.setData(ctx, role=self._model.ItemRole)
+        self._view.insertItem(0, item)
 
     def on_context_dropped(self, name):
-        for item in self._model.findItems(name):
-            self._model.removeRow(item.row())
+        for item in self._view.findItems(name, QtCore.Qt.MatchExactly):
+            self._view.takeItem(self._view.row(item))
+            self._view.removeItemWidget(item)
 
     def on_suite_reset(self):
-        self._model.clear()
+        self._view.clear()
 
     def add_context(self):
-        existing_names = self._model.context_names()
+        existing_names = self.context_names()
         widget = ContextNameEditor(existing_names=existing_names)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
@@ -160,7 +131,14 @@ class ContextStack(QtWidgets.QWidget):
             self.dropped.emit(names)
 
     def selected_contexts(self):
-        return self._model.context_names(self._view.selectedIndexes())
+        return [
+            item.text() for item in self._view.selectedItems()
+        ]
+
+    def context_names(self):
+        return [
+            self._view.item(row).text() for row in range(self._view.count())
+        ]
 
     def context_reordered(self, *args, **kwargs):
         # _ = parent, start, end, destination, row
@@ -327,12 +305,74 @@ class ToolStack(QtWidgets.QWidget):
         # signals
 
 
+class StackedResolveView(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(StackedResolveView, self).__init__(*args, **kwargs)
+
+        switch = QtWidgets.QComboBox()
+        stack = QtWidgets.QStackedWidget()
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(switch)
+        layout.addWidget(stack)
+
+        switch.currentIndexChanged.connect(stack.setCurrentIndex)
+
+        self._switch = switch
+        self._stack = stack
+
+        self._add_panel_0()
+
+    def on_context_added(self, ctx):
+        name = ctx.name
+        is_first = self._switch.count() == 0
+
+        self._switch.insertItem(0, name)
+        if is_first:
+            panel = self._stack.widget(0)
+            panel.set_name(name)
+            panel.setEnabled(True)
+        else:
+            self.add_panel(name)
+            self._switch.setCurrentIndex(0)
+
+    def on_context_dropped(self, name):
+        index = self._switch.findText(name)
+        if index < 0:
+            return  # should not happen
+
+        self._switch.removeItem(index)
+        is_empty = self._switch.count() == 0
+
+        panel = self._stack.widget(index)
+        self._stack.removeWidget(panel)
+        if is_empty:
+            self._add_panel_0()
+
+    def add_panel(self, name, enabled=True):
+        panel = ResolvePanel()
+        panel.set_name(name)
+        panel.setEnabled(enabled)
+
+        self._stack.insertWidget(0, panel)
+
+    def _add_panel_0(self):
+        self.add_panel("", enabled=False)
+
+
 class ResolvePanel(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(ResolvePanel, self).__init__(*args, **kwargs)
 
         label = QtWidgets.QLabel()
+
+        prefix = QtWidgets.QLineEdit()
+        prefix.setPlaceholderText("context prefix..")
+        suffix = QtWidgets.QLineEdit()
+        suffix.setPlaceholderText("context suffix..")
+
         request_editor = RequestEditor()
         resolved_pkg = ResolvedPackages()
         resolved_env = ResolvedEnvironment()

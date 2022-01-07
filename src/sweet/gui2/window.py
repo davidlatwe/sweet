@@ -13,16 +13,9 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(flags=QtCore.Qt.Window)
 
         body = QtWidgets.QWidget()
-        suite_page = pages.SuitePage()
-        resolve_page = pages.ResolvePage()
-
-        suite_tab = QtWidgets.QSplitter()
-        suite_tab.setOrientation(QtCore.Qt.Horizontal)
-        suite_tab.addWidget(resolve_page)
-        suite_tab.addWidget(suite_page)
 
         tabs = QtWidgets.QTabWidget()
-        tabs.addTab(suite_tab, "Suite Editor")
+        tabs.addTab(pages.SuitePage(), "Suite Editor")
 
         layout = QtWidgets.QHBoxLayout(body)
         layout.addWidget(tabs)
@@ -30,10 +23,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._body = body
         self._state = state
         self._splitters = {
-            "suiteEditSplit": suite_tab
+            s.objectName(): s
+            for s in body.findChildren(QtWidgets.QSplitter) if s.objectName()
         }
 
         self.setCentralWidget(body)
+        self.statusBar().show()  # todo: connect messages
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)

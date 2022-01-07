@@ -664,36 +664,12 @@ https://doc.qt.io/qt-5/stylesheet-reference.html#icon
     icon: url(%(res)s/lightning-fill.svg);
 }
 
-#ContextTimestampOpBtn {
-    icon: url(%(res)s/calendar2-week-fill-dim.svg);
+#ContextAddOpBtn {
+    icon: url(%(res)s/plus.svg);
 }
 
-#ContextTimestampOpBtn:hover {
-    icon: url(%(res)s/calendar2-week-fill.svg);
-}
-
-#ContextFilterOpBtn {
-    icon: url(%(res)s/funnel-fill-dim.svg);
-}
-
-#ContextFilterOpBtn:hover {
-    icon: url(%(res)s/funnel-fill.svg);
-}
-
-#ContextBuildingOpBtn {
-    icon: url(%(res)s/cone-striped-dim.svg);
-}
-
-#ContextBuildingOpBtn:hover {
-    icon: url(%(res)s/cone-striped.svg);
-}
-
-#ContextDetailOpBtn {
-    icon: url(%(res)s/info-fill-dim.svg);
-}
-
-#ContextDetailOpBtn:hover {
-    icon: url(%(res)s/info-fill.svg);
+#ContextAddOpBtn:hover {
+    icon: url(%(res)s/plus.svg);
 }
 
 #ContextRemoveOpBtn {

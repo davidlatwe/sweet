@@ -1,92 +1,66 @@
 
 from ._vendor.Qt5 import QtCore, QtWidgets
 from .widgets import (
+
+    # suite page
     CurrentSuite,
-    ContextStack,
+    ContextListWidget,
+    StackedResolveView,
     ToolStack,
-    ResolvePanel,
+
 )
 
 
 class SuitePage(QtWidgets.QWidget):
+    """
+     ____________
+    /suite editor\
+    +---------------------------------+
+    | suite name                      |
+    |------+-----------+--------------+
+    | ctx1 |           |              |
+    | ctx2 |  Resolve  |  Tools View  |
+    | .... |  Context  |              |
+    |      |           |              |
+    +------+-----------+--------------+
+
+    """
 
     def __init__(self, *args, **kwargs):
         super(SuitePage, self).__init__(*args, **kwargs)
 
         current_suite = CurrentSuite()
-        context_stack = ContextStack()
+
+        context_list = ContextListWidget()
+        stacked_resolve = StackedResolveView()
         tool_stack = ToolStack()
 
-        splitter = QtWidgets.QSplitter()
-        splitter.addWidget(current_suite)
-        splitter.addWidget(context_stack)
-        splitter.addWidget(tool_stack)
+        body_split = QtWidgets.QSplitter()
+        body_split.addWidget(context_list)
+        body_split.addWidget(stacked_resolve)
+        body_split.addWidget(tool_stack)
 
-        splitter.setOrientation(QtCore.Qt.Vertical)
-        splitter.setChildrenCollapsible(False)
-        splitter.setStretchFactor(0, 30)
-        splitter.setStretchFactor(1, 35)
-        splitter.setStretchFactor(2, 35)
+        body_split.setOrientation(QtCore.Qt.Horizontal)
+        body_split.setChildrenCollapsible(False)
+        body_split.setStretchFactor(0, 20)
+        body_split.setStretchFactor(1, 40)
+        body_split.setStretchFactor(2, 40)
+
+        head_split = QtWidgets.QSplitter()
+        head_split.addWidget(current_suite)
+        head_split.addWidget(body_split)
+
+        head_split.setOrientation(QtCore.Qt.Vertical)
+        head_split.setChildrenCollapsible(False)
+        head_split.setStretchFactor(0, 40)
+        head_split.setStretchFactor(1, 60)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(splitter)
+        layout.addWidget(head_split)
 
-
-class ResolvePage(QtWidgets.QWidget):
-
-    def __init__(self, *args, **kwargs):
-        super(ResolvePage, self).__init__(*args, **kwargs)
-
-        switch = QtWidgets.QComboBox()
-        stack = QtWidgets.QStackedWidget()
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(switch)
-        layout.addWidget(stack)
-
-        switch.currentIndexChanged.connect(stack.setCurrentIndex)
-
-        self._switch = switch
-        self._stack = stack
-
-        self._add_panel_0()
-
-    def on_context_added(self, ctx):
-        name = ctx.name
-        is_first = self._switch.count() == 0
-
-        self._switch.insertItem(0, name)
-        if is_first:
-            panel = self._stack.widget(0)
-            panel.set_name(name)
-            panel.setEnabled(True)
-        else:
-            self.add_panel(name)
-            self._switch.setCurrentIndex(0)
-
-    def on_context_dropped(self, name):
-        index = self._switch.findText(name)
-        if index < 0:
-            return  # should not happen
-
-        self._switch.removeItem(index)
-        is_empty = self._switch.count() == 0
-
-        panel = self._stack.widget(index)
-        self._stack.removeWidget(panel)
-        if is_empty:
-            self._add_panel_0()
-
-    def add_panel(self, name, enabled=True):
-        panel = ResolvePanel()
-        panel.set_name(name)
-        panel.setEnabled(enabled)
-
-        self._stack.insertWidget(0, panel)
-
-    def _add_panel_0(self):
-        self.add_panel("", enabled=False)
+        head_split.setObjectName("suitePageHeadSplit")
+        body_split.setObjectName("suitePageBodySplit")
 
 
 class StoragePage(QtWidgets.QWidget):

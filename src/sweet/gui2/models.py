@@ -18,7 +18,7 @@ class BaseItemModel(QtGui.QStandardItemModel):
             section, orientation, role)
 
 
-class ContextStackModel(BaseItemModel):
+class ContextListModel(BaseItemModel):  # QtCore.QAbstractListModel
     Headers = [
         "Name",
         "Prefix",
@@ -64,7 +64,7 @@ class ContextStackModel(BaseItemModel):
             if column == 3:
                 return ctx.loaded
 
-        return super(ContextStackModel, self).data(index, role)
+        return super(ContextListModel, self).data(index, role)
 
     def context_names(self, indexes=None):
         indexes = indexes if indexes is not None else [
@@ -75,9 +75,7 @@ class ContextStackModel(BaseItemModel):
 
 class ToolStackModel(BaseItemModel):
     Headers = [
-        "Alias",
         "Name",
-        "Context",
         "Status",
     ]
 
@@ -90,6 +88,10 @@ class ResolvedPackagesModel(BaseItemModel):
     ]
 
     PackageRole = QtCore.Qt.UserRole + 10
+
+
+class ResolvedToolsModel(BaseItemModel):
+    pass
 
 
 class JsonModel(qjsonmodel.QJsonModel):
