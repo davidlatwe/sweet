@@ -56,20 +56,27 @@ class Session(object):
 
         # signals
 
-        context_list = view_.find(widgets.ContextListWidget)
-        stacked_resolve = view_.find(widgets.StackedResolveView)
-        preference = view_.find(pages.PreferencePage)
+        context_list = view_.find(
+            widgets.ContextListWidget)  # type: widgets.ContextListWidget
+        stacked_resolve = view_.find(
+            widgets.StackedResolveView)  # type: widgets.StackedResolveView
+        preference = view_.find(
+            pages.PreferencePage)  # type: pages.PreferencePage
 
+        # view -> control
         context_list.added.connect(ctrl.on_add_context_clicked)
-        ctrl.context_added.connect(context_list.on_context_added)
-        ctrl.context_added.connect(stacked_resolve.on_context_added)
-
         context_list.dropped.connect(ctrl.on_drop_context_clicked)
-        ctrl.context_dropped.connect(context_list.on_context_dropped)
-        ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
-
         context_list.reordered.connect(ctrl.on_context_item_moved)
 
+        # control -> view
+        ctrl.context_added.connect(context_list.on_context_added)
+        ctrl.context_added.connect(stacked_resolve.on_context_added)
+        ctrl.context_dropped.connect(context_list.on_context_dropped)
+        ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
+        ctrl.context_reordered.connect(context_list.on_context_reordered)
+
+        # view -> view
+        context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
 
         self._app = app

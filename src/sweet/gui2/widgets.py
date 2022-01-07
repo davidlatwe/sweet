@@ -58,10 +58,29 @@ class SuiteSavingDialog(QtWidgets.QDialog):
     pass
 
 
+class DragDropListWidget(QtWidgets.QListWidget):
+    dropped = QtCore.Signal()
+
+    def __init__(self, *args, **kwargs):
+        super(DragDropListWidget, self).__init__(*args, **kwargs)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(self.InternalMove)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+
+    def dropEvent(self, event):
+        rte = super(DragDropListWidget, self).dropEvent(event)
+        if event.isAccepted():
+            self.dropped.emit()
+        return rte
+
+
 class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
     dropped = QtCore.Signal(list)
     reordered = QtCore.Signal(list)
+    selected = QtCore.Signal(str)
 
     def __init__(self, *args, **kwargs):
         super(ContextListWidget, self).__init__(*args, **kwargs)
@@ -69,12 +88,8 @@ class ContextListWidget(QtWidgets.QWidget):
 
         label = QtWidgets.QLabel("Context Stack")
 
-        view = QtWidgets.QListWidget()
-        view.setDragEnabled(True)
-        view.setAcceptDrops(True)
-        view.setDropIndicatorShown(True)
-        view.setDragDropMode(view.InternalMove)
-        view.setDefaultDropAction(QtCore.Qt.MoveAction)
+        view = DragDropListWidget()
+        view.setSortingEnabled(False)  # do not sort this !
 
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
@@ -94,23 +109,36 @@ class ContextListWidget(QtWidgets.QWidget):
 
         btn_add.clicked.connect(self.add_context)
         btn_rm.clicked.connect(self.drop_contexts)
-        # model.rowsMoved.connect(self.context_reordered)
+        view.currentTextChanged.connect(self.selected)
+        view.dropped.connect(self.context_reordered)
 
         self._view = view
-        self._model = view.model()
 
     def on_context_added(self, ctx):
         item = QtWidgets.QListWidgetItem(ctx.name)
         # item.setData(ctx, role=self._model.ItemRole)
         self._view.insertItem(0, item)
+        self._view.setCurrentRow(0)
 
     def on_context_dropped(self, name):
-        for item in self._view.findItems(name, QtCore.Qt.MatchExactly):
+        item = self._find_item(name)
+        self._view.takeItem(self._view.row(item))
+        self._view.removeItemWidget(item)
+
+    def on_context_reordered(self, new_order):
+        items = []
+        for name in new_order:
+            item = self._find_item(name)
             self._view.takeItem(self._view.row(item))
-            self._view.removeItemWidget(item)
+            items.append(item)
+        for item in items:
+            self._view.addItem(item)
 
     def on_suite_reset(self):
         self._view.clear()
+
+    def _find_item(self, name):
+        return next(iter(self._view.findItems(name, QtCore.Qt.MatchExactly)))
 
     def add_context(self):
         existing_names = self.context_names()
@@ -137,18 +165,13 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def context_names(self):
         return [
-            self._view.item(row).text() for row in range(self._view.count())
+            self._view.item(row).text()
+            for row in range(self._view.count())
         ]
 
-    def context_reordered(self, *args, **kwargs):
-        # _ = parent, start, end, destination, row
-        new_order = self._model.context_names()
+    def context_reordered(self):
+        new_order = self.context_names()
         self.reordered.emit(new_order)
-
-    # def refresh(self, contexts):
-    #     for ctx in contexts:
-    #         item = QtGui.QStandardItem(ctx.name)
-    #         self._model.appendRow(item)
 
 
 class YesNoDialog(QtWidgets.QDialog):
@@ -305,57 +328,46 @@ class ToolStack(QtWidgets.QWidget):
         # signals
 
 
-class StackedResolveView(QtWidgets.QWidget):
+class StackedResolveView(QtWidgets.QStackedWidget):
 
     def __init__(self, *args, **kwargs):
         super(StackedResolveView, self).__init__(*args, **kwargs)
-
-        switch = QtWidgets.QComboBox()
-        stack = QtWidgets.QStackedWidget()
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(switch)
-        layout.addWidget(stack)
-
-        switch.currentIndexChanged.connect(stack.setCurrentIndex)
-
-        self._switch = switch
-        self._stack = stack
-
         self._add_panel_0()
+        self._names = []
 
     def on_context_added(self, ctx):
         name = ctx.name
-        is_first = self._switch.count() == 0
-
-        self._switch.insertItem(0, name)
+        is_first = len(self._names) == 0
         if is_first:
-            panel = self._stack.widget(0)
+            panel = self.widget(0)
             panel.set_name(name)
             panel.setEnabled(True)
         else:
             self.add_panel(name)
-            self._switch.setCurrentIndex(0)
+            self.setCurrentIndex(0)
+
+        self._names.insert(0, name)
 
     def on_context_dropped(self, name):
-        index = self._switch.findText(name)
-        if index < 0:
-            return  # should not happen
+        index = self._names.index(name)
+        self._names.remove(name)
+        is_empty = len(self._names) == 0
 
-        self._switch.removeItem(index)
-        is_empty = self._switch.count() == 0
-
-        panel = self._stack.widget(index)
-        self._stack.removeWidget(panel)
+        panel = self.widget(index)
+        self.removeWidget(panel)
         if is_empty:
             self._add_panel_0()
+
+    def on_context_selected(self, name):
+        # name may not exists yet while the context is just being added.
+        if name in self._names:
+            self.setCurrentIndex(self._names.index(name))
 
     def add_panel(self, name, enabled=True):
         panel = ResolvePanel()
         panel.set_name(name)
         panel.setEnabled(enabled)
-
-        self._stack.insertWidget(0, panel)
+        self.insertWidget(0, panel)
 
     def _add_panel_0(self):
         self.add_panel("", enabled=False)
@@ -374,16 +386,17 @@ class ResolvePanel(QtWidgets.QWidget):
         suffix.setPlaceholderText("context suffix..")
 
         request_editor = RequestEditor()
-        resolved_pkg = ResolvedPackages()
-        resolved_env = ResolvedEnvironment()
 
+        resolved_info = QtWidgets.QWidget()
         tabs = QtWidgets.QTabWidget()
-        tabs.addTab(resolved_pkg, "Packages")
-        tabs.addTab(resolved_env, "Environment")
+        tabs.addTab(ResolvedPackages(), "Packages")
+        tabs.addTab(ResolvedEnvironment(), "Environment")
+        layout = QtWidgets.QVBoxLayout(resolved_info)
+        layout.addWidget(tabs)
 
         splitter = QtWidgets.QSplitter()
         splitter.addWidget(request_editor)
-        splitter.addWidget(tabs)
+        splitter.addWidget(resolved_info)
 
         splitter.setOrientation(QtCore.Qt.Vertical)
         splitter.setChildrenCollapsible(False)
@@ -391,7 +404,6 @@ class ResolvePanel(QtWidgets.QWidget):
         splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(label)
         layout.addWidget(splitter)
 

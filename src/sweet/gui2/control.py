@@ -7,6 +7,7 @@ from ._vendor.Qt5 import QtCore
 class Controller(QtCore.QObject):
     context_added = QtCore.Signal(SuiteCtx)
     context_dropped = QtCore.Signal(str)
+    context_reordered = QtCore.Signal(list)
 
     def __init__(self, state):
         super(Controller, self).__init__()
@@ -34,8 +35,8 @@ class Controller(QtCore.QObject):
         self.context_dropped.emit(name)
 
     def reorder_contexts(self, new_order):
-        print(new_order)
-        # self._sop.reorder_contexts(new_order)
+        self._sop.reorder_contexts(new_order)
+        self.context_reordered.emit(new_order)
 
     def iter_installed_packages(self, no_local=False):
         paths = None
