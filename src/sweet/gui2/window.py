@@ -16,6 +16,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(pages.SuitePage(), "Suite Editor")
+        tabs.addTab(pages.PreferencePage(state), "Preferences")
 
         layout = QtWidgets.QHBoxLayout(body)
         layout.addWidget(tabs)
@@ -32,6 +33,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)
+
+    def reset_layout(self):
+        with self._state.group("default"):
+            self._state.restore_layout(self, "mainWindow", keep_geo=True)
+            for key, split in self._splitters.items():
+                self._state.restore_layout(split, key)
 
     def showEvent(self, event):
         super(MainWindow, self).showEvent(event)
@@ -53,16 +60,3 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._state.preserve_layout(split, key)
 
         return super(MainWindow, self).closeEvent(event)
-
-
-"""Notes
-
-Current Suite
-Tools View: context and tools
-Context Resolve
-Context View: packages, environment
-
-Saved Suites: with context-tool list, search bar (don't use tab)
-Preference
-Package Lookup
-"""

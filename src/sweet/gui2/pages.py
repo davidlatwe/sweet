@@ -1,5 +1,7 @@
 
 from ._vendor.Qt5 import QtCore, QtWidgets
+from ._vendor import qargparse
+from . import resources as res
 from .widgets import (
 
     # suite page
@@ -76,6 +78,67 @@ class PackagesPage(QtWidgets.QWidget):
 
 
 class PreferencePage(QtWidgets.QWidget):
+    """Sweet settings
+    Changes will be saved and effected immediately.
+    """
+    changed = QtCore.Signal(str, object)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, state, *args, **kwargs):
         super(PreferencePage, self).__init__(*args, **kwargs)
+        self.setObjectName("Preference")
+
+        doc = QtWidgets.QLabel()
+        doc.setObjectName("DocStrings")
+        doc.setText(self.__doc__.strip())
+
+        options = qargparse.QArgumentParser([
+            qargparse.Separator("Appearance"),
+
+            qargparse.Enum(
+                "theme",
+                items=res.theme_names(),
+                default=0,
+                initial=state.retrieve("theme"),
+                help="GUI skin. May need to restart Sweet after changed."
+            ),
+
+            qargparse.Button(
+                "reloadTheme",
+                help="Reload current theme."
+            ),
+
+            qargparse.Button(
+                "resetLayout",
+                help="Reset layout back to their defaults."
+            ),
+
+            qargparse.Separator("Settings"),
+
+            qargparse.Enum(
+                "suiteOpenAs",
+                items=["Ask", "Loaded", "Import"],
+                default=0,
+                initial=state.retrieve("suiteOpenAs")
+            ),
+
+        ])
+
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidget(options)
+        scroll.setWidgetResizable(True)
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(doc, 0, 0, 1, -1)
+        layout.addWidget(scroll, 1, 0, 1, -1)
+        layout.setSpacing(4)
+
+        options.changed.connect(self.on_option_changed)
+
+        self._state = state
+
+    def on_option_changed(self, argument):
+        name = argument["name"]
+        value = argument.read()
+        self._state.store(name, value)
+        self.changed.emit(name, value)

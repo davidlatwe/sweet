@@ -46,17 +46,19 @@ class Session(object):
         print("Preference file: %s" % storage.fileName())
 
         state = State(storage=storage)
-        ctrl = control.Controller(state=state)
-        view_ = window.MainWindow(state=state)
 
         resources.load_themes()
         qss = resources.load_theme(name=state.retrieve("theme"))
+
+        ctrl = control.Controller(state=state)
+        view_ = window.MainWindow(state=state)
         view_.setStyleSheet(qss)
 
         # signals
 
         context_list = view_.find(widgets.ContextListWidget)
         stacked_resolve = view_.find(widgets.StackedResolveView)
+        preference = view_.find(pages.PreferencePage)
 
         context_list.added.connect(ctrl.on_add_context_clicked)
         ctrl.context_added.connect(context_list.on_context_added)
@@ -68,9 +70,12 @@ class Session(object):
 
         context_list.reordered.connect(ctrl.on_context_item_moved)
 
+        preference.changed.connect(self.on_preference_changed)
+
         self._app = app
         self._ctrl = ctrl
         self._view = view_
+        self._state = state
 
     @property
     def app(self):
@@ -83,6 +88,29 @@ class Session(object):
     @property
     def view(self):
         return self._view
+
+    @property
+    def state(self):
+        return self._state
+
+    def on_preference_changed(self, key, value):
+        if key == "theme":
+            self.apply_theme(value)
+        elif key == "suiteOpenAs":
+            pass  # self._ctrl.state["suiteOpenAs"] = value
+        elif key == "resetLayout":
+            self._view.reset_layout()
+        elif key == "reloadTheme":
+            self.apply_theme(self._state.retrieve("theme"))
+        else:
+            print("Unknown preference setting: %s" % key)
+
+    def apply_theme(self, name):
+        view = self._view
+        qss = resources.load_theme(name)
+        view.setStyleSheet(qss)
+        view.style().unpolish(view)
+        view.style().polish(view)
 
 
 class State(object):
@@ -148,13 +176,13 @@ class State(object):
 
         self._storage.endGroup()
 
-    def restore_layout(self, widget, group):
-        # type: (QtWidgets.QWidget, str) -> None
+    def restore_layout(self, widget, group, keep_geo=False):
+        # type: (QtWidgets.QWidget, str, bool) -> None
         self._storage.beginGroup(group)
 
         keys = self._storage.allKeys()
 
-        if "geometry" in keys:
+        if not keep_geo and "geometry" in keys:
             widget.restoreGeometry(self.retrieve("geometry"))
         if "state" in keys and hasattr(widget, "restoreState"):
             widget.restoreState(self.retrieve("state"))
