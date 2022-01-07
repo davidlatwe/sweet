@@ -25,6 +25,10 @@ class Controller(QtCore.QObject):
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
+    def on_context_resolve_clicked(self, name, requests):
+        self._sop.update_context(name, requests=requests)
+        # todo: emit resolved signal
+
     def add_context(self, name, requests=None):
         requests = requests or []
         ctx = self._sop.add_context(name, requests=requests)

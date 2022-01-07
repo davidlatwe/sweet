@@ -60,6 +60,8 @@ class Session(object):
             widgets.ContextListWidget)  # type: widgets.ContextListWidget
         stacked_resolve = view_.find(
             widgets.StackedResolveView)  # type: widgets.StackedResolveView
+        request_editor = view_.find(
+            widgets.RequestEditor)  # type: widgets.RequestEditor
         preference = view_.find(
             pages.PreferencePage)  # type: pages.PreferencePage
 
@@ -67,6 +69,7 @@ class Session(object):
         context_list.added.connect(ctrl.on_add_context_clicked)
         context_list.dropped.connect(ctrl.on_drop_context_clicked)
         context_list.reordered.connect(ctrl.on_context_item_moved)
+        request_editor.requested.connect(ctrl.on_context_resolve_clicked)
 
         # control -> view
         ctrl.context_added.connect(context_list.on_context_added)
