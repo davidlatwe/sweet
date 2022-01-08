@@ -690,7 +690,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
         proxy.setSourceModel(model)
         view.setModel(proxy)
-        search.setPlaceholderText(" Search by family or tool..")
+        search.setPlaceholderText(" Search by family, version or tool..")
 
         # layout
 
@@ -742,6 +742,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
     def on_searched(self, text):
         self._proxy.setFilterRegExp(text)
+        self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
 
     def on_tab_clicked(self, index):

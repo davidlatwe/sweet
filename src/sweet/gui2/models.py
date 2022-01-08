@@ -253,11 +253,11 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
         times = set()
         for version in sorted(versions, key=lambda v: v.version):
             times.add(version.timestamp)
-            keys = "%s,%s" % (version.name, ",".join(version.tools))
+            keys = "%s,%s" % (version.qualified, ",".join(version.tools))
 
             name_item = QtGui.QStandardItem(version.qualified)
-            name_item.setData(version, self.ObjectRole)
             name_item.setData(keys, self.FilterRole)
+            name_item.setData(version, self.ObjectRole)
             name_item.setData(str(version.version), self.CompletionRole)
 
             date_item = QtGui.QStandardItem()
@@ -290,3 +290,4 @@ class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):
         self.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setFilterRole(InstalledPackagesModel.FilterRole)
+        self.setRecursiveFilteringEnabled(True)
