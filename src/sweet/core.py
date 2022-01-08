@@ -60,6 +60,14 @@ SavedSuite = namedtuple(
     "SavedSuite",
     ["name", "branch", "path"]
 )
+PkgFamily = namedtuple(
+    "PkgFamily",
+    ["name", "path"]
+)
+PkgVersion = namedtuple(
+    "PkgVersion",
+    ["name", "version", "uri", "tools", "qualified", "timestamp", "locations"]
+)
 
 
 def _warn(message, category=None):
@@ -568,10 +576,8 @@ class InstalledPackages(object):
 
     def __init__(self, paths=None):
         self._paths = paths or rezconfig.packages_path
-        self._families = []
-        self._packages = []
 
-    def refresh(self):
+    def clear_caches(self):
         for path in self._paths:
             repo = package_repository_manager.get_repository(path)
             repo.clear_caches()
@@ -582,32 +588,30 @@ class InstalledPackages(object):
             path = family.resource.location
             path = "{}@{}".format(family.repository.name(), path)
 
-            doc = {
-                "name": name,
-                "path": path,
-            }
+            yield PkgFamily(
+                name=name,
+                path=path,
+            )
 
-            yield doc
-
-    def iter_packages(self, name, path):
+    def iter_versions(self, name, path):
         seen = dict()
 
         for package in iter_packages(name, paths=[path]):
             qualified_name = package.qualified_name
 
             if qualified_name in seen:
-                seen[qualified_name]["locations"].append(path)
+                seen[qualified_name].locations.append(path)
                 continue
 
-            doc = {
-                "family": name,
-                "version": str(package.version),
-                "uri": package.uri,
-                "tools": package.tools or [],
-                "qualified_name": qualified_name,
-                "timestamp": package.timestamp,
-                "locations": [path],
-            }
-            seen[qualified_name] = doc
+            ver = PkgVersion(
+                name=name,
+                version=str(package.version),
+                uri=package.uri,
+                tools=package.tools or [],
+                qualified=qualified_name,
+                timestamp=package.timestamp,
+                locations=[path],
+            )
+            seen[qualified_name] = ver
 
-            yield doc
+            yield ver
