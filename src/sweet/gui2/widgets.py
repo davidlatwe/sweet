@@ -79,7 +79,7 @@ class DragDropListWidget(QtWidgets.QListWidget):
 class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
     renamed = QtCore.Signal(str, str)
-    dropped = QtCore.Signal(list)
+    dropped = QtCore.Signal(str)
     reordered = QtCore.Signal(list)
     selected = QtCore.Signal(str)
 
@@ -109,7 +109,7 @@ class ContextListWidget(QtWidgets.QWidget):
         # signals
 
         btn_add.clicked.connect(self.add_context)
-        btn_rm.clicked.connect(self.drop_contexts)
+        btn_rm.clicked.connect(self.drop_context)
         view.currentTextChanged.connect(self.selected)
         view.dropped.connect(self.context_reordered)
         view.itemDoubleClicked.connect(self.rename_context)
@@ -182,10 +182,10 @@ class ContextListWidget(QtWidgets.QWidget):
         dialog.finished.connect(on_finished)
         dialog.open()
 
-    def drop_contexts(self):
+    def drop_context(self):
         names = self.selected_contexts()
-        if names:
-            self.dropped.emit(names)
+        for name in names:
+            self.dropped.emit(name)
 
     def selected_contexts(self):
         return [

@@ -22,9 +22,8 @@ class Controller(QtCore.QObject):
     def on_rename_context_clicked(self, name, new_name):
         self.rename_context(name, new_name)
 
-    def on_drop_context_clicked(self, names):
-        for name in names:
-            self.drop_context(name)
+    def on_drop_context_clicked(self, name):
+        self.drop_context(name)
 
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
