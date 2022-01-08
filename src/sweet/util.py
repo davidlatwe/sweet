@@ -33,3 +33,15 @@ def attach_sender(sender, func, signal):
         signal.send(sender)
         return returned
     return wrapper
+
+
+class Singleton(type):
+    """A metaclass for creating singleton
+    https://stackoverflow.com/q/6760685/14054728
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

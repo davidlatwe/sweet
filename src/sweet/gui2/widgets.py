@@ -6,7 +6,7 @@ from .. import util
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
 from . import delegates, resources as res
-from .completer import RequestCompleter, RequestTextEdit
+from .completer import RequestTextEdit
 from .models import (
     JsonModel,
     ResolvedPackagesModel,
@@ -475,13 +475,6 @@ class RequestEditor(QtWidgets.QWidget):
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
-        request.setPlaceholderText("requests..")
-        request.setAcceptRichText(False)
-        request.setTabChangesFocus(True)
-
-        completer = RequestCompleter(request)
-        request.setCompleter(completer)
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(request)
         layout.addWidget(resolve)
@@ -490,13 +483,7 @@ class RequestEditor(QtWidgets.QWidget):
 
         self._name = None
         self._text = request
-        self._completer = completer
-
-    def on_families_scanned(self, families):
-        self._completer.model().add_families(families)
-
-    def on_versions_scanned(self, versions):
-        self._completer.model().add_versions(versions)
+        self._completer = request.completer()
 
     def on_resolve_clicked(self):
         self.requested.emit(self._name, self._text.toPlainText().split())
@@ -734,7 +721,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         header = view.header()
         scroll = view.verticalScrollBar()
 
-        model.modelReset.connect(self.on_model_reset)
+        model.family_updated.connect(self.on_model_family_updated)
         tabs.currentChanged.connect(self.on_tab_clicked)
         search.textChanged.connect(self.on_searched)
         header.sortIndicatorChanged.connect(self.on_sort_changed)
@@ -796,7 +783,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             for i, group in enumerate(self._groups):
                 self._tabs.setTabText(i, group)
 
-    def on_model_reset(self):
+    def on_model_family_updated(self):
         # regenerate tabs
         tabs = self._tabs
         self._groups.clear()

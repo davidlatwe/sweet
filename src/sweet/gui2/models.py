@@ -4,6 +4,19 @@ from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
 
 
+class QSingleton(type(QtCore.QObject), type):
+    """A metaclass for creating QObject singleton
+    https://forum.qt.io/topic/88531/singleton-in-python-with-qobject
+    https://bugreports.qt.io/browse/PYSIDE-1434?focusedCommentId=540135#comment-540135
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(QSingleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 class TreeItem(dict):
 
     def __init__(self, data=None):
@@ -186,9 +199,14 @@ class ResolvedEnvironmentModel(JsonModel):
         super(ResolvedEnvironmentModel, self).load(data)
 
 
-class InstalledPackagesModel(BaseItemModel):
+class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
+    """
+    Note: This is a singleton.
+    """
+    family_updated = QtCore.Signal()
     FilterRole = QtCore.Qt.UserRole + 10
     ObjectRole = QtCore.Qt.UserRole + 11
+    CompletionRole = QtCore.Qt.UserRole + 12
     Headers = [
         "Name",
         "Date",
@@ -214,6 +232,7 @@ class InstalledPackagesModel(BaseItemModel):
         for family in sorted(families, key=lambda f: f.name.lower()):
             item = QtGui.QStandardItem(family.name)
             item.setData(family, self.ObjectRole)
+            item.setData(family.name, self.CompletionRole)
             self.appendRow(item)
 
             self._families[family.name] = item
@@ -221,6 +240,8 @@ class InstalledPackagesModel(BaseItemModel):
             initial = family.name[0].upper()
             if initial not in self._initials:
                 self._initials[initial] = item
+
+        self.family_updated.emit()
 
     def add_versions(self, versions):
         if not versions:
@@ -233,13 +254,19 @@ class InstalledPackagesModel(BaseItemModel):
         for version in sorted(versions, key=lambda v: v.version):
             times.add(version.timestamp)
             keys = "%s,%s" % (version.name, ",".join(version.tools))
+
             name_item = QtGui.QStandardItem(version.qualified)
-            date_item = QtGui.QStandardItem(version.timestamp)
             name_item.setData(version, self.ObjectRole)
             name_item.setData(keys, self.FilterRole)
+            name_item.setData(str(version.version), self.CompletionRole)
+
+            date_item = QtGui.QStandardItem()
+            date_item.setData(version.timestamp, QtCore.Qt.DisplayRole)
+
             parent.appendRow([name_item, date_item])
 
-        date_item = QtGui.QStandardItem(sorted(times)[-1])
+        date_item = QtGui.QStandardItem()
+        date_item.setData(sorted(times)[-1], QtCore.Qt.DisplayRole)
         self.setItem(parent.row(), 1, date_item)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -251,6 +278,9 @@ class InstalledPackagesModel(BaseItemModel):
             return item.data(self.ObjectRole)
 
         return super(InstalledPackagesModel, self).data(index, role)
+
+    def flags(self, index):
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
 
 class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):

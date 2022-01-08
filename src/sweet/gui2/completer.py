@@ -1,5 +1,6 @@
 
 from ._vendor.Qt5 import QtCore, QtGui, QtWidgets
+from .models import InstalledPackagesModel
 from . import resources as res
 
 
@@ -10,26 +11,6 @@ class CompleterProxyModel(QtCore.QSortFilterProxyModel):
         return super(CompleterProxyModel, self).data(index, role)
 
 
-class CompleterModel(QtCore.QAbstractListModel):
-
-    def __init__(self, *args, **kwargs):
-        super(CompleterModel, self).__init__(*args, **kwargs)
-        self._items = []
-
-    def clear(self):
-        self._items.clear()
-
-    def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(self._items)
-
-    def add_families(self, families):
-        self._items += [f.name for f in families]
-
-    def add_versions(self, versions):
-        # todo: omit internal package version
-        self._items += [v.qualified for v in versions]
-
-
 class RequestCompleter(QtWidgets.QCompleter):
 
     def __init__(self, *args, **kwargs):
@@ -38,9 +19,11 @@ class RequestCompleter(QtWidgets.QCompleter):
         self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setWrapAround(False)
 
-        model = CompleterModel()
+        model = InstalledPackagesModel()
         proxy = CompleterProxyModel()
         proxy.setSourceModel(model)
+        self.setCompletionColumn(0)
+        self.setCompletionRole(model.CompletionRole)
         self.setModel(proxy)
 
         self._model = model
@@ -71,7 +54,13 @@ class RequestTextEdit(QtWidgets.QTextEdit):
     def __init__(self, *args, **kwargs):
         super(RequestTextEdit, self).__init__(*args, **kwargs)
         self.setObjectName("RequestTextEdit")
+        self.setPlaceholderText("requests..")
+        self.setAcceptRichText(False)
+        self.setTabChangesFocus(True)
+
         self._completer = None
+        completer = RequestCompleter(self)
+        self.setCompleter(completer)
 
     def setCompleter(self, c):
         if self._completer is not None:
