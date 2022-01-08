@@ -1,6 +1,5 @@
 
-from ..core import SuiteOp, SuiteCtx
-from .. import _rezapi as rez
+from ..core import SuiteOp, SuiteCtx, InstalledPackages
 from ._vendor.Qt5 import QtCore
 
 
@@ -9,11 +8,16 @@ class Controller(QtCore.QObject):
     context_dropped = QtCore.Signal(str)
     context_reordered = QtCore.Signal(list)
     context_renamed = QtCore.Signal(str, str)
+    pkg_scan_started = QtCore.Signal()
+    pkg_families_scanned = QtCore.Signal(list)
+    pkg_versions_scanned = QtCore.Signal(list)
+    pkg_scan_ended = QtCore.Signal()
 
     def __init__(self, state):
         super(Controller, self).__init__()
 
         self._sop = SuiteOp()
+        self._pkg = InstalledPackages()
         self._state = state
 
     def on_add_context_clicked(self, name):
@@ -30,6 +34,9 @@ class Controller(QtCore.QObject):
 
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
+
+    def on_installed_pkg_scan_clicked(self):
+        self.scan_installed_packages()
 
     def add_context(self, name, requests=None):
         requests = requests or []
@@ -52,5 +59,15 @@ class Controller(QtCore.QObject):
         self._sop.update_context(name, requests=requests)
         # todo: emit resolved signal
 
-    def iter_installed_packages(self):
-        pass
+    def scan_installed_packages(self):
+        self.pkg_scan_started.emit()
+        self._pkg.clear_caches()
+
+        families = list(self._pkg.iter_families())
+        self.pkg_families_scanned.emit(families)
+
+        for family in families:
+            versions = list(self._pkg.iter_versions(family.name, family.path))
+            self.pkg_versions_scanned.emit(versions)
+
+        self.pkg_scan_ended.emit()

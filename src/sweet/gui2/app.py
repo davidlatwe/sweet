@@ -56,14 +56,12 @@ class Session(object):
 
         # signals
 
-        context_list = view_.find(
-            widgets.ContextListWidget)  # type: widgets.ContextListWidget
-        stacked_resolve = view_.find(
-            widgets.StackedResolveView)  # type: widgets.StackedResolveView
-        request_editor = view_.find(
-            widgets.RequestEditor)  # type: widgets.RequestEditor
-        preference = view_.find(
-            pages.PreferencePage)  # type: pages.PreferencePage
+        context_list = view_.find(widgets.ContextListWidget)
+        stacked_resolve = view_.find(widgets.StackedResolveView)
+        request_editor = view_.find(widgets.RequestEditor)
+        installed_pkg = view_.find(widgets.InstalledPackagesWidget)
+        installed_pkg_model = installed_pkg.model()
+        preference = view_.find(pages.PreferencePage)
 
         # view -> control
         context_list.added.connect(ctrl.on_add_context_clicked)
@@ -73,6 +71,13 @@ class Session(object):
         request_editor.requested.connect(ctrl.on_resolve_context_clicked)
 
         # control -> view
+        ctrl.pkg_scan_started.connect(installed_pkg_model.clear)
+        ctrl.pkg_scan_started.connect(lambda: print("start pkg scanning"))
+        ctrl.pkg_families_scanned.connect(installed_pkg_model.add_families)
+        ctrl.pkg_families_scanned.connect(request_editor.on_families_scanned)
+        ctrl.pkg_versions_scanned.connect(installed_pkg_model.add_versions)
+        ctrl.pkg_versions_scanned.connect(request_editor.on_versions_scanned)
+        ctrl.pkg_scan_ended.connect(lambda: print("all pkg scanned"))
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
         ctrl.context_renamed.connect(context_list.on_context_renamed)
@@ -89,6 +94,8 @@ class Session(object):
         self._ctrl = ctrl
         self._view = view_
         self._state = state
+
+        ctrl.scan_installed_packages()
 
     @property
     def app(self):

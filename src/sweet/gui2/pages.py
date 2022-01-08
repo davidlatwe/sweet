@@ -11,7 +11,7 @@ from .widgets import (
     ToolStack,
 
     # packages page
-    InstalledPackagesView,
+    InstalledPackagesWidget,
 
 )
 
@@ -79,7 +79,7 @@ class PackagesPage(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(PackagesPage, self).__init__(*args, **kwargs)
 
-        installed = InstalledPackagesView()
+        installed = InstalledPackagesWidget()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(installed)

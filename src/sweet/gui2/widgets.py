@@ -5,7 +5,15 @@ import json
 from .. import util
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
-from . import models, resources as res
+from . import delegates, resources as res
+from .completer import RequestCompleter, RequestTextEdit
+from .models import (
+    JsonModel,
+    ResolvedPackagesModel,
+    ToolStackModel,
+    InstalledPackagesModel,
+    InstalledPackagesProxyModel,
+)
 
 
 class TreeView(qoverview.VerticalExtendedTreeView):
@@ -338,7 +346,7 @@ class ToolStack(QtWidgets.QWidget):
 
         stack = TreeView()
 
-        model = models.ToolStackModel()
+        model = ToolStackModel()
         stack.setModel(model)
 
         # layout
@@ -463,14 +471,16 @@ class RequestEditor(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(RequestEditor, self).__init__(*args, **kwargs)
 
-        request = QtWidgets.QTextEdit()
-        request.setObjectName("RequestTextEdit")
+        request = RequestTextEdit()
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
         request.setPlaceholderText("requests..")
         request.setAcceptRichText(False)
         request.setTabChangesFocus(True)
+
+        completer = RequestCompleter(request)
+        request.setCompleter(completer)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(request)
@@ -480,6 +490,13 @@ class RequestEditor(QtWidgets.QWidget):
 
         self._name = None
         self._text = request
+        self._completer = completer
+
+    def on_families_scanned(self, families):
+        self._completer.model().add_families(families)
+
+    def on_versions_scanned(self, versions):
+        self._completer.model().add_versions(versions)
 
     def on_resolve_clicked(self):
         self.requested.emit(self._name, self._text.toPlainText().split())
@@ -522,13 +539,13 @@ class ResolvedPackages(QtWidgets.QWidget):
         menu.addAction(copyfile)
 
         def on_openfile():
-            package = index.data(role=models.ResolvedPackagesModel.PackageRole)
+            package = index.data(role=ResolvedPackagesModel.PackageRole)
             pkg_uri = os.path.dirname(package.uri)
             fname = os.path.join(pkg_uri, "package.py")
             util.open_file_location(fname)
 
         def on_copyfile():
-            package = index.data(role=models.ResolvedPackagesModel.PackageRole)
+            package = index.data(role=ResolvedPackagesModel.PackageRole)
             pkg_uri = os.path.dirname(package.uri)
             fname = os.path.join(pkg_uri, "package.py")
             clipboard = QtWidgets.QApplication.instance().clipboard()
@@ -565,7 +582,7 @@ class JsonView(TreeView):
         menu.addSeparator()
 
         def on_copy():
-            text = str(model_.data(index, models.JsonModel.JsonRole))
+            text = str(model_.data(index, JsonModel.JsonRole))
             app = QtWidgets.QApplication.instance()
             app.clipboard().setText(text)
 
@@ -608,5 +625,189 @@ class ResolvedGraph(QtWidgets.QWidget):
     pass
 
 
-class InstalledPackagesView(QtWidgets.QWidget):
-    pass
+class VerticalDocTabBar(QtWidgets.QTabBar):
+
+    def __init__(self, *args, **kwargs):
+        super(VerticalDocTabBar, self).__init__(*args, **kwargs)
+        self.setShape(QtWidgets.QTabBar.RoundedWest)
+        self.setDocumentMode(True)  # for MacOS
+        self.setUsesScrollButtons(True)
+
+    def tabSizeHint(self, index):
+        s = QtWidgets.QTabBar.tabSizeHint(self, index)
+        s.transpose()
+        return s
+
+    def paintEvent(self, event):
+        painter = QtWidgets.QStylePainter(self)
+        opt = QtWidgets.QStyleOptionTab()
+
+        for i in range(self.count()):
+            self.initStyleOption(opt, i)
+            painter.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, opt)
+            painter.save()
+
+            s = opt.rect.size()
+            s.transpose()
+            r = QtCore.QRect(QtCore.QPoint(), s)
+            r.moveCenter(opt.rect.center())
+            opt.rect = r
+
+            rect = self.tabRect(i)
+            c = rect.center()
+            painter.translate(c)
+            painter.rotate(90)
+            painter.translate(-c)
+            painter.drawControl(QtWidgets.QStyle.CE_TabBarTabLabel, opt)
+            painter.restore()
+
+
+class InstalledPackagesTabBar(VerticalDocTabBar):
+    def __init__(self, *args, **kwargs):
+        super(InstalledPackagesTabBar, self).__init__(*args, **kwargs)
+        self.setObjectName("PackageTabBar")
+        self.setMinimumHeight(120)
+
+
+class InstalledPackagesView(TreeView):
+
+    def __init__(self, *args, **kwargs):
+        super(InstalledPackagesView, self).__init__(*args, **kwargs)
+        self.setObjectName("PackageTreeView")
+        self.setSortingEnabled(True)
+        self.setAlternatingRowColors(True)
+        self.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        time_delegate = delegates.PrettyTimeDelegate()
+        self.setItemDelegateForColumn(1, time_delegate)
+
+        self._time_delegate = time_delegate
+
+
+class InstalledPackagesWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(InstalledPackagesWidget, self).__init__(*args, **kwargs)
+
+        wrap = QtWidgets.QWidget()
+        body = QtWidgets.QWidget()
+        body.setObjectName("PackagePage")
+        side = QtWidgets.QWidget()
+        side.setObjectName("PackageSide")
+
+        search = QtWidgets.QLineEdit()
+        view = InstalledPackagesView()
+        model = InstalledPackagesModel()
+        proxy = InstalledPackagesProxyModel()
+        tabs = InstalledPackagesTabBar()
+
+        proxy.setSourceModel(model)
+        view.setModel(proxy)
+        search.setPlaceholderText(" Search by family or tool..")
+        tabs.addTab("")  # placeholder tab for startup
+
+        # layout
+
+        layout = QtWidgets.QVBoxLayout(side)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(tabs)
+        layout.addStretch(100)
+        layout.setSpacing(0)
+
+        layout = QtWidgets.QVBoxLayout(body)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.addWidget(view)
+
+        layout = QtWidgets.QHBoxLayout(wrap)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(side)
+        layout.addWidget(body)
+        layout.setSpacing(0)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(search)
+        layout.addSpacing(6)
+        layout.addWidget(wrap)
+        layout.setSpacing(0)
+
+        # signals
+
+        header = view.header()
+        scroll = view.verticalScrollBar()
+
+        model.modelReset.connect(self.on_model_reset)
+        tabs.currentChanged.connect(self.on_tab_clicked)
+        search.textChanged.connect(self.on_searched)
+        header.sortIndicatorChanged.connect(self.on_sort_changed)
+        scroll.valueChanged.connect(self.on_scrolled)
+
+        self._view = view
+        self._model = model
+        self._proxy = proxy
+
+        self._tabs = tabs
+        self._groups = []
+
+    def model(self):
+        return self._model
+
+    def proxy(self):
+        return self._proxy
+
+    def on_searched(self, text):
+        self._proxy.setFilterRegExp(text)
+        self._view.reset_extension()
+
+    def on_tab_clicked(self, index):
+        group = self._tabs.tabText(index)
+        for i, item in enumerate(self._model.iter_items()):
+            if item["_group"] == group:
+                index = self._model.index(i, 0)
+                index = self._proxy.mapFromSource(index)
+                self._view.scroll_at_top(index)
+                return
+
+    def on_scrolled(self, value):
+        if not self._tabs.isEnabled():
+            return
+
+        index = self._view.top_scrolled_index(value)
+        index = self._proxy.mapToSource(index)
+        name = self._model.data(index)
+        if name:
+            group = name[0].upper()
+            index = self._groups.index(group)
+            self._tabs.blockSignals(True)
+            self._tabs.setCurrentIndex(index)
+            self._tabs.blockSignals(False)
+
+    def on_sort_changed(self, index, order):
+        is_sort_name = index == 0
+
+        self._tabs.setEnabled(is_sort_name)
+        if is_sort_name:
+            if len(self._groups) <= 1:
+                return
+
+            first, second = self._groups[:2]
+            is_ascending = int(first > second)
+            if is_ascending == int(order):
+                return
+
+            self._groups.reverse()
+            for i, group in enumerate(self._groups):
+                self._tabs.setTabText(i, group)
+
+    def on_model_reset(self):
+        # regenerate tabs
+        tabs = self._tabs
+        self._groups.clear()
+        for index in range(tabs.count()):
+            tabs.removeTab(index)
+
+        for group in self._model.name_groups():
+            self._groups.append(group)
+            tabs.addTab(group)
+
+        # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
+        tabs.updateGeometry()
