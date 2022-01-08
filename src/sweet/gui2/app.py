@@ -69,6 +69,7 @@ class Session(object):
         context_list.reordered.connect(ctrl.on_context_item_moved)
         context_list.renamed.connect(ctrl.on_rename_context_clicked)
         request_editor.requested.connect(ctrl.on_resolve_context_clicked)
+        installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
 
         # control -> view
         ctrl.pkg_scan_started.connect(installed_pkg_model.clear)
@@ -93,7 +94,7 @@ class Session(object):
         self._view = view_
         self._state = state
 
-        ctrl.scan_installed_packages()
+        ctrl.scan_installed_packages()  # todo: this need a delay
 
     @property
     def app(self):

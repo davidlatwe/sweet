@@ -672,16 +672,19 @@ class InstalledPackagesView(TreeView):
 
 
 class InstalledPackagesWidget(QtWidgets.QWidget):
+    refreshed = QtCore.Signal()
 
     def __init__(self, *args, **kwargs):
         super(InstalledPackagesWidget, self).__init__(*args, **kwargs)
 
         wrap = QtWidgets.QWidget()
+        head = QtWidgets.QWidget()
         body = QtWidgets.QWidget()
         body.setObjectName("PackagePage")
         side = QtWidgets.QWidget()
         side.setObjectName("PackageSide")
 
+        refresh = QtWidgets.QPushButton("R")  # todo: need a refresh icon
         search = QtWidgets.QLineEdit()
         view = InstalledPackagesView()
         model = InstalledPackagesModel()
@@ -693,6 +696,11 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         search.setPlaceholderText(" Search by family, version or tool..")
 
         # layout
+
+        layout = QtWidgets.QHBoxLayout(head)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(refresh)
+        layout.addWidget(search)
 
         layout = QtWidgets.QVBoxLayout(side)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -711,7 +719,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         layout.setSpacing(0)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(search)
+        layout.addWidget(head)
         layout.addSpacing(6)
         layout.addWidget(wrap)
         layout.setSpacing(0)
@@ -721,6 +729,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         header = view.header()
         scroll = view.verticalScrollBar()
 
+        refresh.clicked.connect(self.refreshed)
         model.family_updated.connect(self.on_model_family_updated)
         tabs.currentChanged.connect(self.on_tab_clicked)
         search.textChanged.connect(self.on_searched)
@@ -789,7 +798,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         tabs = self._tabs
         self._groups.clear()
         for index in range(tabs.count()):
-            tabs.removeTab(index)
+            tabs.removeTab(0)
 
         for group in self._model.initials():
             self._groups.append(group)
