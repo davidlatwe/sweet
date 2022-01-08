@@ -605,7 +605,7 @@ class InstalledPackages(object):
 
             ver = PkgVersion(
                 name=name,
-                version=str(package.version),
+                version=package.version,
                 uri=package.uri,
                 tools=package.tools or [],
                 qualified=qualified_name,

@@ -188,6 +188,7 @@ class ResolvedEnvironmentModel(JsonModel):
 
 class InstalledPackagesModel(BaseItemModel):
     FilterRole = QtCore.Qt.UserRole + 10
+    ObjectRole = QtCore.Qt.UserRole + 11
     Headers = [
         "Name",
         "Date",
@@ -195,56 +196,61 @@ class InstalledPackagesModel(BaseItemModel):
 
     def __init__(self, *args, **kwargs):
         super(InstalledPackagesModel, self).__init__(*args, **kwargs)
-        self._groups = set()
+        self._initials = dict()
         self._families = dict()
 
     def clear(self):
-        self._groups.clear()
+        self._initials.clear()
         self._families.clear()
         super(InstalledPackagesModel, self).clear()
 
-    def name_groups(self):
-        return sorted(self._groups)
+    def initials(self):
+        return sorted(self._initials.keys())
+
+    def first_item_in_initial(self, letter):
+        return self._initials.get(letter)
 
     def add_families(self, families):
-        for family in families:
-            initial = family.name[0].upper()
-            self._groups.add(initial)
-
+        for family in sorted(families, key=lambda f: f.name.lower()):
             item = QtGui.QStandardItem(family.name)
-            # item.setData()
+            item.setData(family, self.ObjectRole)
             self.appendRow(item)
 
             self._families[family.name] = item
 
+            initial = family.name[0].upper()
+            if initial not in self._initials:
+                self._initials[initial] = item
+
     def add_versions(self, versions):
-        for version in versions:
-            parent = self._families.get(version.name)  # type: QtGui.QStandardItem
-            if not parent:
-                continue  # log debug
+        if not versions:
+            return
+        parent = self._families.get(versions[0].name)
+        if not parent:
+            return
 
-            item = QtGui.QStandardItem(version.qualified)
-            parent.appendRow(item)
+        times = set()
+        for version in sorted(versions, key=lambda v: v.version):
+            times.add(version.timestamp)
+            keys = "%s,%s" % (version.name, ",".join(version.tools))
+            name_item = QtGui.QStandardItem(version.qualified)
+            date_item = QtGui.QStandardItem(version.timestamp)
+            name_item.setData(version, self.ObjectRole)
+            name_item.setData(keys, self.FilterRole)
+            parent.appendRow([name_item, date_item])
 
-    def __data(self, index, role=QtCore.Qt.DisplayRole):
+        date_item = QtGui.QStandardItem(sorted(times)[-1])
+        self.setItem(parent.row(), 1, date_item)
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
-            return None
+            return
 
-        if role == QtCore.Qt.DisplayRole:
-            col = index.column()
-            item = index.internalPointer()
-            key = self.Headers[col]
-            return item[key]
+        if role == self.ObjectRole:
+            item = self.itemFromIndex(self.index(index.row(), 0))
+            return item.data(self.ObjectRole)
 
-        if role == QtCore.Qt.ForegroundRole:
-            col = index.column()
-            item = index.internalPointer()
-            if item["_type"] == "version" and col == 0:
-                return QtGui.QColor("gray")
-
-        if role == self.FilterRole:
-            item = index.internalPointer()
-            return ", ".join([item["family"], item["tools"]])
+        return super(InstalledPackagesModel, self).data(index, role)
 
 
 class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):

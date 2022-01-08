@@ -704,7 +704,6 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         search.setPlaceholderText(" Search by family or tool..")
-        tabs.addTab("")  # placeholder tab for startup
 
         # layout
 
@@ -760,12 +759,11 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
     def on_tab_clicked(self, index):
         group = self._tabs.tabText(index)
-        for i, item in enumerate(self._model.iter_items()):
-            if item["_group"] == group:
-                index = self._model.index(i, 0)
-                index = self._proxy.mapFromSource(index)
-                self._view.scroll_at_top(index)
-                return
+        item = self._model.first_item_in_initial(group)
+        if item is not None:
+            index = item.index()
+            index = self._proxy.mapFromSource(index)
+            self._view.scroll_at_top(index)
 
     def on_scrolled(self, value):
         if not self._tabs.isEnabled():
@@ -805,9 +803,12 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         for index in range(tabs.count()):
             tabs.removeTab(index)
 
-        for group in self._model.name_groups():
+        for group in self._model.initials():
             self._groups.append(group)
             tabs.addTab(group)
+
+        if not self._groups:
+            tabs.addTab("")  # placeholder tab for startup
 
         # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
         tabs.updateGeometry()

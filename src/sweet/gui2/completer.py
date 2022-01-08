@@ -12,14 +12,22 @@ class CompleterProxyModel(QtCore.QSortFilterProxyModel):
 
 class CompleterModel(QtCore.QAbstractListModel):
 
+    def __init__(self, *args, **kwargs):
+        super(CompleterModel, self).__init__(*args, **kwargs)
+        self._items = []
+
+    def clear(self):
+        self._items.clear()
+
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(parent.children())
+        return len(self._items)
 
     def add_families(self, families):
-        pass
+        self._items += [f.name for f in families]
 
     def add_versions(self, versions):
-        pass  # todo: omit internal package version
+        # todo: omit internal package version
+        self._items += [v.qualified for v in versions]
 
 
 class RequestCompleter(QtWidgets.QCompleter):
@@ -89,7 +97,7 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         prefix = completer.splitPath(prefix)[-1]
         extra = len(completion) - len(prefix)
 
-        if extra is not 0:
+        if extra != 0:
             tc = self.textCursor()
             tc.movePosition(QtGui.QTextCursor.Left)
             tc.movePosition(QtGui.QTextCursor.EndOfWord)
