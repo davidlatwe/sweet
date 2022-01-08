@@ -18,61 +18,6 @@ class BaseItemModel(QtGui.QStandardItemModel):
             section, orientation, role)
 
 
-class ContextListModel(BaseItemModel):  # QtCore.QAbstractListModel
-    Headers = [
-        "Name",
-        "Prefix",
-        "Suffix",
-        "Loaded",
-    ]
-
-    ItemRole = QtCore.Qt.UserRole + 10
-
-    def supportedDropActions(self):
-        return QtCore.Qt.MoveAction
-
-    def flags(self, index):
-        base_flags = (
-            QtCore.Qt.ItemIsEnabled |
-            QtCore.Qt.ItemIsSelectable
-        )
-        if index.isValid():
-            # we don't want to drop in as a child item so the flag
-            # `ItemIsDropEnabled` is omitted.
-            return base_flags | QtCore.Qt.ItemIsDragEnabled
-        else:
-            return base_flags | QtCore.Qt.ItemIsDropEnabled
-
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        if not index.isValid():
-            return
-
-        if role in {QtCore.Qt.DisplayRole, QtCore.Qt.EditRole}:
-
-            item_index = self.index(index.row(), 0)
-            ctx = item_index.data(self.ItemRole)
-            if ctx is None:
-                return
-
-            column = index.column()
-            if column == 0:
-                return ctx.name
-            if column == 1:
-                return ctx.prefix
-            if column == 2:
-                return ctx.suffix
-            if column == 3:
-                return ctx.loaded
-
-        return super(ContextListModel, self).data(index, role)
-
-    def context_names(self, indexes=None):
-        indexes = indexes if indexes is not None else [
-            self.index(row, 0) for row in range(self.rowCount())
-        ]
-        return [self.data(index) for index in indexes]
-
-
 class ToolStackModel(BaseItemModel):
     Headers = [
         "Name",
