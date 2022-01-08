@@ -501,14 +501,20 @@ class ResolvedPackages(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedPackages, self).__init__(*args, **kwargs)
 
+        model = ResolvedPackagesModel()
         view = TreeView()
         view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        view.customContextMenuRequested.connect(self.on_right_click)
+        view.setModel(model)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
 
+        view.customContextMenuRequested.connect(self.on_right_click)
+
         self._view = view
+
+    def on_context_resolved(self, packages):
+        pass
 
     def on_right_click(self, position):
         view = self._view
