@@ -75,7 +75,8 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
     alias_changed = QtCore.Signal(str, str, str)
     hidden_changed = QtCore.Signal(str, str, bool)
 
-    ContextSortRole = QtCore.Qt.UserRole + 10
+    ToolNameRole = QtCore.Qt.UserRole + 10
+    ContextSortRole = QtCore.Qt.UserRole + 11
     Headers = [
         "Name",  # context name and tool alias
         "Status",
@@ -143,6 +144,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
             is_hidden = tool.status == constants.TOOL_HIDDEN
 
             name_item = QtGui.QStandardItem(tool.alias)
+            name_item.setData(tool.name, self.ToolNameRole)
             name_item.setData(
                 QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
                 QtCore.Qt.CheckStateRole
@@ -201,7 +203,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
             is_context = index.parent() == self.invisibleRootItem().index()
             if index.column() == 0 and not is_context:
                 ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
-                tool_name = self.data(index, QtCore.Qt.DisplayRole)
+                tool_name = self.data(index, self.ToolNameRole)
                 item = self.itemFromIndex(index)
                 item.setData(value, QtCore.Qt.CheckStateRole)
                 visible = value == QtCore.Qt.Checked
@@ -213,7 +215,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
             if index.column() == 0 and not is_context:
                 if value:
                     ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
-                    tool_name = self.data(index, QtCore.Qt.DisplayRole)
+                    tool_name = self.data(index, self.ToolNameRole)
                     item = self.itemFromIndex(index)
                     item.setData(value, QtCore.Qt.DisplayRole)
                     self.alias_changed.emit(ctx_name, tool_name, value)
