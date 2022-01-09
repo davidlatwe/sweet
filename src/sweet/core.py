@@ -9,7 +9,6 @@ from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
-from rez.packages import PackageFamily, Package
 from rez.packages import iter_package_families, iter_packages
 from rez.package_repository import package_repository_manager
 from . import signals, util
@@ -41,6 +40,7 @@ sweetconfig = rezconfig.plugins.command.sweet
 __all__ = (
     "SuiteOp",
     "Storage",
+    "InstalledPackages",
 
     "SuiteCtx",
     "SuiteTool",
