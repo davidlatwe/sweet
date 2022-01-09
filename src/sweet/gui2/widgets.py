@@ -15,6 +15,7 @@ from .models import (
     ToolStackSortProxyModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
+    SuiteStorageModel,
 )
 
 
@@ -926,3 +927,22 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
         # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
         tabs.updateGeometry()
+
+
+class SuiteStorageWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(SuiteStorageWidget, self).__init__(*args, **kwargs)
+
+        view = TreeView()
+        model = SuiteStorageModel()
+
+        view.setModel(model)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
+
+        self._model = model
+
+    def model(self):
+        return self._model

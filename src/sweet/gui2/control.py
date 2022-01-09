@@ -1,5 +1,5 @@
 
-from ..core import SuiteOp, SuiteCtx, InstalledPackages
+from ..core import SuiteOp, SuiteCtx, InstalledPackages, Storage
 from ._vendor.Qt5 import QtCore
 
 
@@ -14,11 +14,15 @@ class Controller(QtCore.QObject):
     pkg_families_scanned = QtCore.Signal(list)
     pkg_versions_scanned = QtCore.Signal(list)
     pkg_scan_ended = QtCore.Signal()
+    storage_scan_started = QtCore.Signal()
+    storage_scanned = QtCore.Signal(str, list)
+    storage_scan_ended = QtCore.Signal()
 
     def __init__(self, state):
         super(Controller, self).__init__()
 
         self._sop = SuiteOp()
+        self._sto = Storage()
         self._pkg = InstalledPackages()
         self._state = state
 
@@ -110,3 +114,14 @@ class Controller(QtCore.QObject):
             self.pkg_versions_scanned.emit(versions)
 
         self.pkg_scan_ended.emit()
+
+    def scan_suite_storage(self):
+        self.storage_scan_started.emit()
+
+        for branch in self._sto.branches():
+            self.storage_scanned.emit(
+                branch,
+                list(self._sto.iter_saved_suites(branch)),
+            )
+
+        self.storage_scan_ended.emit()

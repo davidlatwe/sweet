@@ -4,6 +4,9 @@ from ._vendor import qargparse
 from . import resources as res
 from .widgets import (
 
+    # suite storage
+    SuiteStorageWidget,
+
     # suite page
     CurrentSuite,
     ContextListWidget,
@@ -72,6 +75,11 @@ class StoragePage(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(StoragePage, self).__init__(*args, **kwargs)
+
+        storage = SuiteStorageWidget()
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(storage)
 
 
 class PackagesPage(QtWidgets.QWidget):

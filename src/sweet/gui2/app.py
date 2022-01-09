@@ -62,6 +62,8 @@ class Session(object):
         tool_stack_model = tool_stack.model()
         installed_pkg = view_.find(widgets.InstalledPackagesWidget)
         installed_pkg_model = installed_pkg.model()
+        storage_view = view_.find(widgets.SuiteStorageWidget)
+        storage_model = storage_view.model()
         preference = view_.find(pages.PreferencePage)
 
         # model -> control
@@ -78,25 +80,31 @@ class Session(object):
         stacked_resolve.suffix_changed.connect(ctrl.on_context_suffix_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
 
-        # control -> view
+        # control -> model
+        ctrl.storage_scan_started.connect(storage_model.clear)
+        ctrl.storage_scanned.connect(storage_model.add_saved_suites)
         ctrl.pkg_scan_started.connect(installed_pkg_model.clear)
-        ctrl.pkg_scan_started.connect(lambda: print("start pkg scanning"))
         ctrl.pkg_families_scanned.connect(installed_pkg_model.add_families)
         ctrl.pkg_versions_scanned.connect(installed_pkg_model.add_versions)
-        ctrl.pkg_scan_ended.connect(lambda: print("all pkg scanned"))
         ctrl.context_added.connect(tool_stack_model.on_context_added)
+        ctrl.context_renamed.connect(tool_stack_model.on_context_renamed)
+        ctrl.context_dropped.connect(tool_stack_model.on_context_dropped)
+        ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
+        ctrl.tools_updated.connect(tool_stack_model.update_tools)
+
+        # control -> view
+        ctrl.pkg_scan_started.connect(lambda: print("start pkg scanning"))
+        ctrl.pkg_scan_ended.connect(lambda: print("all pkg scanned"))
+        ctrl.storage_scan_started.connect(lambda: print("start suites scanning"))
+        ctrl.storage_scan_ended.connect(lambda: print("all suites scanned"))
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
-        ctrl.context_renamed.connect(tool_stack_model.on_context_renamed)
         ctrl.context_renamed.connect(context_list.on_context_renamed)
         ctrl.context_renamed.connect(stacked_resolve.on_context_renamed)
-        ctrl.context_dropped.connect(tool_stack_model.on_context_dropped)
         ctrl.context_dropped.connect(context_list.on_context_dropped)
         ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
-        ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
         ctrl.context_reordered.connect(context_list.on_context_reordered)
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
-        ctrl.tools_updated.connect(tool_stack_model.update_tools)
 
         # view -> view
         context_list.selected.connect(stacked_resolve.on_context_selected)
@@ -108,6 +116,7 @@ class Session(object):
         self._state = state
 
         ctrl.scan_installed_packages()  # todo: this need a delay
+        ctrl.scan_suite_storage()
 
     @property
     def app(self):

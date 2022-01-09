@@ -1,7 +1,7 @@
 
 import os
 from .. import constants
-from ..core import SuiteCtx, SuiteTool
+from ..core import SuiteCtx, SuiteTool, SavedSuite
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
 from . import resources as res
@@ -377,3 +377,27 @@ class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.setFilterRole(InstalledPackagesModel.FilterRole)
         self.setRecursiveFilteringEnabled(True)
+
+
+class SuiteStorageModel(BaseItemModel):
+    SuitePathRole = QtCore.Qt.UserRole + 10
+    Headers = [
+        "Name",
+    ]
+
+    def add_saved_suites(self, branch, suites):
+        """
+
+        :param branch:
+        :param suites:
+        :type branch: str
+        :type suites: list[SavedSuite]
+        :return:
+        """
+        branch_item = QtGui.QStandardItem(branch)
+        self.appendRow(branch_item)
+
+        for suite in suites:
+            suite_item = QtGui.QStandardItem(suite.name)
+            suite_item.setData(suite.path, self.SuitePathRole)
+            branch_item.appendRow(suite_item)
