@@ -529,7 +529,7 @@ class BrokenContext(object):
 class Storage(object):
     """Suite storage"""
 
-    def __init__(self, roots):
+    def __init__(self, roots=None):
         roots = roots or sweetconfig.suite_roots()  # type: dict
         assert isinstance(roots, dict)
         self._roots = roots
