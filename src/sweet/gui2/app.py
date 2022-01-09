@@ -64,6 +64,10 @@ class Session(object):
         installed_pkg_model = installed_pkg.model()
         preference = view_.find(pages.PreferencePage)
 
+        # model -> control
+        tool_stack_model.alias_changed.connect(ctrl.on_tool_alias_changed)
+        tool_stack_model.hidden_changed.connect(ctrl.on_tool_hidden_changed)
+
         # view -> control
         context_list.added.connect(ctrl.on_add_context_clicked)
         context_list.dropped.connect(ctrl.on_drop_context_clicked)

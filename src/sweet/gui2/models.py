@@ -72,7 +72,8 @@ class BaseItemModel(QtGui.QStandardItemModel):
 
 
 class ToolStackModel(BaseItemModel, metaclass=QSingleton):
-    tool_changed = QtCore.Signal()
+    alias_changed = QtCore.Signal(str, str, str)
+    hidden_changed = QtCore.Signal(str, str, bool)
 
     ContextSortRole = QtCore.Qt.UserRole + 10
     Headers = [
@@ -85,7 +86,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         super(ToolStackModel, self).__init__(*args, **kwargs)
         self._status_icon = {
             constants.TOOL_VALID: res.icon("images", "check-ok"),
-            constants.TOOL_HIDDEN: res.icon("images", "chevron_down"),
+            constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
             constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
             constants.TOOL_MISSING: res.icon("images", "x"),
         }
@@ -137,14 +138,17 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         for context in self._context_items.values():
             context.removeRows(0, context.rowCount())
 
-        for tool in tools:
+        for tool in sorted(tools, key=lambda t: t.name):
             context_item = self._context_items[tool.ctx_name]
+            is_hidden = tool.status == constants.TOOL_HIDDEN
 
             name_item = QtGui.QStandardItem(tool.alias)
-
-            status_icon = self._status_icon[tool.status]
+            name_item.setData(
+                QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
+                QtCore.Qt.CheckStateRole
+            )
             status_item = QtGui.QStandardItem()
-            status_item.setIcon(status_icon)
+            status_item.setIcon(self._status_icon[tool.status])
             status_item.setToolTip(self._status_tip[tool.status])
 
             pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
@@ -154,6 +158,29 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
     def find_context_index(self, name):
         if name in self._context_items:
             return self._context_items[name].index()
+
+    def flags(self, index):
+        """
+
+        :param index:
+        :type index: QtCore.QModelIndex
+        :return:
+        :rtype: QtCore.Qt.ItemFlags
+        """
+        if not index.isValid():
+            return
+
+        is_context = index.parent() == self.invisibleRootItem().index()
+        base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+        if index.column() == 0 and not is_context:
+            return (
+                base_flags
+                | QtCore.Qt.ItemIsEditable
+                | QtCore.Qt.ItemIsUserCheckable
+            )
+        else:
+            return base_flags
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
@@ -167,12 +194,39 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         :return:
         :rtype: bool
         """
+        if not index.isValid():
+            return False
 
-        # todo: edit alias, visibility
-        pass
+        if role == QtCore.Qt.CheckStateRole:
+            is_context = index.parent() == self.invisibleRootItem().index()
+            if index.column() == 0 and not is_context:
+                ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
+                tool_name = self.data(index, QtCore.Qt.DisplayRole)
+                item = self.itemFromIndex(index)
+                item.setData(value, QtCore.Qt.CheckStateRole)
+                visible = value == QtCore.Qt.Checked
+                self.hidden_changed.emit(ctx_name, tool_name, not visible)
+                return True
+
+        if role == QtCore.Qt.EditRole:
+            is_context = index.parent() == self.invisibleRootItem().index()
+            if index.column() == 0 and not is_context:
+                if value:
+                    ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
+                    tool_name = self.data(index, QtCore.Qt.DisplayRole)
+                    item = self.itemFromIndex(index)
+                    item.setData(value, QtCore.Qt.DisplayRole)
+                    self.alias_changed.emit(ctx_name, tool_name, value)
+                return True
+
+        return super(ToolStackModel, self).setData(index, value, role)
 
 
 class ToolStackSortProxyModel(QtCore.QSortFilterProxyModel):
+
+    def __init__(self, *args, **kwargs):
+        super(ToolStackSortProxyModel, self).__init__(*args, **kwargs)
+        self.setSortRole(ToolStackModel.ContextSortRole)
 
     def sort(self, column, order=QtCore.Qt.AscendingOrder):
         """
@@ -284,6 +338,15 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
         self.setItem(parent.row(), 1, date_item)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
+        """
+
+        :param index:
+        :param role:
+        :type index: QtCore.QModelIndex
+        :type role: int
+        :return:
+        :rtype: Any
+        """
         if not index.isValid():
             return
 
@@ -294,6 +357,13 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
         return super(InstalledPackagesModel, self).data(index, role)
 
     def flags(self, index):
+        """
+
+        :param index:
+        :type index: QtCore.QModelIndex
+        :return:
+        :rtype: QtCore.Qt.ItemFlags
+        """
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
 

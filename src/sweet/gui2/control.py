@@ -40,6 +40,12 @@ class Controller(QtCore.QObject):
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
+    def on_tool_alias_changed(self, name, tool, alias):
+        self.set_tool_alias(name, tool, alias)
+
+    def on_tool_hidden_changed(self, name, tool, hidden):
+        self.set_tool_hidden(name, tool, hidden)
+
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
@@ -74,6 +80,14 @@ class Controller(QtCore.QObject):
 
     def set_context_suffix(self, name, suffix):
         self._sop.update_context(name, suffix=suffix)
+        self._tools_updated()
+
+    def set_tool_alias(self, name, tool, alias):
+        self._sop.update_context(name, tool_name=tool, new_alias=alias)
+        self._tools_updated()
+
+    def set_tool_hidden(self, name, tool, hidden):
+        self._sop.update_context(name, tool_name=tool, set_hidden=hidden)
         self._tools_updated()
 
     def resolve_context(self, name, requests):

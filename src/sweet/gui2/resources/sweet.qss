@@ -700,27 +700,27 @@ https://doc.qt.io/qt-5/stylesheet-reference.html#icon
 }
 
 #ToolView::indicator:unchecked {
-    image: url(%(res)s/toggle-on.svg);
-}
-
-#ToolView::indicator:unchecked:hover {
-    image: url(%(res)s/toggle-on-bright.svg);
-}
-
-#ToolView::indicator:unchecked:disabled {
-    image: url(%(res)s/toggle-on-dim.svg);
-}
-
-#ToolView::indicator:checked {
     image: url(%(res)s/toggle-off.svg);
 }
 
-#ToolView::indicator:checked:hover {
+#ToolView::indicator:unchecked:hover {
     image: url(%(res)s/toggle-off-bright.svg);
 }
 
-#ToolView::indicator:checked:disabled {
+#ToolView::indicator:unchecked:disabled {
     image: url(%(res)s/toggle-off-dim.svg);
+}
+
+#ToolView::indicator:checked {
+    image: url(%(res)s/toggle-on.svg);
+}
+
+#ToolView::indicator:checked:hover {
+    image: url(%(res)s/toggle-on-bright.svg);
+}
+
+#ToolView::indicator:checked:disabled {
+    image: url(%(res)s/toggle-on-dim.svg);
 }
 
 /*https://bugreports.qt.io/browse/QTBUG-13768*/

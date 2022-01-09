@@ -341,6 +341,7 @@ class ToolsView(TreeView):
 
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
+        self.setObjectName("ToolView")
         icon_deg = delegates.IconCenterDelegate(self)
         self.setItemDelegateForColumn(1, icon_deg)  # status icon
 
@@ -361,7 +362,6 @@ class ToolStackWidget(QtWidgets.QWidget):
         proxy = ToolStackSortProxyModel()
 
         proxy.setSourceModel(model)
-        proxy.setSortRole(model.ContextSortRole)
         view.setModel(proxy)
         view.setSortingEnabled(True)
         view.header().setSortIndicatorShown(False)
