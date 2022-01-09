@@ -11,8 +11,8 @@ from .models import (
     JsonModel,
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
-    ResolvedToolsModel,
     ToolStackModel,
+    ToolStackSortProxyModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
 )
@@ -335,10 +335,20 @@ class RegExpValidator(QtGui.QRegExpValidator):
         return state, t, c
 
 
-class ToolStack(QtWidgets.QWidget):
+class ToolsView(TreeView):
+    alias_changed = QtCore.Signal(str, str, str)
+    hide_changed = QtCore.Signal(str, str, bool)
 
     def __init__(self, *args, **kwargs):
-        super(ToolStack, self).__init__(*args, **kwargs)
+        super(ToolsView, self).__init__(*args, **kwargs)
+        icon_deg = delegates.IconCenterDelegate(self)
+        self.setItemDelegateForColumn(1, icon_deg)  # status icon
+
+
+class ToolStackWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ToolStackWidget, self).__init__(*args, **kwargs)
         self.setObjectName("ToolStack")
 
         label = QtWidgets.QLabel("Tool Stack")
@@ -346,10 +356,15 @@ class ToolStack(QtWidgets.QWidget):
         btn_filter = QtWidgets.QPushButton()  # toggleable
         btn_filter.setIcon(res.icon("images", "funnel-fill.svg"))
 
-        stack = TreeView()
-
+        view = ToolsView()
         model = ToolStackModel()
-        stack.setModel(model)
+        proxy = ToolStackSortProxyModel()
+
+        proxy.setSourceModel(model)
+        proxy.setSortRole(model.ContextSortRole)
+        view.setModel(proxy)
+        view.setSortingEnabled(True)
+        view.header().setSortIndicatorShown(False)
 
         # layout
 
@@ -359,7 +374,7 @@ class ToolStack(QtWidgets.QWidget):
 
         stack_layout = QtWidgets.QHBoxLayout()
         stack_layout.addLayout(action_layout)
-        stack_layout.addWidget(stack)
+        stack_layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(label)
@@ -367,8 +382,14 @@ class ToolStack(QtWidgets.QWidget):
 
         # signals
 
+        self._model = model
+
+    def model(self):
+        return self._model
+
 
 class StackedResolveView(QtWidgets.QStackedWidget):
+    requested = QtCore.Signal(str, list)
 
     def __init__(self, *args, **kwargs):
         super(StackedResolveView, self).__init__(*args, **kwargs)
@@ -427,6 +448,9 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         panel = ResolvePanel()
         panel.set_name(name)
         panel.setEnabled(enabled)
+        panel.requested.connect(
+            lambda requests: self.requested.emit(panel.name(), requests)
+        )
         self.insertWidget(0, panel)
 
     def _add_panel_0(self):
@@ -434,6 +458,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
 
 
 class ResolvePanel(QtWidgets.QWidget):
+    requested = QtCore.Signal(list)
 
     def __init__(self, *args, **kwargs):
         super(ResolvePanel, self).__init__(*args, **kwargs)
@@ -445,7 +470,10 @@ class ResolvePanel(QtWidgets.QWidget):
         suffix = QtWidgets.QLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
-        request_editor = RequestEditor()
+        request_editor = QtWidgets.QWidget()
+        request = RequestTextEdit()
+        resolve = QtWidgets.QPushButton("Resolve")
+        resolve.setObjectName("ContextResolveOpBtn")
 
         tools = ResolvedTools()
         packages = ResolvedPackages()
@@ -461,6 +489,10 @@ class ResolvePanel(QtWidgets.QWidget):
         tabs.addTab(environ, "Environment")
         tabs.addTab(code, "Code")
         tabs.addTab(graph, "Graph")
+
+        layout = QtWidgets.QVBoxLayout(request_editor)
+        layout.addWidget(request)
+        layout.addWidget(resolve)
 
         layout = QtWidgets.QVBoxLayout(resolved_info)
         layout.addWidget(info)
@@ -479,13 +511,21 @@ class ResolvePanel(QtWidgets.QWidget):
         layout.addWidget(label)
         layout.addWidget(splitter)
 
+        # signal
+        resolve.clicked.connect(
+            lambda: self.requested.emit(request.toPlainText().split())
+        )
+
+        self._name = None
         self._label = label
-        self._editor = request_editor
         self._tools = tools
         self._packages = packages
         self._environ = environ
         self._code = code
         self._graph = graph
+
+    def name(self):
+        return self._name
 
     def set_name(self, ctx_name):
         """
@@ -494,7 +534,8 @@ class ResolvePanel(QtWidgets.QWidget):
         :type ctx_name: str
         :return:
         """
-        self._editor.set_name(ctx_name)
+        self._name = ctx_name
+        self._tools.set_name(ctx_name)
         self._label.setText("Context: %s" % ctx_name)
 
     def set_resolved(self, context):
@@ -504,36 +545,8 @@ class ResolvePanel(QtWidgets.QWidget):
         :type context: rez.ResolvedContext
         :return:
         """
-        self._tools.model().load(context.get_tools(request_only=True))
         self._packages.model().load(context.resolved_packages)
         self._environ.model().load(context.get_environ())
-
-
-class RequestEditor(QtWidgets.QWidget):
-    requested = QtCore.Signal(str, list)
-
-    def __init__(self, *args, **kwargs):
-        super(RequestEditor, self).__init__(*args, **kwargs)
-
-        request = RequestTextEdit()
-        resolve = QtWidgets.QPushButton("Resolve")
-        resolve.setObjectName("ContextResolveOpBtn")
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(request)
-        layout.addWidget(resolve)
-
-        resolve.clicked.connect(self.on_resolve_clicked)
-
-        self._name = None
-        self._text = request
-        self._completer = request.completer()
-
-    def on_resolve_clicked(self):
-        self.requested.emit(self._name, self._text.toPlainText().split())
-
-    def set_name(self, ctx_name):
-        self._name = ctx_name
 
 
 class ResolvedTools(QtWidgets.QWidget):
@@ -541,17 +554,25 @@ class ResolvedTools(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedTools, self).__init__(*args, **kwargs)
 
-        model = ResolvedToolsModel()
-        view = TreeView()
+        model = ToolStackModel()
+        view = ToolsView()
         view.setModel(model)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
 
+        self._view = view
         self._model = model
+        self._view_fixed = False
 
-    def model(self):
-        return self._model
+    def set_name(self, ctx_name):
+        if ctx_name and not self._view_fixed:
+            index = self._model.find_context_index(ctx_name)
+            if index is None:
+                print("Unable to find context item index from model.")
+            else:
+                self._view.setRootIndex(index)
+                self._view_fixed = True
 
 
 class ResolvedPackages(QtWidgets.QWidget):

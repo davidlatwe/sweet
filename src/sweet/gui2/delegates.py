@@ -1,7 +1,7 @@
 
 import time
 from datetime import datetime
-from ._vendor.Qt5 import QtWidgets
+from ._vendor.Qt5 import QtCore, QtWidgets
 
 
 def pretty_date(t, now=None, strftime="%b %d %Y %H:%M"):
@@ -107,3 +107,15 @@ class PrettyTimeDelegate(QtWidgets.QStyledItemDelegate):
             return
 
         return pretty_timestamp(value)
+
+
+class IconCenterDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    https://stackoverflow.com/a/56439391/14054728
+    """
+    def initStyleOption(self, option, index):
+        super(IconCenterDelegate, self).initStyleOption(option, index)
+        option.decorationAlignment = (
+            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom
+        )
+        option.decorationPosition = QtWidgets.QStyleOptionViewItem.Top

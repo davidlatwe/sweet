@@ -1,7 +1,10 @@
 
 import os
+from .. import constants
+from ..core import SuiteCtx, SuiteTool
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
+from . import resources as res
 
 
 class QSingleton(type(QtCore.QObject), type):
@@ -63,9 +66,94 @@ class BaseItemModel(QtGui.QStandardItemModel):
         return super(BaseItemModel, self).headerData(
             section, orientation, role)
 
+    def clear(self):
+        super(BaseItemModel, self).clear()  # also clears header items, hence..
+        self.setHorizontalHeaderLabels(self.Headers)
 
-class ContextToolsBaseModel(BaseItemModel):
+
+class ToolStackModel(BaseItemModel, metaclass=QSingleton):
     tool_changed = QtCore.Signal()
+
+    ContextSortRole = QtCore.Qt.UserRole + 10
+    Headers = [
+        "Name",  # context name and tool alias
+        "Status",
+        "From Package",
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(ToolStackModel, self).__init__(*args, **kwargs)
+        self._status_icon = {
+            constants.TOOL_VALID: res.icon("images", "check-ok"),
+            constants.TOOL_HIDDEN: res.icon("images", "chevron_down"),
+            constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
+            constants.TOOL_MISSING: res.icon("images", "x"),
+        }
+        self._status_tip = {
+            constants.TOOL_VALID: "Can be accessed.",
+            constants.TOOL_HIDDEN: "Is hidden from context.",
+            constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
+            constants.TOOL_MISSING: "Missing from last resolve.",
+        }
+        self._context_items = dict()
+
+    def on_context_added(self, ctx):
+        """
+
+        :param ctx:
+        :type ctx: SuiteCtx
+        :return:
+        """
+        c = QtGui.QStandardItem(ctx.name)
+        c.setData(ctx.priority, self.ContextSortRole)
+        self.appendRow(c)
+        self._context_items[ctx.name] = c
+
+        # for keeping header visible after view resets it's rootIndex.
+        c.appendRow([QtGui.QStandardItem() for _ in range(len(self.Headers))])
+        c.removeRow(0)
+
+    def on_context_renamed(self, name, new_name):
+        item = self._context_items.pop(name)
+        item.setText(new_name)
+        self._context_items[new_name] = item
+
+    def on_context_dropped(self, name):
+        item = self._context_items.pop(name)
+        self.removeRow(item.row())
+
+    def on_context_reordered(self, new_order):
+        for priority, name in enumerate(reversed(new_order)):
+            c = self._context_items[name]
+            c.setData(priority, self.ContextSortRole)
+
+    def update_tools(self, tools):
+        """
+
+        :param tools:
+        :type tools: list[SuiteTool]
+        :return:
+        """
+        for context in self._context_items.values():
+            context.removeRows(0, context.rowCount())
+
+        for tool in tools:
+            context_item = self._context_items[tool.ctx_name]
+
+            name_item = QtGui.QStandardItem(tool.alias)
+
+            status_icon = self._status_icon[tool.status]
+            status_item = QtGui.QStandardItem()
+            status_item.setIcon(status_icon)
+            status_item.setToolTip(self._status_tip[tool.status])
+
+            pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
+
+            context_item.appendRow([name_item, status_item, pkg_item])
+
+    def find_context_index(self, name):
+        if name in self._context_items:
+            return self._context_items[name].index()
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
@@ -81,34 +169,22 @@ class ContextToolsBaseModel(BaseItemModel):
         """
 
         # todo: edit alias, visibility
-
-    def add_tool(self, tool):
         pass
 
 
-class ToolStackModel(ContextToolsBaseModel):
-    Headers = [
-        "Name",
-        "Status",
-        "Package",
-        "Context",
-    ]
+class ToolStackSortProxyModel(QtCore.QSortFilterProxyModel):
 
+    def sort(self, column, order=QtCore.Qt.AscendingOrder):
+        """
 
-class ResolvedToolsModel(ContextToolsBaseModel):
-    Headers = [
-        "Name",
-        "Status",
-        "Package",
-    ]
-
-    def load(self, context_tools):
-        self.clear()
-
-        for pkg_name, (variant, tools) in context_tools.items():
-            for tool in tools:
-                name = QtGui.QStandardItem()
-                self.appendRow()
+        :param column:
+        :param order:
+        :type column: int
+        :type order: QtCore.Qt.SortOrder
+        :return:
+        """
+        order = QtCore.Qt.DescendingOrder  # fixed
+        return super(ToolStackSortProxyModel, self).sort(column, order)
 
 
 class ResolvedPackagesModel(BaseItemModel):

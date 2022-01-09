@@ -7,8 +7,9 @@ class Controller(QtCore.QObject):
     context_added = QtCore.Signal(SuiteCtx)
     context_resolved = QtCore.Signal(str, SuiteCtx)
     context_dropped = QtCore.Signal(str)
-    context_reordered = QtCore.Signal(list)
     context_renamed = QtCore.Signal(str, str)
+    context_reordered = QtCore.Signal(list)
+    tools_updated = QtCore.Signal(list)
     pkg_scan_started = QtCore.Signal()
     pkg_families_scanned = QtCore.Signal(list)
     pkg_versions_scanned = QtCore.Signal(list)
@@ -43,22 +44,31 @@ class Controller(QtCore.QObject):
         requests = requests or []
         ctx = self._sop.add_context(name, requests=requests)
         self.context_added.emit(ctx)
+        if requests:
+            self._tools_updated()
 
     def rename_context(self, name, new_name):
         self._sop.update_context(name, new_name=new_name)
         self.context_renamed.emit(name, new_name)
+        self._tools_updated()
 
     def drop_context(self, name):
         self._sop.drop_context(name)
         self.context_dropped.emit(name)
+        self._tools_updated()
 
     def reorder_contexts(self, new_order):
         self._sop.reorder_contexts(new_order)
         self.context_reordered.emit(new_order)
+        self._tools_updated()
 
     def resolve_context(self, name, requests):
         ctx = self._sop.update_context(name, requests=requests)
         self.context_resolved.emit(name, ctx)
+        self._tools_updated()
+
+    def _tools_updated(self):
+        self.tools_updated.emit(list(self._sop.iter_tools()))
 
     def scan_installed_packages(self):
         self.pkg_scan_started.emit()

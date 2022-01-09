@@ -8,7 +8,7 @@ from .widgets import (
     CurrentSuite,
     ContextListWidget,
     StackedResolveView,
-    ToolStack,
+    ToolStackWidget,
 
     # packages page
     InstalledPackagesWidget,
@@ -38,7 +38,7 @@ class SuitePage(QtWidgets.QWidget):
 
         context_list = ContextListWidget()
         stacked_resolve = StackedResolveView()
-        tool_stack = ToolStack()
+        tool_stack = ToolStackWidget()
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
