@@ -34,6 +34,12 @@ class Controller(QtCore.QObject):
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
+    def on_context_prefix_changed(self, name, prefix):
+        self.set_context_prefix(name, prefix)
+
+    def on_context_suffix_changed(self, name, suffix):
+        self.set_context_suffix(name, suffix)
+
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
@@ -60,6 +66,14 @@ class Controller(QtCore.QObject):
     def reorder_contexts(self, new_order):
         self._sop.reorder_contexts(new_order)
         self.context_reordered.emit(new_order)
+        self._tools_updated()
+
+    def set_context_prefix(self, name, prefix):
+        self._sop.update_context(name, prefix=prefix)
+        self._tools_updated()
+
+    def set_context_suffix(self, name, suffix):
+        self._sop.update_context(name, suffix=suffix)
         self._tools_updated()
 
     def resolve_context(self, name, requests):

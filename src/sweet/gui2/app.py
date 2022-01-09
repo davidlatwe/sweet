@@ -70,6 +70,8 @@ class Session(object):
         context_list.reordered.connect(ctrl.on_context_item_moved)
         context_list.renamed.connect(ctrl.on_rename_context_clicked)
         stacked_resolve.requested.connect(ctrl.on_resolve_context_clicked)
+        stacked_resolve.prefix_changed.connect(ctrl.on_context_prefix_changed)
+        stacked_resolve.suffix_changed.connect(ctrl.on_context_suffix_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
 
         # control -> view

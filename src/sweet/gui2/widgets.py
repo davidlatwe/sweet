@@ -390,6 +390,8 @@ class ToolStackWidget(QtWidgets.QWidget):
 
 class StackedResolveView(QtWidgets.QStackedWidget):
     requested = QtCore.Signal(str, list)
+    prefix_changed = QtCore.Signal(str, str)
+    suffix_changed = QtCore.Signal(str, str)
 
     def __init__(self, *args, **kwargs):
         super(StackedResolveView, self).__init__(*args, **kwargs)
@@ -448,6 +450,12 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         panel = ResolvePanel()
         panel.set_name(name)
         panel.setEnabled(enabled)
+        panel.prefix_changed.connect(
+            lambda text: self.prefix_changed.emit(panel.name(), text)
+        )
+        panel.suffix_changed.connect(
+            lambda text: self.suffix_changed.emit(panel.name(), text)
+        )
         panel.requested.connect(
             lambda requests: self.requested.emit(panel.name(), requests)
         )
@@ -459,12 +467,15 @@ class StackedResolveView(QtWidgets.QStackedWidget):
 
 class ResolvePanel(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
+    prefix_changed = QtCore.Signal(str)
+    suffix_changed = QtCore.Signal(str)
 
     def __init__(self, *args, **kwargs):
         super(ResolvePanel, self).__init__(*args, **kwargs)
 
         label = QtWidgets.QLabel()
 
+        naming_editor = QtWidgets.QWidget()
         prefix = QtWidgets.QLineEdit()
         prefix.setPlaceholderText("context prefix..")
         suffix = QtWidgets.QLineEdit()
@@ -490,7 +501,13 @@ class ResolvePanel(QtWidgets.QWidget):
         tabs.addTab(code, "Code")
         tabs.addTab(graph, "Graph")
 
+        layout = QtWidgets.QHBoxLayout(naming_editor)
+        layout.setContentsMargins(0, 4, 0, 4)
+        layout.addWidget(prefix)
+        layout.addWidget(suffix)
+
         layout = QtWidgets.QVBoxLayout(request_editor)
+        layout.addWidget(naming_editor)
         layout.addWidget(request)
         layout.addWidget(resolve)
 
@@ -512,6 +529,12 @@ class ResolvePanel(QtWidgets.QWidget):
         layout.addWidget(splitter)
 
         # signal
+        prefix.textChanged.connect(
+            lambda text: self.prefix_changed.emit(text)
+        )
+        suffix.textChanged.connect(
+            lambda text: self.suffix_changed.emit(text)
+        )
         resolve.clicked.connect(
             lambda: self.requested.emit(request.toPlainText().split())
         )
