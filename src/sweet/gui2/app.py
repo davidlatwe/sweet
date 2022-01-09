@@ -84,6 +84,7 @@ class Session(object):
         ctrl.context_dropped.connect(context_list.on_context_dropped)
         ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
         ctrl.context_reordered.connect(context_list.on_context_reordered)
+        ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
 
         # view -> view
         context_list.selected.connect(stacked_resolve.on_context_selected)

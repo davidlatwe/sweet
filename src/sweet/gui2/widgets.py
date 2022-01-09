@@ -2,7 +2,7 @@
 import re
 import os
 import json
-from .. import util
+from .. import util, core, _rezapi as rez
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
 from . import delegates, resources as res
@@ -10,6 +10,8 @@ from .completer import RequestTextEdit
 from .models import (
     JsonModel,
     ResolvedPackagesModel,
+    ResolvedEnvironmentModel,
+    ResolvedToolsModel,
     ToolStackModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
@@ -386,6 +388,19 @@ class StackedResolveView(QtWidgets.QStackedWidget):
 
         self._names.insert(0, name)
 
+    def on_context_resolved(self, name, ctx):
+        """
+
+        :param name:
+        :param ctx:
+        :type name: str
+        :type ctx: core.SuiteCtx
+        :return:
+        """
+        index = self._names.index(name)
+        panel = self.widget(index)
+        panel.set_resolved(ctx.context)
+
     def on_context_renamed(self, name, new_name):
         index = self._names.index(name)
         panel = self.widget(index)
@@ -432,14 +447,21 @@ class ResolvePanel(QtWidgets.QWidget):
 
         request_editor = RequestEditor()
 
+        tools = ResolvedTools()
+        packages = ResolvedPackages()
+        environ = ResolvedEnvironment()
+        code = ResolvedCode()
+        graph = ResolvedGraph()
+
         resolved_info = QtWidgets.QWidget()
         info = QtWidgets.QLabel("Resolved Context Info")
         tabs = QtWidgets.QTabWidget()
-        tabs.addTab(ResolvedTools(), "Tools")
-        tabs.addTab(ResolvedPackages(), "Packages")
-        tabs.addTab(ResolvedEnvironment(), "Environment")
-        tabs.addTab(ResolvedCode(), "Code")
-        tabs.addTab(ResolvedGraph(), "Graph")
+        tabs.addTab(tools, "Tools")
+        tabs.addTab(packages, "Packages")
+        tabs.addTab(environ, "Environment")
+        tabs.addTab(code, "Code")
+        tabs.addTab(graph, "Graph")
+
         layout = QtWidgets.QVBoxLayout(resolved_info)
         layout.addWidget(info)
         layout.addWidget(tabs)
@@ -459,10 +481,32 @@ class ResolvePanel(QtWidgets.QWidget):
 
         self._label = label
         self._editor = request_editor
+        self._tools = tools
+        self._packages = packages
+        self._environ = environ
+        self._code = code
+        self._graph = graph
 
     def set_name(self, ctx_name):
+        """
+
+        :param ctx_name:
+        :type ctx_name: str
+        :return:
+        """
         self._editor.set_name(ctx_name)
         self._label.setText("Context: %s" % ctx_name)
+
+    def set_resolved(self, context):
+        """
+
+        :param context:
+        :type context: rez.ResolvedContext
+        :return:
+        """
+        self._tools.model().load(context.get_tools(request_only=True))
+        self._packages.model().load(context.resolved_packages)
+        self._environ.model().load(context.get_environ())
 
 
 class RequestEditor(QtWidgets.QWidget):
@@ -493,7 +537,21 @@ class RequestEditor(QtWidgets.QWidget):
 
 
 class ResolvedTools(QtWidgets.QWidget):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedTools, self).__init__(*args, **kwargs)
+
+        model = ResolvedToolsModel()
+        view = TreeView()
+        view.setModel(model)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
+
+        self._model = model
+
+    def model(self):
+        return self._model
 
 
 class ResolvedPackages(QtWidgets.QWidget):
@@ -512,9 +570,10 @@ class ResolvedPackages(QtWidgets.QWidget):
         view.customContextMenuRequested.connect(self.on_right_click)
 
         self._view = view
+        self._model = model
 
-    def on_context_resolved(self, packages):
-        pass
+    def model(self):
+        return self._model
 
     def on_right_click(self, position):
         view = self._view
@@ -605,9 +664,17 @@ class ResolvedEnvironment(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedEnvironment, self).__init__(*args, **kwargs)
 
+        model = ResolvedEnvironmentModel()
         view = JsonView()
+        view.setModel(model)
+
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
+
+        self._model = model
+
+    def model(self):
+        return self._model
 
 
 class ResolvedCode(QtWidgets.QWidget):

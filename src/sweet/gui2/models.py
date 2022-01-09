@@ -64,11 +64,51 @@ class BaseItemModel(QtGui.QStandardItemModel):
             section, orientation, role)
 
 
-class ToolStackModel(BaseItemModel):
+class ContextToolsBaseModel(BaseItemModel):
+    tool_changed = QtCore.Signal()
+
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        """
+
+        :param index:
+        :param value:
+        :param role:
+        :type index: QtCore.QModelIndex
+        :type value: Any
+        :type role: int
+        :return:
+        :rtype: bool
+        """
+
+        # todo: edit alias, visibility
+
+    def add_tool(self, tool):
+        pass
+
+
+class ToolStackModel(ContextToolsBaseModel):
     Headers = [
         "Name",
         "Status",
+        "Package",
+        "Context",
     ]
+
+
+class ResolvedToolsModel(ContextToolsBaseModel):
+    Headers = [
+        "Name",
+        "Status",
+        "Package",
+    ]
+
+    def load(self, context_tools):
+        self.clear()
+
+        for pkg_name, (variant, tools) in context_tools.items():
+            for tool in tools:
+                name = QtGui.QStandardItem()
+                self.appendRow()
 
 
 class ResolvedPackagesModel(BaseItemModel):
@@ -80,9 +120,8 @@ class ResolvedPackagesModel(BaseItemModel):
 
     PackageRole = QtCore.Qt.UserRole + 10
 
-
-class ResolvedToolsModel(BaseItemModel):
-    pass
+    def load(self, packages):
+        self.clear()
 
 
 class ResolvedEnvironmentModel(JsonModel):

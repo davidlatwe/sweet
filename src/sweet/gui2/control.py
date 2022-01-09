@@ -5,6 +5,7 @@ from ._vendor.Qt5 import QtCore
 
 class Controller(QtCore.QObject):
     context_added = QtCore.Signal(SuiteCtx)
+    context_resolved = QtCore.Signal(str, SuiteCtx)
     context_dropped = QtCore.Signal(str)
     context_reordered = QtCore.Signal(list)
     context_renamed = QtCore.Signal(str, str)
@@ -56,8 +57,8 @@ class Controller(QtCore.QObject):
         self.context_reordered.emit(new_order)
 
     def resolve_context(self, name, requests):
-        self._sop.update_context(name, requests=requests)
-        # todo: emit resolved signal
+        ctx = self._sop.update_context(name, requests=requests)
+        self.context_resolved.emit(name, ctx)
 
     def scan_installed_packages(self):
         self.pkg_scan_started.emit()
