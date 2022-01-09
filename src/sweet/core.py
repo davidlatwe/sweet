@@ -530,6 +530,10 @@ class Storage(object):
     """Suite storage"""
 
     def __init__(self, roots=None):
+        """
+        :param roots: Storage roots, branch name as key and path as value.
+        :type roots: dict
+        """
         roots = roots or sweetconfig.suite_roots()  # type: dict
         assert isinstance(roots, dict)
         self._roots = roots
@@ -540,9 +544,24 @@ class Storage(object):
             ", ".join("%s=%s" % (b, path) for b, path in self._roots)
         )
 
-    def suite_path(self, branch, name):
-        # type: (str, str) -> str
+    def branches(self):
+        """Get current suite storage branch names
 
+        :return: List of suite storage branch names.
+        :rtype: list
+        """
+        return list(self._roots.keys())
+
+    def suite_path(self, branch, name):
+        """Compose suite directory path
+
+        :param branch: Suite storage branch
+        :param name: Suite name
+        :type branch: str
+        :type name: str
+        :return: Suite directory path
+        :rtype: str
+        """
         try:
             root = self._roots[branch]
         except KeyError:
@@ -551,8 +570,13 @@ class Storage(object):
         return os.path.join(root, name)
 
     def iter_saved_suites(self, branch=None):
-        # type: (str) -> [SavedSuite]
+        """Iter existing suites withing given roots
 
+        :param branch: Suite storage branch. Iter all branches if not given.
+        :type branch: str or None
+        :return: A SavedSuite object iterator
+        :rtype: list[SavedSuite]
+        """
         for b, root in self._roots.items():
             if branch and b != branch:
                 continue
