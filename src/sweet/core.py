@@ -45,6 +45,8 @@ __all__ = (
     "SuiteCtx",
     "SuiteTool",
     "SavedSuite",
+    "PkgFamily",
+    "PkgVersion",
 )
 
 
