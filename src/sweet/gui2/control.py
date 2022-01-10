@@ -82,38 +82,48 @@ class Controller(QtCore.QObject):
     def defer_scan_suite_storage(self):
         self.background_scan_suite_storage()
 
+    @QtCore.Slot()  # noqa
     def on_add_context_clicked(self, name):
         self.add_context(name)
 
+    @QtCore.Slot()  # noqa
     def on_rename_context_clicked(self, name, new_name):
         self.rename_context(name, new_name)
 
+    @QtCore.Slot()  # noqa
     def on_drop_context_clicked(self, name):
         self.drop_context(name)
 
+    @QtCore.Slot()  # noqa
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=400)
     def on_context_prefix_changed(self, name, prefix):
         self.set_context_prefix(name, prefix)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=400)
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=400)
     def on_tool_alias_changed(self, name, tool, alias):
         self.set_tool_alias(name, tool, alias)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=200)
     def on_tool_hidden_changed(self, name, tool, hidden):
         self.set_tool_hidden(name, tool, hidden)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=200)
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
+    @QtCore.Slot()  # noqa
     @_defer(on_time=200)
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
