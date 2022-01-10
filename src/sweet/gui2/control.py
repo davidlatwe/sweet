@@ -1,5 +1,13 @@
 
-from ..core import SuiteOp, SuiteCtx, InstalledPackages, Storage
+from itertools import groupby
+from ..core import (
+    SuiteOp,
+    InstalledPackages,
+    Storage,
+    SuiteCtx,
+    PkgFamily,
+    PkgVersion,
+)
 from ._vendor.Qt5 import QtCore
 
 
@@ -106,11 +114,27 @@ class Controller(QtCore.QObject):
         self.pkg_scan_started.emit()
         self._pkg.clear_caches()
 
-        families = list(self._pkg.iter_families())
-        self.pkg_families_scanned.emit(families)
+        family_key = (lambda f: f.name.lower())
 
-        for family in families:
-            versions = list(self._pkg.iter_versions(family.name, family.path))
+        all_families = sorted(
+            self._pkg.iter_families(), key=family_key
+        )  # type: list[PkgFamily]
+
+        self.pkg_families_scanned.emit(all_families)
+
+        _current = None
+        for key, same_families in groupby(all_families, key=family_key):
+            # ensure versions that belongs to same family get emitted in one
+            # batch.
+            versions = []
+
+            for family in same_families:
+                name, location = family.name, family.location
+
+                versions += list(
+                    self._pkg.iter_versions(name, location)
+                )  # type: list[PkgVersion]
+
             self.pkg_versions_scanned.emit(versions)
 
         self.pkg_scan_ended.emit()
