@@ -62,11 +62,11 @@ SavedSuite = namedtuple(
 )
 PkgFamily = namedtuple(
     "PkgFamily",
-    ["name", "path"]
+    ["name", "location"]
 )
 PkgVersion = namedtuple(
     "PkgVersion",
-    ["name", "version", "uri", "tools", "qualified", "timestamp", "locations"]
+    ["name", "version", "uri", "tools", "qualified", "timestamp", "location"]
 )
 
 
@@ -597,45 +597,85 @@ class Storage(object):
 
 
 class InstalledPackages(object):
+    """Utility for iterating installed rez packages in given paths
+    """
 
-    def __init__(self, paths=None):
-        self._paths = paths or rezconfig.packages_path
+    def __init__(self, packages_path=None):
+        """
+        :param packages_path: Paths to look for packages. If not provide,
+            use `rezconfig.packages_path` by default.
+        :type packages_path: list[str] or None
+        """
+        self._paths = packages_path or rezconfig.packages_path
 
-    def clear_caches(self):
-        for path in self._paths:
+    @property
+    def packages_path(self):
+        """Returns package lookup paths that this instance is using
+
+        :return: Current paths for finding packages.
+        :rtype: list[str]
+        """
+        return self._paths
+
+    def clear_caches(self, location=None):
+        """Clear repository cache for current session to spot new package
+
+        :param location: One single package path to clear. Clear cache of all
+            paths (`packages_path`) if not given.
+        :type location: str or None
+        :return: None
+        """
+        paths = [location] if location else self._paths
+
+        for path in paths:
             repo = package_repository_manager.get_repository(path)
             repo.clear_caches()
 
-    def iter_families(self):
-        for family in iter_package_families(paths=self._paths):
-            name = family.name
-            path = family.resource.location
-            path = "{}@{}".format(family.repository.name(), path)
+    def iter_families(self, location=None):
+        """Iter package families
+
+        Note that same family may get yielded multiple times since they
+        exists in multiple locations, e.g. from 'install' and 'release'.
+
+        :param location: One single package path to look for. Loop over all
+            paths (`packages_path`) if not given.
+        :type location: str or None
+        :return: An iterator that yields `PkgFamily` objects
+        :rtype: Iterator[PkgFamily]
+        """
+        paths = [location] if location else self._paths
+
+        for family in iter_package_families(paths=paths):
+            location = family.resource.location
+            location = "{}@{}".format(family.repository.name(), location)
+            # for repository type other than 'filesystem', e.g. 'memory'
 
             yield PkgFamily(
-                name=name,
-                path=path,
+                name=family.name,
+                location=location,
             )
 
-    def iter_versions(self, name, path):
-        seen = dict()
+    def iter_versions(self, name, location=None):
+        """Iter package versions
 
-        for package in iter_packages(name, paths=[path]):
-            qualified_name = package.qualified_name
+        :param name: Package name
+        :param location: One single package path to look for. Loop over all
+            paths (`packages_path`) if not given.
+        :type name: str
+        :type location: str or None
+        :return: An iterator that yields `PkgVersion` objects
+        :rtype: Iterator[PkgVersion]
+        """
+        paths = [location] if location else self._paths
 
-            if qualified_name in seen:
-                seen[qualified_name].locations.append(path)
-                continue
+        for package in iter_packages(name, paths=paths):
 
-            ver = PkgVersion(
+            yield PkgVersion(
                 name=name,
                 version=package.version,
                 uri=package.uri,
                 tools=package.tools or [],
-                qualified=qualified_name,
+                qualified=package.qualified_name,
                 timestamp=package.timestamp,
-                locations=[path],
+                location=package.resource.location,
             )
-            seen[qualified_name] = ver
-
-            yield ver
