@@ -66,7 +66,8 @@ PkgFamily = namedtuple(
 )
 PkgVersion = namedtuple(
     "PkgVersion",
-    ["name", "version", "uri", "tools", "qualified", "timestamp", "location"]
+    ["name", "version", "qualified", "requires", "variants", "tools",
+     "uri", "timestamp", "location", "is_nonlocal"]
 )
 
 
@@ -607,6 +608,7 @@ class InstalledPackages(object):
         :type packages_path: list[str] or None
         """
         self._paths = packages_path or rezconfig.packages_path
+        self._non_local = util.normpaths(rezconfig.nonlocal_packages_path)
 
     @property
     def packages_path(self):
@@ -668,14 +670,26 @@ class InstalledPackages(object):
         """
         paths = [location] if location else self._paths
 
-        for package in iter_packages(name, paths=paths):
+        _cache = dict()
+        for p in iter_packages(name, paths=paths):
+            _l = p.resource.location
+            if _l in _cache:
+                norm_location = _cache[_l]
+            else:
+                norm_location = util.normpath(_l)
+                _cache[_l] = norm_location
+
+            is_nonlocal = norm_location in self._non_local
 
             yield PkgVersion(
                 name=name,
-                version=package.version,
-                uri=package.uri,
-                tools=package.tools or [],
-                qualified=package.qualified_name,
-                timestamp=package.timestamp,
-                location=package.resource.location,
+                version=p.version,
+                qualified=p.qualified_name,
+                requires=[str(r) for r in p.requires or []],
+                variants=[[str(r) for r in var] for var in p.variants or []],
+                tools=p.tools or [],
+                uri=p.uri,
+                timestamp=p.timestamp,
+                location=norm_location,
+                is_nonlocal=is_nonlocal,
             )
