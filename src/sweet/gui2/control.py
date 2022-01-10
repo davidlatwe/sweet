@@ -63,7 +63,7 @@ class Controller(QtCore.QObject):
     storage_scan_ended = QtCore.Signal()
 
     def __init__(self, state):
-        super(Controller, self).__init__()
+        super(Controller, self).__init__(parent=None)
 
         self._sop = SuiteOp()
         self._sto = Storage()
