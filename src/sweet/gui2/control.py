@@ -1,4 +1,5 @@
 
+import inspect
 import functools
 from itertools import groupby
 from ..core import (
@@ -20,6 +21,7 @@ def _defer(on_time=500):
         def decorated(*args, **kwargs):
             self = args[0]
             name = func.__name__
+            self._sender[name] = QtCore.QObject.sender(self)  # real sender
             if name not in self._timers:
                 # init timer
                 d = {
@@ -31,6 +33,7 @@ def _defer(on_time=500):
 
                 def on_timeout():
                     func(*d["args"], **d["kwargs"])
+                    self._sender.pop(name, None)  # cleanup
 
                 d["timer"].timeout.connect(on_timeout)
                 d["timer"].setSingleShot(True)
@@ -70,9 +73,15 @@ class Controller(QtCore.QObject):
         self._pkg = InstalledPackages()
         self._state = state
         self._timers = dict()
+        self._sender = dict()
 
         self.defer_scan_suite_storage()
         self.defer_scan_installed_packages()
+
+    def sender(self):
+        """Internal use. To preserve real signal sender for decorated method."""
+        f = inspect.stack()[1].function
+        return self._sender.pop(f, super(Controller, self).sender())
 
     @_defer(on_time=500)
     def defer_scan_installed_packages(self):
