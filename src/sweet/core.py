@@ -608,7 +608,7 @@ class InstalledPackages(object):
         :type packages_path: list[str] or None
         """
         self._paths = packages_path or rezconfig.packages_path
-        self._non_local = util.normpaths(rezconfig.nonlocal_packages_path)
+        self._non_local = util.normpaths(*rezconfig.nonlocal_packages_path)
 
     @property
     def packages_path(self):
