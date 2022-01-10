@@ -1,4 +1,5 @@
 
+import functools
 from itertools import groupby
 from ..core import (
     SuiteOp,
@@ -11,7 +12,41 @@ from ..core import (
 from ._vendor.Qt5 import QtCore
 
 
+def _defer(on_time=500):
+    """Function call deferrer for class Controller
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def decorated(self, *args, **kwargs):
+            name = func.__name__
+            if name not in self._timers:
+                # init timer
+                d = {
+                    "timer": QtCore.QTimer(self),
+                    "args": tuple(),
+                    "kwargs": dict(),
+                }
+                self._timers[name] = d
+
+                def on_timeout():
+                    func(self, *d["args"], **d["kwargs"])
+
+                d["timer"].timeout.connect(on_timeout)
+                d["timer"].setSingleShot(True)
+
+            d = self._timers[name]
+            d["args"] = args
+            d["kwargs"] = kwargs
+            d["timer"].start(kwargs.get("on_time") or on_time)
+
+        return decorated
+
+    return decorator
+
+
 class Controller(QtCore.QObject):
+    """Application controller
+    """
     context_added = QtCore.Signal(SuiteCtx)
     context_resolved = QtCore.Signal(str, SuiteCtx)
     context_dropped = QtCore.Signal(str)
@@ -33,6 +68,23 @@ class Controller(QtCore.QObject):
         self._sto = Storage()
         self._pkg = InstalledPackages()
         self._state = state
+        self._timers = dict()
+
+    @_defer(on_time=500)
+    def defer_scan_installed_packages(self):
+        self._scan_installed_packages()
+
+    @_defer(on_time=500)
+    def defer_scan_suite_storage(self):
+        self._scan_suite_storage()
+
+    def _scan_installed_packages(self):
+        # todo: working in background
+        self.scan_installed_packages()
+
+    def _scan_suite_storage(self):
+        # todo: working in background
+        self.scan_suite_storage()
 
     def on_add_context_clicked(self, name):
         self.add_context(name)
@@ -46,21 +98,27 @@ class Controller(QtCore.QObject):
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
+    @_defer(on_time=400)
     def on_context_prefix_changed(self, name, prefix):
         self.set_context_prefix(name, prefix)
 
+    @_defer(on_time=400)
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
+    @_defer(on_time=400)
     def on_tool_alias_changed(self, name, tool, alias):
         self.set_tool_alias(name, tool, alias)
 
+    @_defer(on_time=200)
     def on_tool_hidden_changed(self, name, tool, hidden):
         self.set_tool_hidden(name, tool, hidden)
 
+    @_defer(on_time=200)
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
+    @_defer(on_time=200)
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
 
