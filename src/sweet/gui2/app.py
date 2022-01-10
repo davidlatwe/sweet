@@ -115,9 +115,6 @@ class Session(object):
         self._view = view_
         self._state = state
 
-        ctrl.scan_installed_packages()  # todo: this need a delay
-        ctrl.scan_suite_storage()
-
     @property
     def app(self):
         return self._app

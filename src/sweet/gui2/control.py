@@ -70,21 +70,16 @@ class Controller(QtCore.QObject):
         self._state = state
         self._timers = dict()
 
+        self.defer_scan_suite_storage()
+        self.defer_scan_installed_packages()
+
     @_defer(on_time=500)
     def defer_scan_installed_packages(self):
-        self._scan_installed_packages()
+        self.background_scan_installed_packages()
 
     @_defer(on_time=500)
     def defer_scan_suite_storage(self):
-        self._scan_suite_storage()
-
-    def _scan_installed_packages(self):
-        # todo: working in background
-        self.scan_installed_packages()
-
-    def _scan_suite_storage(self):
-        # todo: working in background
-        self.scan_suite_storage()
+        self.background_scan_suite_storage()
 
     def on_add_context_clicked(self, name):
         self.add_context(name)
@@ -121,6 +116,14 @@ class Controller(QtCore.QObject):
     @_defer(on_time=200)
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
+
+    def background_scan_installed_packages(self):
+        # todo: working in background
+        self.scan_installed_packages()
+
+    def background_scan_suite_storage(self):
+        # todo: working in background
+        self.scan_suite_storage()
 
     def add_context(self, name, requests=None):
         requests = requests or []
