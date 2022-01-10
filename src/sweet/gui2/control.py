@@ -119,12 +119,18 @@ class Controller(QtCore.QObject):
         self.scan_installed_packages()
 
     def background_scan_installed_packages(self):
-        # todo: working in background
-        self.scan_installed_packages()
+        thread = QtCore.QThread(self)
+        thread.run = self.scan_installed_packages
+        thread.start()
 
     def background_scan_suite_storage(self):
-        # todo: working in background
-        self.scan_suite_storage()
+        thread = QtCore.QThread(self)
+        thread.run = self.scan_suite_storage
+        thread.start()
+
+    # todo:
+    #  1. quit thread on app exit
+    #  2. process should check if interruption requested in loop.
 
     def add_context(self, name, requests=None):
         requests = requests or []
