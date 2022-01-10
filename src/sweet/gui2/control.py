@@ -17,7 +17,8 @@ def _defer(on_time=500):
     """
     def decorator(func):
         @functools.wraps(func)
-        def decorated(self, *args, **kwargs):
+        def decorated(*args, **kwargs):
+            self = args[0]
             name = func.__name__
             if name not in self._timers:
                 # init timer
@@ -29,7 +30,7 @@ def _defer(on_time=500):
                 self._timers[name] = d
 
                 def on_timeout():
-                    func(self, *d["args"], **d["kwargs"])
+                    func(*d["args"], **d["kwargs"])
 
                 d["timer"].timeout.connect(on_timeout)
                 d["timer"].setSingleShot(True)
