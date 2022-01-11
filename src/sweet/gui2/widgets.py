@@ -847,12 +847,13 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         header = view.header()
         scroll = view.verticalScrollBar()
 
-        model.family_updated.connect(self.on_model_family_updated)
         tabs.currentChanged.connect(self.on_tab_clicked)
         search.textChanged.connect(self.on_searched)
         header.sortIndicatorChanged.connect(self.on_sort_changed)
         scroll.valueChanged.connect(self.on_scrolled)
-        refresh.clicked.connect(self.on_refresh_clicked)
+        refresh.released.connect(self.on_refresh_released)
+        model.modelReset.connect(lambda: self.setEnabled(False))
+        model.family_updated.connect(self.on_model_family_updated)
 
         self._view = view
         self._model = model
@@ -867,11 +868,13 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
     def proxy(self):
         return self._proxy
 
+    @QtCore.Slot()  # noqa
     def on_searched(self, text):
         self._proxy.setFilterRegExp(text)
         self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
 
+    @QtCore.Slot()  # noqa
     def on_tab_clicked(self, index):
         group = self._tabs.tabText(index)
         item = self._model.first_item_in_initial(group)
@@ -880,6 +883,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             index = self._proxy.mapFromSource(index)
             self._view.scroll_at_top(index)
 
+    @QtCore.Slot()  # noqa
     def on_scrolled(self, value):
         if not self._tabs.isEnabled():
             return
@@ -894,6 +898,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             self._tabs.setCurrentIndex(index)
             self._tabs.blockSignals(False)
 
+    @QtCore.Slot()  # noqa
     def on_sort_changed(self, index, order):
         is_sort_name = index == 0
 
@@ -911,6 +916,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             for i, group in enumerate(self._groups):
                 self._tabs.setTabText(i, group)
 
+    @QtCore.Slot()  # noqa
     def on_model_family_updated(self):
         # regenerate tabs
         tabs = self._tabs
@@ -928,8 +934,10 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
         tabs.updateGeometry()
         tabs.setEnabled(True)
+        self.setEnabled(True)
 
-    def on_refresh_clicked(self):
+    @QtCore.Slot()  # noqa
+    def on_refresh_released(self):
         self._tabs.setEnabled(False)
         self.refreshed.emit()
 

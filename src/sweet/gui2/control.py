@@ -133,9 +133,8 @@ class Controller(QtCore.QObject):
         self.resolve_context(name, requests=requests)
 
     @QtCore.Slot()  # noqa
-    @_defer(on_time=200)
     def on_installed_pkg_scan_clicked(self):
-        self.scan_installed_packages()
+        self.background_scan_installed_packages()
 
     def background_scan_installed_packages(self):
         thread = QtCore.QThread(self)
