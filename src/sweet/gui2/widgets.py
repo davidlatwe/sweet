@@ -847,12 +847,12 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         header = view.header()
         scroll = view.verticalScrollBar()
 
-        refresh.clicked.connect(self.refreshed)
         model.family_updated.connect(self.on_model_family_updated)
         tabs.currentChanged.connect(self.on_tab_clicked)
         search.textChanged.connect(self.on_searched)
         header.sortIndicatorChanged.connect(self.on_sort_changed)
         scroll.valueChanged.connect(self.on_scrolled)
+        refresh.clicked.connect(self.on_refresh_clicked)
 
         self._view = view
         self._model = model
@@ -927,6 +927,11 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
         # (MacOS) Ensure tab bar *polished* even it's not visible on launch.
         tabs.updateGeometry()
+        tabs.setEnabled(True)
+
+    def on_refresh_clicked(self):
+        self._tabs.setEnabled(False)
+        self.refreshed.emit()
 
 
 class SuiteStorageWidget(QtWidgets.QWidget):
