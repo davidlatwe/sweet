@@ -11,7 +11,7 @@ from .models import (
     JsonModel,
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
-    ToolStackModel,
+    ToolStackModelSingleton,
     ToolStackSortProxyModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
@@ -359,7 +359,7 @@ class ToolStackWidget(QtWidgets.QWidget):
         btn_filter.setIcon(res.icon("images", "funnel-fill.svg"))
 
         view = ToolsView()
-        model = ToolStackModel()
+        model = ToolStackModelSingleton()
         proxy = ToolStackSortProxyModel()
 
         proxy.setSourceModel(model)
@@ -578,7 +578,7 @@ class ResolvedTools(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedTools, self).__init__(*args, **kwargs)
 
-        model = ToolStackModel()
+        model = ToolStackModelSingleton()
         view = ToolsView()
         view.setModel(model)
 

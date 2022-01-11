@@ -71,7 +71,7 @@ class BaseItemModel(QtGui.QStandardItemModel):
         self.setHorizontalHeaderLabels(self.Headers)
 
 
-class ToolStackModel(BaseItemModel, metaclass=QSingleton):
+class ToolStackModel(BaseItemModel):
     alias_changed = QtCore.Signal(str, str, str)
     hidden_changed = QtCore.Signal(str, str, bool)
 
@@ -83,7 +83,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         "From Package",
     ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, editable=True, *args, **kwargs):
         super(ToolStackModel, self).__init__(*args, **kwargs)
         self._status_icon = {
             constants.TOOL_VALID: res.icon("images", "check-ok"),
@@ -98,6 +98,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
             constants.TOOL_MISSING: "Missing from last resolve.",
         }
         self._context_items = dict()
+        self._editable = editable
 
     def on_context_added(self, ctx):
         """
@@ -175,7 +176,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         is_context = index.parent() == self.invisibleRootItem().index()
         base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-        if index.column() == 0 and not is_context:
+        if self._editable and index.column() == 0 and not is_context:
             return (
                 base_flags
                 | QtCore.Qt.ItemIsEditable
@@ -196,7 +197,7 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
         :return:
         :rtype: bool
         """
-        if not index.isValid():
+        if not (self._editable and index.isValid()):
             return False
 
         if role == QtCore.Qt.CheckStateRole:
@@ -222,6 +223,10 @@ class ToolStackModel(BaseItemModel, metaclass=QSingleton):
                 return True
 
         return super(ToolStackModel, self).setData(index, value, role)
+
+
+class ToolStackModelSingleton(ToolStackModel, metaclass=QSingleton):
+    """A singleton model for sharing across tool widgets"""
 
 
 class ToolStackSortProxyModel(QtCore.QSortFilterProxyModel):
