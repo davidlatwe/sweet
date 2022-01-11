@@ -851,7 +851,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         search.textChanged.connect(self.on_searched)
         header.sortIndicatorChanged.connect(self.on_sort_changed)
         scroll.valueChanged.connect(self.on_scrolled)
-        refresh.released.connect(self.on_refresh_released)
+        refresh.clicked.connect(self.on_refresh_released)
         model.modelReset.connect(lambda: self.setEnabled(False))
         model.family_updated.connect(self.on_model_family_updated)
 
