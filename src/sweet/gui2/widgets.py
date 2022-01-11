@@ -186,6 +186,12 @@ class ContextListWidget(QtWidgets.QWidget):
 
         view = DragDropListWidget()
         view.setSortingEnabled(False)  # do not sort this !
+        view.setStyleSheet("""
+            QListWidget::item{
+                padding: 5px 1px;
+                border: 0px;
+            }
+        """)
 
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
