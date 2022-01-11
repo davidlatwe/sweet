@@ -10,36 +10,40 @@ from ..core import (
     PkgFamily,
     PkgVersion,
 )
-from ._vendor.Qt5 import QtCore, QtWidgets
+from ._vendor.Qt5 import QtCore
 from .widgets import BusyWidget
 
 
 def _defer(on_time=500):
-    """Function call deferrer for class Controller
+    """A decorator for deferring Controller function call
+
+    :param on_time: The time to wait before the function runs (msec)
+    :type on_time: int
+    :return:
     """
     def decorator(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
             self = args[0]
-            name = func.__name__
-            self._sender[name] = QtCore.QObject.sender(self)  # real sender
-            if name not in self._timers:
+            fn_name = func.__name__
+            self._sender[fn_name] = QtCore.QObject.sender(self)  # real sender
+            if fn_name not in self._timers:
                 # init timer
                 d = {
                     "timer": QtCore.QTimer(self),
                     "args": tuple(),
                     "kwargs": dict(),
                 }
-                self._timers[name] = d
+                self._timers[fn_name] = d
 
                 def on_timeout():
                     func(*d["args"], **d["kwargs"])
-                    self._sender.pop(name, None)  # cleanup
+                    self._sender.pop(fn_name, None)  # cleanup
 
                 d["timer"].timeout.connect(on_timeout)
                 d["timer"].setSingleShot(True)
 
-            d = self._timers[name]
+            d = self._timers[fn_name]
             d["args"] = args
             d["kwargs"] = kwargs
             d["timer"].start(kwargs.get("on_time") or on_time)
@@ -49,66 +53,44 @@ def _defer(on_time=500):
     return decorator
 
 
-def _block(objects, until):
-    """
+def _thread(name, blocks=None):
+    """A decorator for running Controller functions in worker thread
 
-    :param objects:
-    :param until:
+    :param name: Thread name
+    :param blocks: A tuple of `BusyWidget` object name strings
+    :type name: str
+    :type blocks: tuple[str] or None
     :return:
     """
     def decorator(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
             self = args[0]  # type: Controller
-            name = func.__name__
-
-            signal = getattr(self, until, None)
-            if signal is None:
-                print("No signal %r to release widget: %s" % (until, name))
-
-            widgets = [
-                w for w in QtWidgets.QApplication.allWidgets()
-                if isinstance(w, BusyWidget) and w.objectName() in objects
-            ]  # type: list[BusyWidget]
-
-            for widget in widgets:
-                def on_finished():
-                    widget.set_overwhelmed(False)
-                    signal.disconnect(on_finished)
-
-                signal.connect(on_finished)
-                widget.set_overwhelmed(True)
-
-            func(*args, **kwargs)
-
-        return decorated
-    return decorator
-
-
-def _thread(name):
-    """
-
-    :param name:
-    :return:
-    """
-
-    # todo:
-    #  1. quit thread on app exit
-    #  2. process should check if interruption requested in loop.
-
-    def decorator(func):
-        @functools.wraps(func)
-        def decorated(*args, **kwargs):
-            self = args[0]  # type: Controller
+            fn_name = func.__name__
 
             if name not in self._thread:
                 self._thread[name] = Thread(self)
             thread = self._thread[name]
 
             if thread.isRunning():
-                print("Thread %r still running. Can not proceed." % name)
+                print(f"Thread {name!r} is busy, cannot process {fn_name!r}.")
                 return
-            print("Thread %r starting.." % name)
+
+            blocks_ = blocks or []
+            busy_widgets = [
+                w for w in BusyWidget.instances() if w.objectName() in blocks_
+            ]  # type: list[BusyWidget]
+
+            for widget in busy_widgets:
+                def on_finished():
+                    widget.set_overwhelmed(False)
+                    thread.finished.disconnect(on_finished)
+                    print(f"Thread {name!r} finished {fn_name!r}.")
+
+                thread.finished.connect(on_finished)
+                widget.set_overwhelmed(True)
+
+            print(f"Thread {name!r} is about to run {fn_name!r}.")
             thread.set_job(func, *args, **kwargs)
             thread.start()
 
@@ -160,18 +142,15 @@ class Controller(QtCore.QObject):
     def defer_scan_suite_storage(self):
         self.scan_suite_storage()
 
-    # todo: how to block this ? no tool update signal is no request.
     @QtCore.Slot()  # noqa
     def on_add_context_clicked(self, name):
         self.add_context(name)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     def on_rename_context_clicked(self, name, new_name):
         self.rename_context(name, new_name)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     def on_drop_context_clicked(self, name):
         self.drop_context(name)
 
@@ -180,30 +159,26 @@ class Controller(QtCore.QObject):
         self.reorder_contexts(names)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_context_prefix_changed(self, name, prefix):
         self.set_context_prefix(name, prefix)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_tool_alias_changed(self, name, tool, alias):
         self.set_tool_alias(name, tool, alias)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
+    @_defer(on_time=50)
     def on_tool_hidden_changed(self, name, tool, hidden):
         self.set_tool_hidden(name, tool, hidden)
 
     @QtCore.Slot()  # noqa
-    @_block(objects=("SuitePage",), until="tools_updated")
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
@@ -211,7 +186,7 @@ class Controller(QtCore.QObject):
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def add_context(self, name, requests=None):
         requests = requests or []
         ctx = self._sop.add_context(name, requests=requests)
@@ -219,45 +194,45 @@ class Controller(QtCore.QObject):
         if requests:
             self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def rename_context(self, name, new_name):
         self._sop.update_context(name, new_name=new_name)
         self.context_renamed.emit(name, new_name)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def drop_context(self, name):
         self._sop.drop_context(name)
         self.context_dropped.emit(name)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def reorder_contexts(self, new_order):
         self._sop.reorder_contexts(new_order)
         self.context_reordered.emit(new_order)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def set_context_prefix(self, name, prefix):
         self._sop.update_context(name, prefix=prefix)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def set_context_suffix(self, name, suffix):
         self._sop.update_context(name, suffix=suffix)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def set_tool_alias(self, name, tool, alias):
         self._sop.update_context(name, tool_name=tool, new_alias=alias)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def set_tool_hidden(self, name, tool, hidden):
         self._sop.update_context(name, tool_name=tool, set_hidden=hidden)
         self._tools_updated()
 
-    @_thread(name="suiteOp")
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def resolve_context(self, name, requests):
         ctx = self._sop.update_context(name, requests=requests)
         self.context_resolved.emit(name, ctx)
@@ -268,6 +243,7 @@ class Controller(QtCore.QObject):
 
     @_thread(name="scanPkg")
     def scan_installed_packages(self):
+        ct = QtCore.QThread.currentThread()
         self.pkg_scan_started.emit()
         self._pkg.clear_caches()
 
@@ -286,8 +262,9 @@ class Controller(QtCore.QObject):
             versions = []
 
             for family in same_families:
+                if ct.isInterruptionRequested():  # could be long running proc
+                    break
                 name, location = family.name, family.location
-
                 versions += list(
                     self._pkg.iter_versions(name, location)
                 )  # type: list[PkgVersion]
@@ -298,9 +275,12 @@ class Controller(QtCore.QObject):
 
     @_thread(name="scanSuite")
     def scan_suite_storage(self):
+        ct = QtCore.QThread.currentThread()
         self.storage_scan_started.emit()
 
         for branch in self._sto.branches():
+            if ct.isInterruptionRequested():  # could be long running proc
+                break
             self.storage_scanned.emit(
                 branch,
                 list(self._sto.iter_saved_suites(branch)),

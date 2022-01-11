@@ -39,14 +39,23 @@ class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
 
 class BusyWidget(QtWidgets.QWidget):
     """
-    Instead of toggling QWidget.setEnabled() to block user inputs, install
-    an event filter to block keyboard mouse events plus a busy cursor.
+    Instead of toggling QWidget.setEnabled() to block user inputs and makes
+    the appearance looks glitchy between short time processes, install an
+    eventFilter to block keyboard and mouse events plus a busy cursor looks
+    better.
     """
+    _instances = []
+
     def __init__(self, *args, **kwargs):
         super(BusyWidget, self).__init__(*args, **kwargs)
         self._is_busy = False
         self._entered = False
         self._filter = BusyEventFilterSingleton(self)
+        self._instances.append(self)
+
+    @classmethod
+    def instances(cls):
+        return cls._instances[:]
 
     @QtCore.Slot()  # noqa
     def set_overwhelmed(self, busy):
