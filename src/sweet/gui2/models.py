@@ -1,6 +1,8 @@
 
 import os
-from .. import constants
+from rez.packages import Variant
+from rez.config import config as rezconfig
+from .. import constants, util
 from ..core import SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
@@ -252,13 +254,37 @@ class ResolvedPackagesModel(BaseItemModel):
     Headers = [
         "Name",
         "Version",
-        "Released",
+        "Is Local",
     ]
 
     PackageRole = QtCore.Qt.UserRole + 10
 
+    def __init__(self, *args, **kwargs):
+        super(ResolvedPackagesModel, self).__init__(*args, **kwargs)
+        self._is_local_icon = [
+            res.icon("images", "person-circle"),  # local
+            res.icon("images", "people-fill.svg"),  # non-local
+        ]
+        self._non_local = util.normpaths(*rezconfig.nonlocal_packages_path)
+
     def load(self, packages):
+        """
+        :param packages:
+        :type packages: list[Variant]
+        :return:
+        """
         self.clear()
+
+        for pkg in packages:
+            norm_location = util.normpath(pkg.resource.location)
+            is_nonlocal = norm_location in self._non_local
+
+            name_item = QtGui.QStandardItem(pkg.name)
+            version_item = QtGui.QStandardItem(str(pkg.version))
+            is_local_item = QtGui.QStandardItem()
+            is_local_item.setIcon(self._is_local_icon[is_nonlocal])
+
+            self.appendRow([name_item, version_item, is_local_item])
 
 
 class ResolvedEnvironmentModel(JsonModel):
@@ -336,6 +362,12 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
         self.family_updated.emit()
 
     def add_versions(self, versions):
+        """
+
+        :param versions:
+        :type versions: list[PkgVersion]
+        :return:
+        """
         if not versions:
             return
         _sample = versions[0]
