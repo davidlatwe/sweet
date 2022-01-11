@@ -118,29 +118,51 @@ class TreeView(qoverview.VerticalExtendedTreeView):
 
 
 class CurrentSuite(QtWidgets.QWidget):
+    new_clicked = QtCore.Signal()
+    save_clicked = QtCore.Signal(str, str, str)  # branch, name, description
 
     def __init__(self, *args, **kwargs):
         super(CurrentSuite, self).__init__(*args, **kwargs)
         self.setObjectName("SuiteView")
 
+        top = QtWidgets.QWidget()
         name = QtWidgets.QLineEdit()
+        new_btn = QtWidgets.QPushButton(" New")
+        save_btn = QtWidgets.QPushButton(" Save")
         description = QtWidgets.QTextEdit()
         load_path = QtWidgets.QLineEdit()
 
+        new_btn.setIcon(res.icon("images", "egg-fill"))
+        save_btn.setIcon(res.icon("images", "egg-fried"))
+
         name.setPlaceholderText("Suite name..")
         description.setPlaceholderText("Suite description.. (optional)")
-        description.setMinimumHeight(5)
+        load_path.setPlaceholderText("Suite load path..")
         load_path.setReadOnly(True)
+
+        description.setMinimumHeight(5)  # for shrinking with splitter
         load_path.setMinimumHeight(5)
 
-        layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(top)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(name)
+        layout.addWidget(save_btn)
+        layout.addWidget(new_btn)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(top)
         layout.addWidget(description, stretch=True)
         layout.addWidget(load_path)
         layout.addStretch()
 
+        new_btn.clicked.connect(self.on_suite_new_clicked)
+
         self._min_height = self.minimumSizeHint().height()
         self._hide_on_min = [description, load_path]
+        self._suite_dirty = False
+        self._name = name
+        self._desc = description
+        self._path = load_path
 
     def resizeEvent(self, event):
         h = event.size().height()
@@ -148,9 +170,59 @@ class CurrentSuite(QtWidgets.QWidget):
             w.setVisible(h > self._min_height)
         return super(CurrentSuite, self).resizeEvent(event)
 
+    @QtCore.Slot()  # noqa
+    def on_suite_edited(self):
+        self._suite_dirty = True
 
-class SuiteSavingDialog(QtWidgets.QDialog):
-    pass
+    @QtCore.Slot()  # noqa
+    def on_suite_saved(self, load_path):
+        self._suite_dirty = False
+        self._path.setText(load_path)
+
+    @QtCore.Slot()  # noqa
+    def on_suite_loaded(self, name, description, load_path):
+        self._suite_dirty = False
+        self._name.setText(name)
+        self._desc.setPlainText(description)
+        self._path.setText(load_path)
+
+    def on_suite_new_clicked(self):
+        if self._suite_dirty:
+            widget = QtWidgets.QLabel(
+                "Current suite is not saved, are you sure to discard and start "
+                "a new one ?"
+            )
+            dialog = YesNoDialog(widget, yes_as_default=False, parent=self)
+            dialog.setWindowTitle("Unsaved Changes")
+
+            def on_finished(result):
+                if result:
+                    self.new_clicked.emit()
+
+            dialog.finished.connect(on_finished)
+            dialog.open()
+
+        else:
+            self.new_clicked.emit()
+
+    def on_suite_save_clicked(self):
+        widget = QtWidgets.QWidget()
+        # todo:
+        #  1. get branch list
+        #  2. remember the selected branch in preference
+
+        dialog = YesNoDialog(widget, parent=self)
+        dialog.setWindowTitle("Save Suite")
+
+        def on_finished(result):
+            if result:
+                branch = ""
+                name = self._name.text()
+                description = self._desc.toPlainText()
+                self.save_clicked.emit(branch, name, description)
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
 
 
 class DragDropListWidget(QtWidgets.QListWidget):
@@ -306,7 +378,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
 class YesNoDialog(QtWidgets.QDialog):
 
-    def __init__(self, widget, *args, **kwargs):
+    def __init__(self, widget, yes_as_default=True, *args, **kwargs):
         super(YesNoDialog, self).__init__(*args, **kwargs)
 
         btn_accept = QtWidgets.QPushButton("Accept")
@@ -314,8 +386,8 @@ class YesNoDialog(QtWidgets.QDialog):
 
         btn_accept.setObjectName("AcceptButton")
         btn_reject.setObjectName("CancelButton")
-        btn_accept.setDefault(True)
-        btn_accept.setEnabled(False)
+        btn_accept.setDefault(yes_as_default)
+        btn_reject.setDefault(not yes_as_default)
 
         layout = QtWidgets.QGridLayout(self)
         layout.addWidget(widget, 0, 0, 1, 2)
@@ -326,6 +398,7 @@ class YesNoDialog(QtWidgets.QDialog):
         btn_reject.clicked.connect(lambda: self.done(self.Rejected))
         if hasattr(widget, "validated"):
             widget.validated.connect(btn_accept.setEnabled)
+            btn_accept.setEnabled(False)
 
 
 class ContextNameEditor(QtWidgets.QWidget):
