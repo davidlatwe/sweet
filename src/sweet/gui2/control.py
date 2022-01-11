@@ -126,21 +126,13 @@ class Controller(QtCore.QObject):
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
 
-        self.defer_scan_suite_storage()
-        self.defer_scan_installed_packages()
+        _defer(on_time=500)(Controller.scan_suite_storage)(self)
+        _defer(on_time=500)(Controller.scan_installed_packages)(self)
 
     def sender(self):
         """Internal use. To preserve real signal sender for decorated method."""
         f = inspect.stack()[1].function
         return self._sender.pop(f, super(Controller, self).sender())
-
-    @_defer(on_time=500)
-    def defer_scan_installed_packages(self):
-        self.scan_installed_packages()
-
-    @_defer(on_time=500)
-    def defer_scan_suite_storage(self):
-        self.scan_suite_storage()
 
     @QtCore.Slot()  # noqa
     def on_add_context_clicked(self, name):
