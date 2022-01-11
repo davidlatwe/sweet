@@ -94,10 +94,6 @@ class Session(object):
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
 
         # control -> view
-        ctrl.pkg_scan_started.connect(lambda: print("start pkg scanning"))
-        ctrl.pkg_scan_ended.connect(lambda: print("all pkg scanned"))
-        ctrl.storage_scan_started.connect(lambda: print("start suites scanning"))
-        ctrl.storage_scan_ended.connect(lambda: print("all suites scanned"))
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
         ctrl.context_renamed.connect(context_list.on_context_renamed)
@@ -110,6 +106,9 @@ class Session(object):
         # view -> view
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
+
+        # status bar messages
+        ctrl.status_message.connect(view_.spoken)
         busy_filter.overwhelmed.connect(view_.spoken)
 
         self._app = app

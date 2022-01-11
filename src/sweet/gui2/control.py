@@ -62,6 +62,10 @@ def _thread(name, blocks=None):
     :type blocks: tuple[str] or None
     :return:
     """
+    # todo:
+    #  closing app while thread running ->
+    #   QThread: Destroyed while thread is still running
+
     def decorator(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
@@ -85,10 +89,15 @@ def _thread(name, blocks=None):
                 def on_finished():
                     widget.set_overwhelmed(False)
                     thread.finished.disconnect(on_finished)
-                    print(f"Thread {name!r} finished {fn_name!r}.")
 
                 thread.finished.connect(on_finished)
                 widget.set_overwhelmed(True)
+
+            def on_finished_message():
+                print(f"Thread {name!r} finished {fn_name!r}.")
+                thread.finished.disconnect(on_finished_message)
+
+            thread.finished.connect(on_finished_message)
 
             print(f"Thread {name!r} is about to run {fn_name!r}.")
             thread.set_job(func, *args, **kwargs)
@@ -114,6 +123,7 @@ class Controller(QtCore.QObject):
     storage_scan_started = QtCore.Signal()
     storage_scanned = QtCore.Signal(str, list)
     storage_scan_ended = QtCore.Signal()
+    status_message = QtCore.Signal(str)
 
     def __init__(self, state):
         super(Controller, self).__init__(parent=None)
@@ -236,19 +246,30 @@ class Controller(QtCore.QObject):
     @_thread(name="scanPkg")
     def scan_installed_packages(self):
         ct = QtCore.QThread.currentThread()
+        self.status_message.emit("Start scanning installed packages...")
         self.pkg_scan_started.emit()
         self._pkg.clear_caches()
 
+        # it's also important to sort before `groupby`
         family_key = (lambda f: f.name.lower())
-
         all_families = sorted(
             self._pkg.iter_families(), key=family_key
         )  # type: list[PkgFamily]
 
         self.pkg_families_scanned.emit(all_families)
 
+        grouped_families = [
+            (k, list(ls)) for k, ls in groupby(all_families, key=family_key)
+        ]
+
+        _fm_count = len(grouped_families)
+        _path_count = len(self._pkg.packages_path)
+        self.status_message.emit(
+            f"Found {_fm_count} families from {_path_count} locations."
+        )
+
         _current = None
-        for key, same_families in groupby(all_families, key=family_key):
+        for i, (key, same_families) in enumerate(grouped_families):
             # ensure versions that belongs to same family get emitted in one
             # batch.
             versions = []
@@ -262,12 +283,18 @@ class Controller(QtCore.QObject):
                 )  # type: list[PkgVersion]
 
             self.pkg_versions_scanned.emit(versions)
+            self.status_message.emit(
+                f"Finding versions for {_fm_count} families from {_path_count} "
+                f"locations {'.' * (int(i / 50) % 5)}"
+            )  # animated dots that also reflects the speed of the process.
 
         self.pkg_scan_ended.emit()
+        self.status_message.emit("All installed packages scanned.")
 
     @_thread(name="scanSuite")
     def scan_suite_storage(self):
         ct = QtCore.QThread.currentThread()
+        self.status_message.emit("Start scanning saved suites...")
         self.storage_scan_started.emit()
 
         for branch in self._sto.branches():
@@ -279,6 +306,7 @@ class Controller(QtCore.QObject):
             )
 
         self.storage_scan_ended.emit()
+        self.status_message.emit("All saved suites scanned.")
 
 
 class Thread(QtCore.QThread):
