@@ -33,7 +33,11 @@ class MainWindow(QtWidgets.QMainWindow):
         }
 
         self.setCentralWidget(body)
-        self.statusBar().show()  # todo: connect messages
+        self.statusBar().show()
+
+    @QtCore.Slot()  # noqa
+    def spoken(self, message):
+        self.statusBar().showMessage(message, 2000)
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)

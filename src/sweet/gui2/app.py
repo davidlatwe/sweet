@@ -65,6 +65,7 @@ class Session(object):
         storage_view = view_.find(widgets.SuiteStorageWidget)
         storage_model = storage_view.model()
         preference = view_.find(pages.PreferencePage)
+        busy_filter = widgets.BusyEventFilterSingleton()
 
         # model -> control
         tool_stack_model.alias_changed.connect(ctrl.on_tool_alias_changed)
@@ -109,6 +110,7 @@ class Session(object):
         # view -> view
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
+        busy_filter.overwhelmed.connect(view_.spoken)
 
         self._app = app
         self._ctrl = ctrl

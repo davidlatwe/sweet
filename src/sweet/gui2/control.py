@@ -10,7 +10,8 @@ from ..core import (
     PkgFamily,
     PkgVersion,
 )
-from ._vendor.Qt5 import QtCore
+from ._vendor.Qt5 import QtCore, QtWidgets
+from .widgets import BusyWidget
 
 
 def _defer(on_time=500):
@@ -48,6 +49,73 @@ def _defer(on_time=500):
     return decorator
 
 
+def _block(objects, until):
+    """
+
+    :param objects:
+    :param until:
+    :return:
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def decorated(*args, **kwargs):
+            self = args[0]  # type: Controller
+            name = func.__name__
+
+            signal = getattr(self, until, None)
+            if signal is None:
+                print("No signal %r to release widget: %s" % (until, name))
+
+            widgets = [
+                w for w in QtWidgets.QApplication.allWidgets()
+                if isinstance(w, BusyWidget) and w.objectName() in objects
+            ]  # type: list[BusyWidget]
+
+            for widget in widgets:
+                def on_finished():
+                    widget.set_overwhelmed(False)
+                    signal.disconnect(on_finished)
+
+                signal.connect(on_finished)
+                widget.set_overwhelmed(True)
+
+            func(*args, **kwargs)
+
+        return decorated
+    return decorator
+
+
+def _thread(name):
+    """
+
+    :param name:
+    :return:
+    """
+
+    # todo:
+    #  1. quit thread on app exit
+    #  2. process should check if interruption requested in loop.
+
+    def decorator(func):
+        @functools.wraps(func)
+        def decorated(*args, **kwargs):
+            self = args[0]  # type: Controller
+
+            if name not in self._thread:
+                self._thread[name] = Thread(self)
+            thread = self._thread[name]
+
+            if thread.isRunning():
+                print("Thread %r still running. Can not proceed." % name)
+                return
+            print("Thread %r starting.." % name)
+            thread.set_job(func, *args, **kwargs)
+            thread.start()
+
+        return decorated
+    return decorator
+
+
 class Controller(QtCore.QObject):
     """Application controller
     """
@@ -74,6 +142,7 @@ class Controller(QtCore.QObject):
         self._state = state
         self._timers = dict()
         self._sender = dict()
+        self._thread = dict()  # type: dict[str, Thread]
 
         self.defer_scan_suite_storage()
         self.defer_scan_installed_packages()
@@ -85,21 +154,24 @@ class Controller(QtCore.QObject):
 
     @_defer(on_time=500)
     def defer_scan_installed_packages(self):
-        self.background_scan_installed_packages()
+        self.scan_installed_packages()
 
     @_defer(on_time=500)
     def defer_scan_suite_storage(self):
-        self.background_scan_suite_storage()
+        self.scan_suite_storage()
 
+    # todo: how to block this ? no tool update signal is no request.
     @QtCore.Slot()  # noqa
     def on_add_context_clicked(self, name):
         self.add_context(name)
 
     @QtCore.Slot()  # noqa
+    @_block(objects=("SuitePage",), until="tools_updated")
     def on_rename_context_clicked(self, name, new_name):
         self.rename_context(name, new_name)
 
     @QtCore.Slot()  # noqa
+    @_block(objects=("SuitePage",), until="tools_updated")
     def on_drop_context_clicked(self, name):
         self.drop_context(name)
 
@@ -108,48 +180,38 @@ class Controller(QtCore.QObject):
         self.reorder_contexts(names)
 
     @QtCore.Slot()  # noqa
+    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_context_prefix_changed(self, name, prefix):
         self.set_context_prefix(name, prefix)
 
     @QtCore.Slot()  # noqa
+    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
     @QtCore.Slot()  # noqa
+    @_block(objects=("SuitePage",), until="tools_updated")
     @_defer(on_time=400)
     def on_tool_alias_changed(self, name, tool, alias):
         self.set_tool_alias(name, tool, alias)
 
     @QtCore.Slot()  # noqa
-    @_defer(on_time=200)
+    @_block(objects=("SuitePage",), until="tools_updated")
     def on_tool_hidden_changed(self, name, tool, hidden):
         self.set_tool_hidden(name, tool, hidden)
 
     @QtCore.Slot()  # noqa
-    @_defer(on_time=200)
+    @_block(objects=("SuitePage",), until="tools_updated")
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
     @QtCore.Slot()  # noqa
     def on_installed_pkg_scan_clicked(self):
-        self.background_scan_installed_packages()
+        self.scan_installed_packages()
 
-    def background_scan_installed_packages(self):
-        thread = QtCore.QThread(self)
-        thread.run = self.scan_installed_packages
-        thread.start()
-
-    def background_scan_suite_storage(self):
-        thread = QtCore.QThread(self)
-        thread.run = self.scan_suite_storage
-        thread.start()
-
-    # todo:
-    #  1. quit thread on app exit
-    #  2. process should check if interruption requested in loop.
-
+    @_thread(name="suiteOp")
     def add_context(self, name, requests=None):
         requests = requests or []
         ctx = self._sop.add_context(name, requests=requests)
@@ -157,37 +219,45 @@ class Controller(QtCore.QObject):
         if requests:
             self._tools_updated()
 
+    @_thread(name="suiteOp")
     def rename_context(self, name, new_name):
         self._sop.update_context(name, new_name=new_name)
         self.context_renamed.emit(name, new_name)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def drop_context(self, name):
         self._sop.drop_context(name)
         self.context_dropped.emit(name)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def reorder_contexts(self, new_order):
         self._sop.reorder_contexts(new_order)
         self.context_reordered.emit(new_order)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def set_context_prefix(self, name, prefix):
         self._sop.update_context(name, prefix=prefix)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def set_context_suffix(self, name, suffix):
         self._sop.update_context(name, suffix=suffix)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def set_tool_alias(self, name, tool, alias):
         self._sop.update_context(name, tool_name=tool, new_alias=alias)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def set_tool_hidden(self, name, tool, hidden):
         self._sop.update_context(name, tool_name=tool, set_hidden=hidden)
         self._tools_updated()
 
+    @_thread(name="suiteOp")
     def resolve_context(self, name, requests):
         ctx = self._sop.update_context(name, requests=requests)
         self.context_resolved.emit(name, ctx)
@@ -196,6 +266,7 @@ class Controller(QtCore.QObject):
     def _tools_updated(self):
         self.tools_updated.emit(list(self._sop.iter_tools()))
 
+    @_thread(name="scanPkg")
     def scan_installed_packages(self):
         self.pkg_scan_started.emit()
         self._pkg.clear_caches()
@@ -225,6 +296,7 @@ class Controller(QtCore.QObject):
 
         self.pkg_scan_ended.emit()
 
+    @_thread(name="scanSuite")
     def scan_suite_storage(self):
         self.storage_scan_started.emit()
 
@@ -235,3 +307,20 @@ class Controller(QtCore.QObject):
             )
 
         self.storage_scan_ended.emit()
+
+
+class Thread(QtCore.QThread):
+    
+    def __init__(self, *args, **kwargs):
+        super(Thread, self).__init__(*args, **kwargs)
+        self._func = None
+        self._args = None
+        self._kwargs = None
+
+    def set_job(self, func, *args, **kwargs):
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+
+    def run(self):
+        self._func(*self._args, **self._kwargs)

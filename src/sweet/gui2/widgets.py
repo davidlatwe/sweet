@@ -8,6 +8,7 @@ from ._vendor import qoverview
 from . import delegates, resources as res
 from .completer import RequestTextEdit
 from .models import (
+    QSingleton,
     JsonModel,
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
@@ -17,6 +18,80 @@ from .models import (
     InstalledPackagesProxyModel,
     SuiteStorageModel,
 )
+
+
+class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
+    overwhelmed = QtCore.Signal(str)
+
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if event.type() in (
+            QtCore.QEvent.Scroll,
+            QtCore.QEvent.KeyPress,
+            QtCore.QEvent.KeyRelease,
+            QtCore.QEvent.MouseButtonPress,
+            QtCore.QEvent.MouseButtonRelease,
+            QtCore.QEvent.MouseButtonDblClick,
+        ):
+            self.overwhelmed.emit("Not allowed at this moment.")
+            return True
+        return False
+
+
+class BusyWidget(QtWidgets.QWidget):
+    """
+    Instead of toggling QWidget.setEnabled() to block user inputs, install
+    an event filter to block keyboard mouse events plus a busy cursor.
+    """
+    def __init__(self, *args, **kwargs):
+        super(BusyWidget, self).__init__(*args, **kwargs)
+        self._is_busy = False
+        self._entered = False
+        self._filter = BusyEventFilterSingleton(self)
+
+    @QtCore.Slot()  # noqa
+    def set_overwhelmed(self, busy):
+        if self._is_busy == busy:
+            return
+        self._is_busy = busy
+        if self._entered:
+            self._over_busy_cursor(busy)
+        self._block_children(busy)
+
+    def enterEvent(self, event):
+        if self._is_busy:
+            self._over_busy_cursor(True)
+        self._entered = True
+        super(BusyWidget, self).enterEvent(event)
+
+    def leaveEvent(self, event):
+        if self._is_busy:
+            self._over_busy_cursor(False)
+        self._entered = False
+        super(BusyWidget, self).leaveEvent(event)
+
+    def _over_busy_cursor(self, over):
+        if over:
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        else:
+            QtWidgets.QApplication.restoreOverrideCursor()
+
+    def _block_children(self, block):
+
+        def action(w):
+            if block:
+                w.installEventFilter(self._filter)
+            else:
+                w.removeEventFilter(self._filter)
+
+        def iter_children(w):
+            for c in w.children():
+                yield c
+                for gc in iter_children(c):
+                    yield gc
+
+        for child in list(iter_children(self)):
+            action(child)
+        action(self)
 
 
 class TreeView(qoverview.VerticalExtendedTreeView):
@@ -399,6 +474,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         self._add_panel_0()
         self._names = []
 
+    @QtCore.Slot()  # noqa
     def on_context_added(self, ctx):
         name = ctx.name
         is_first = len(self._names) == 0
@@ -412,6 +488,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
 
         self._names.insert(0, name)
 
+    @QtCore.Slot()  # noqa
     def on_context_resolved(self, name, ctx):
         """
 
@@ -425,6 +502,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         panel = self.widget(index)
         panel.set_resolved(ctx.context)
 
+    @QtCore.Slot()  # noqa
     def on_context_renamed(self, name, new_name):
         index = self._names.index(name)
         panel = self.widget(index)
@@ -432,6 +510,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         self._names.remove(name)
         self._names.insert(index, new_name)
 
+    @QtCore.Slot()  # noqa
     def on_context_dropped(self, name):
         index = self._names.index(name)
         self._names.remove(name)
@@ -442,6 +521,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         if is_empty:
             self._add_panel_0()
 
+    @QtCore.Slot()  # noqa
     def on_context_selected(self, name):
         # name may not exists yet while the context is just being added.
         if name in self._names:

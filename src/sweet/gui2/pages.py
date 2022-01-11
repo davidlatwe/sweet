@@ -3,6 +3,7 @@ from ._vendor.Qt5 import QtCore, QtWidgets
 from ._vendor import qargparse
 from . import resources as res
 from .widgets import (
+    BusyWidget,
 
     # suite storage
     SuiteStorageWidget,
@@ -19,7 +20,7 @@ from .widgets import (
 )
 
 
-class SuitePage(QtWidgets.QWidget):
+class SuitePage(BusyWidget):
     """
      ____________
     /suite editor\
@@ -36,6 +37,7 @@ class SuitePage(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(SuitePage, self).__init__(*args, **kwargs)
+        self.setObjectName("SuitePage")
 
         current_suite = CurrentSuite()
 
@@ -77,6 +79,7 @@ class StoragePage(QtWidgets.QWidget):
         super(StoragePage, self).__init__(*args, **kwargs)
 
         storage = SuiteStorageWidget()
+        # todo: add a tool view (no need to use singleton model)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(storage)
