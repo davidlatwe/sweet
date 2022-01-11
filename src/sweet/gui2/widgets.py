@@ -118,6 +118,8 @@ class TreeView(qoverview.VerticalExtendedTreeView):
 
 
 class CurrentSuite(QtWidgets.QWidget):
+    branch_asked = QtCore.Signal()
+    dirty_asked = QtCore.Signal()
     new_clicked = QtCore.Signal()
     save_clicked = QtCore.Signal(str, str, str)  # branch, name, description
 
@@ -134,8 +136,9 @@ class CurrentSuite(QtWidgets.QWidget):
 
         new_btn.setIcon(res.icon("images", "egg-fill"))
         save_btn.setIcon(res.icon("images", "egg-fried"))
+        save_btn.setEnabled(False)
 
-        name.setPlaceholderText("Suite name..")
+        name.setPlaceholderText("Suite name.. (must given before save)")
         description.setPlaceholderText("Suite description.. (optional)")
         load_path.setPlaceholderText("Suite load path..")
         load_path.setReadOnly(True)
@@ -155,14 +158,20 @@ class CurrentSuite(QtWidgets.QWidget):
         layout.addWidget(load_path)
         layout.addStretch()
 
+        # todo: suite name must have a validator like the one
+        #  for context naming
+
+        name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
         new_btn.clicked.connect(self.on_suite_new_clicked)
+        save_btn.clicked.connect(self.on_suite_save_clicked)
 
         self._min_height = self.minimumSizeHint().height()
         self._hide_on_min = [description, load_path]
-        self._suite_dirty = False
         self._name = name
         self._desc = description
         self._path = load_path
+        self._dirty = None
+        self._branches = None
 
     def resizeEvent(self, event):
         h = event.size().height()
@@ -171,23 +180,32 @@ class CurrentSuite(QtWidgets.QWidget):
         return super(CurrentSuite, self).resizeEvent(event)
 
     @QtCore.Slot()  # noqa
-    def on_suite_edited(self):
-        self._suite_dirty = True
+    def on_suite_newed(self):
+        self._name.setText("")
+        self._desc.setPlainText("")
+        self._path.setText("")
 
     @QtCore.Slot()  # noqa
     def on_suite_saved(self, load_path):
-        self._suite_dirty = False
         self._path.setText(load_path)
 
     @QtCore.Slot()  # noqa
     def on_suite_loaded(self, name, description, load_path):
-        self._suite_dirty = False
         self._name.setText(name)
         self._desc.setPlainText(description)
         self._path.setText(load_path)
 
+    def set_branches(self, result):
+        self._branches = result
+
+    def set_dirty(self, value):
+        self._dirty = value
+
     def on_suite_new_clicked(self):
-        if self._suite_dirty:
+        self.dirty_asked.emit()
+        assert self._dirty is not None  # todo: prompt error to status bar
+
+        if self._dirty:
             widget = QtWidgets.QLabel(
                 "Current suite is not saved, are you sure to discard and start "
                 "a new one ?"
@@ -206,17 +224,26 @@ class CurrentSuite(QtWidgets.QWidget):
             self.new_clicked.emit()
 
     def on_suite_save_clicked(self):
+        self.branch_asked.emit()
+        assert self._branches  # todo: prompt error to status bar
+
+        # todo: remember the selected branch in preference
+        # todo: use qargparse
+
         widget = QtWidgets.QWidget()
-        # todo:
-        #  1. get branch list
-        #  2. remember the selected branch in preference
+        hint = QtWidgets.QLabel("Where to save this suite ?")
+        box = QtWidgets.QComboBox()
+        box.addItems(self._branches)
+        layout = QtWidgets.QVBoxLayout(widget)
+        layout.addWidget(hint)
+        layout.addWidget(box)
 
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Save Suite")
 
         def on_finished(result):
             if result:
-                branch = ""
+                branch = box.currentText()
                 name = self._name.text()
                 description = self._desc.toPlainText()
                 self.save_clicked.emit(branch, name, description)
@@ -313,7 +340,7 @@ class ContextListWidget(QtWidgets.QWidget):
         item = self._find_item(name)
         item.setText(new_name)
 
-    def on_suite_reset(self):
+    def on_suite_newed(self):
         self._view.clear()
 
     def _find_item(self, name):
@@ -614,6 +641,13 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         # name may not exists yet while the context is just being added.
         if name in self._names:
             self.setCurrentIndex(self._names.index(name))
+
+    @QtCore.Slot()  # noqa
+    def on_suite_newed(self):
+        for i in range(self.count()):
+            self.removeWidget(self.widget(0))
+        self._names.clear()
+        self._add_panel_0()
 
     def add_panel(self, name, enabled=True):
         panel = ResolvePanel()

@@ -132,6 +132,10 @@ class ToolStackModel(BaseItemModel):
             c = self._context_items[name]
             c.setData(priority, self.ContextSortRole)
 
+    def on_suite_newed(self):
+        self._context_items.clear()
+        self.clear()
+
     def update_tools(self, tools):
         """
 

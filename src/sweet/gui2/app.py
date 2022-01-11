@@ -56,6 +56,7 @@ class Session(object):
 
         # signals
 
+        current_suite = view_.find(widgets.CurrentSuite)
         context_list = view_.find(widgets.ContextListWidget)
         stacked_resolve = view_.find(widgets.StackedResolveView)
         tool_stack = view_.find(widgets.ToolStackWidget)
@@ -66,6 +67,12 @@ class Session(object):
         storage_model = storage_view.model()
         preference = view_.find(pages.PreferencePage)
         busy_filter = widgets.BusyEventFilterSingleton()
+
+        # data query (note: this connection has to be made first or the sender()
+        #             will be None if the slot is decorated with QtCore.Slot().
+        #             this is a bug of pyside2.)
+        current_suite.dirty_asked.connect(ctrl.on_suite_dirty_asked)
+        current_suite.branch_asked.connect(ctrl.on_storage_branches_asked)
 
         # model -> control
         tool_stack_model.alias_changed.connect(ctrl.on_tool_alias_changed)
@@ -80,6 +87,8 @@ class Session(object):
         stacked_resolve.prefix_changed.connect(ctrl.on_context_prefix_changed)
         stacked_resolve.suffix_changed.connect(ctrl.on_context_suffix_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
+        current_suite.new_clicked.connect(ctrl.on_suite_new_clicked)
+        current_suite.save_clicked.connect(ctrl.on_suite_save_clicked)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.clear)
@@ -92,6 +101,11 @@ class Session(object):
         ctrl.context_dropped.connect(tool_stack_model.on_context_dropped)
         ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
+        ctrl.suite_newed.connect(tool_stack_model.on_suite_newed)
+        ctrl.suite_newed.connect(stacked_resolve.on_suite_newed)
+        ctrl.suite_newed.connect(context_list.on_suite_newed)
+        ctrl.suite_newed.connect(current_suite.on_suite_newed)
+        ctrl.suite_saved.connect(current_suite.on_suite_saved)
 
         # control -> view
         ctrl.context_added.connect(context_list.on_context_added)

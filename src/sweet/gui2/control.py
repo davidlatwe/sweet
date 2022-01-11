@@ -110,6 +110,9 @@ def _thread(name, blocks=None):
 class Controller(QtCore.QObject):
     """Application controller
     """
+    suite_newed = QtCore.Signal()
+    suite_saved = QtCore.Signal(str)
+    suite_loaded = QtCore.Signal(str, str, str)
     context_added = QtCore.Signal(SuiteCtx)
     context_resolved = QtCore.Signal(str, SuiteCtx)
     context_dropped = QtCore.Signal(str)
@@ -132,6 +135,7 @@ class Controller(QtCore.QObject):
         self._sto = Storage()
         self._pkg = InstalledPackages()
         self._state = state
+        self._dirty = False
         self._timers = dict()
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
@@ -143,6 +147,22 @@ class Controller(QtCore.QObject):
         """Internal use. To preserve real signal sender for decorated method."""
         f = inspect.stack()[1].function
         return self._sender.pop(f, super(Controller, self).sender())
+
+    @QtCore.Slot()  # noqa
+    def on_suite_dirty_asked(self):
+        self.sender().set_dirty(self._dirty)
+
+    @QtCore.Slot()  # noqa
+    def on_storage_branches_asked(self):
+        self.sender().set_branches(self._sto.branches())
+
+    @QtCore.Slot()  # noqa
+    def on_suite_new_clicked(self):
+        self.new_suite()
+
+    @QtCore.Slot()  # noqa
+    def on_suite_save_clicked(self, branch, name, description):
+        self.save_suite(branch, name, description)
 
     @QtCore.Slot()  # noqa
     def on_add_context_clicked(self, name):
@@ -195,6 +215,7 @@ class Controller(QtCore.QObject):
         self.context_added.emit(ctx)
         if requests:
             self._tools_updated()
+        self._dirty = True
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def rename_context(self, name, new_name):
@@ -241,7 +262,23 @@ class Controller(QtCore.QObject):
         self._tools_updated()
 
     def _tools_updated(self):
+        self._dirty = True
         self.tools_updated.emit(list(self._sop.iter_tools()))
+
+    @_thread(name="suiteOp", blocks=("SuitePage",))
+    def new_suite(self):
+        self._sop.reset()
+        self._dirty = False
+        self.suite_newed.emit()
+
+    @_thread(name="suiteOp", blocks=("SuitePage",))
+    def save_suite(self, branch, name, description):
+        path = self._sto.suite_path(branch, name)
+        self._sop.set_description(description)
+        self._sop.save(path)
+        self._dirty = False
+        self.suite_saved.emit(path)
+        # todo: update saved suite into storage list
 
     @_thread(name="scanPkg")
     def scan_installed_packages(self):
