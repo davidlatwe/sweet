@@ -159,9 +159,6 @@ class CurrentSuite(QtWidgets.QWidget):
         layout.addWidget(load_path)
         layout.addStretch()
 
-        # todo: suite name must have a validator like the one
-        #  for context naming
-
         name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
         new_btn.clicked.connect(self.on_suite_new_clicked)
         save_btn.clicked.connect(self.on_suite_save_clicked)
