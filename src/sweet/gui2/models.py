@@ -491,7 +491,7 @@ class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):
 
 
 class SuiteStorageModel(BaseItemModel):
-    SuitePathRole = QtCore.Qt.UserRole + 10
+    SavedSuiteRole = QtCore.Qt.UserRole + 10
     Headers = [
         "Name",
     ]
@@ -510,5 +510,5 @@ class SuiteStorageModel(BaseItemModel):
 
         for suite in suites:
             suite_item = QtGui.QStandardItem(suite.name)
-            suite_item.setData(suite.path, self.SuitePathRole)
+            suite_item.setData(suite, self.SavedSuiteRole)
             branch_item.appendRow(suite_item)

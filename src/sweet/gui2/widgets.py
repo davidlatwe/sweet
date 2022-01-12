@@ -17,6 +17,7 @@ from .models import (
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
     SuiteStorageModel,
+    ToolStackModel,
 )
 
 
@@ -1184,6 +1185,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
 
 class SuiteStorageWidget(QtWidgets.QWidget):
+    suite_selected = QtCore.Signal(core.SavedSuite)
 
     def __init__(self, *args, **kwargs):
         super(SuiteStorageWidget, self).__init__(*args, **kwargs)
@@ -1200,3 +1202,44 @@ class SuiteStorageWidget(QtWidgets.QWidget):
 
     def model(self):
         return self._model
+
+
+class SuiteStorageToolsView(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(SuiteStorageToolsView, self).__init__(*args, **kwargs)
+
+        view = ToolsView()
+        model = ToolStackModel()
+
+        view.setModel(model)
+        # pin view index root on selection changed
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
+
+        self._view = view
+        self._model = model
+
+        # todo:
+        #  item model hierarchy should be like
+        #  this ?
+        #       suite
+        #         > context
+        #             > tool
+        #  or
+        #       suite
+        #         > tool
+        #  ?
+
+    def on_suite_selected(self, saved_suite):
+        """
+
+        :param saved_suite:
+        :type saved_suite: core.SavedSuite
+        :return:
+        """
+        pass
+
+    def set_view_root(self, index):
+        pass

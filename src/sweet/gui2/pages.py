@@ -7,6 +7,7 @@ from .widgets import (
 
     # suite storage
     SuiteStorageWidget,
+    SuiteStorageToolsView,
 
     # suite page
     CurrentSuite,
@@ -74,15 +75,41 @@ class SuitePage(BusyWidget):
 
 
 class StoragePage(QtWidgets.QWidget):
+    """
+     ____________
+    /storage view\
+    +---------------+-----------------+
+    |               |                 |
+    |               |                 |
+    | Saved Suites  |   Tools View    |
+    |               |   (read-only)   |
+    |               |                 |
+    |               |                 |
+    +---------------+-----------------+
+
+    """
 
     def __init__(self, *args, **kwargs):
         super(StoragePage, self).__init__(*args, **kwargs)
 
         storage = SuiteStorageWidget()
-        # todo: add a tool view (no need to use singleton model)
+        tool_view = SuiteStorageToolsView()
+
+        body_split = QtWidgets.QSplitter()
+        body_split.addWidget(storage)
+        body_split.addWidget(tool_view)
+
+        body_split.setOrientation(QtCore.Qt.Horizontal)
+        body_split.setChildrenCollapsible(False)
+        body_split.setStretchFactor(0, 50)
+        body_split.setStretchFactor(1, 50)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(storage)
+        layout.addWidget(body_split)
+
+        # signals
+
+        storage.suite_selected.connect(tool_view.on_suite_selected)
 
 
 class PackagesPage(QtWidgets.QWidget):
