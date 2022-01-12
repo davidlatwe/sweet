@@ -3,13 +3,15 @@ Main business logic, with event notification
 """
 import os
 import warnings
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import List
 from rez.vendor import yaml
 from rez.config import config as rezconfig
 from rez.utils.formatting import PackageRequest
 from rez.resolved_context import ResolvedContext
 from rez.resolver import ResolverStatus
-from rez.packages import iter_package_families, iter_packages
+from rez.vendor.version.version import Version
+from rez.packages import iter_package_families, iter_packages, Variant
 from rez.package_repository import package_repository_manager
 from . import signals, util
 from ._rezapi import SweetSuite
@@ -18,6 +20,7 @@ from .constants import (
     TOOL_HIDDEN,
     TOOL_SHADOWED,
     TOOL_MISSING,
+    TOOL_CACHED,
 )
 from .exceptions import (
     RezError,
@@ -50,27 +53,96 @@ __all__ = (
 )
 
 
-SuiteCtx = namedtuple(
-    "SuiteCtx",
-    ["name", "context", "priority", "prefix", "suffix", "loaded", "from_rxt"]
-)
-SuiteTool = namedtuple(
-    "SuiteTool",
-    ["name", "alias", "status", "ctx_name", "variant"]
-)
-SavedSuite = namedtuple(
-    "SavedSuite",
-    ["name", "branch", "path"]
-)
-PkgFamily = namedtuple(
-    "PkgFamily",
-    ["name", "location"]
-)
-PkgVersion = namedtuple(
-    "PkgVersion",
-    ["name", "version", "qualified", "requires", "variants", "tools",
-     "uri", "timestamp", "location", "is_nonlocal"]
-)
+@dataclass
+class SuiteCtx:
+    __slots__ = "name", "context", "priority", "prefix", "suffix", \
+                "loaded", "from_rxt"
+    name: str
+    context: ResolvedContext or None
+    priority: int
+    prefix: str
+    suffix: str
+    loaded: bool
+    from_rxt: bool
+
+
+@dataclass
+class SuiteTool:
+    __slots__ = "name", "alias", "status", "ctx_name", "variant", "uri"
+    name: str
+    alias: str
+    status: int
+    ctx_name: str
+    variant: Variant or str
+    uri: str
+
+
+@dataclass
+class PkgFamily:
+    __slots__ = "name", "location"
+    name: str
+    location: str
+
+
+@dataclass
+class PkgVersion:
+    __slots__ = "name", "version", "qualified", "requires", "variants", \
+                "tools", "uri", "timestamp", "location", "is_nonlocal"
+    name: str
+    version: Version
+    qualified: str
+    requires: List[str]
+    variants: List[List[str]]
+    tools: List[str]
+    uri: str
+    timestamp: int
+    location: str
+    is_nonlocal: bool
+
+
+@dataclass
+class SavedSuite:
+    __slots__ = "name", "branch", "path", "suite"
+    name: str
+    branch: str
+    path: str
+    suite: SweetSuite or None
+
+    @property
+    def _suite(self):
+        if self.suite is None:
+            self.suite = SweetSuite.load(self.path)
+        return self.suite
+
+    @property
+    def description(self):
+        return self._suite.description
+
+    def iter_tools(self, as_resolved=False):
+        """
+
+        :return: A SuiteTool object iterator
+        :rtype: collections.Iterator[SuiteTool]
+        """
+        if as_resolved:
+            sop = SuiteOp()
+            sop._working_suite = self._suite
+            for tool in sop.iter_tools():
+                if tool.status != TOOL_VALID:
+                    break
+                yield tool
+
+        else:
+            for ctx_name, tools in self._suite.saved_tools.items():
+                for t_alias, t_name, var_name, uri in tools:
+                    yield SuiteTool(
+                        name=t_name,
+                        alias=t_alias,
+                        status=TOOL_CACHED,
+                        ctx_name=ctx_name,
+                        variant=var_name,
+                        uri=uri,
+                    )
 
 
 def _warn(message, category=None):
@@ -155,9 +227,11 @@ class SuiteOp(object):
         self._suite.flush_tools()
         self._suite.update_tools()
 
-    def sanity_check(self):
+    def sanity_check(self, as_released=False):
         """Ensure suite is valid.
 
+        :param as_released: Make sure all packages are released
+        :type as_released: bool
         :return: None
         :raise SuiteOpError: If suite validation failed.
         """
@@ -165,6 +239,9 @@ class SuiteOp(object):
             self._suite.validate()
         except SuiteError as e:
             raise SuiteOpError(e)
+
+        if as_released:
+            pass  # todo: ensure all packages are from released path
 
     def set_description(self, text):
         """Set suite description
@@ -455,14 +532,15 @@ class SuiteOp(object):
                     yield self._tool_data_to_tuple(d, status=status)
 
         status = TOOL_MISSING
-        for ctx_name, cached_d in self._suite.saved_tools.items():
-            for t_alias, t_name in cached_d.items():
+        for ctx_name, tools in self._suite.saved_tools.items():
+            for t_alias, t_name, var_name, uri in tools:
                 if t_alias not in seen:
                     d = {
                         "tool_name": t_name,
                         "tool_alias": t_alias,
                         "context_name": ctx_name,
-                        "variant": None,
+                        "variant": var_name,
+                        "uri": uri,
                     }
                     if _match_context(d):
                         yield self._tool_data_to_tuple(d, status=status)
@@ -488,12 +566,14 @@ class SuiteOp(object):
         )
 
     def _tool_data_to_tuple(self, d, status=0):
+        uri = d.get("uri") or d["variant"].uri
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
             status=status,
             ctx_name=d["context_name"],
-            variant=d["variant"],  # see TestCore.test_tool_by_multi_packages
+            variant=d["variant"],  # see TestCore.test_tool_by_multi_packages,
+            uri=uri,
         )
 
     def _resolve_context(self, requests):
@@ -596,6 +676,7 @@ class Storage(object):
                         name=name,
                         branch=b,
                         path=path,
+                        suite=None,  # lazy load
                     )
 
 

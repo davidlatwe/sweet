@@ -1,10 +1,12 @@
 
 import os
+from collections import OrderedDict as odict
 from rez.utils.filesystem import forceful_rmtree
 from rez.utils.execution import create_forwarding_script
 from rez.utils.yaml import dump_yaml
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
+from rez.exceptions import ResolvedContextError
 from rez import suite
 from rez.config import config
 from rez.vendor import yaml
@@ -58,7 +60,10 @@ class SweetSuite(_Suite):
         if self.load_path:
             context_path = self._context_path(name, self.load_path)
             if os.path.isfile(context_path):
-                _saved_context = ResolvedContext.load(context_path)
+                try:
+                    _saved_context = ResolvedContext.load(context_path)
+                except ResolvedContextError:
+                    pass  # possible that .rxt contains inaccessible packages
 
         if self._is_live:
             try:
@@ -173,20 +178,32 @@ class SweetSuite(_Suite):
         data = super(SweetSuite, self).to_dict()
         data["description"] = self._description
         data["live_resolve"] = self._is_live
-        data["tools"] = {
-            cname: {
-                tool_alias: d["tool_name"]
-                for tool_alias, d in self.get_tools().items()
-                if cname == d["context_name"]
-            }
+
+        data["tools"] = [
+            (
+                cname,
+                [
+                    (
+                        tool_alias,
+                        d["tool_name"],
+                        d["variant"].qualified_name,
+                        d["variant"].uri,
+                     )
+                    for tool_alias, d in self.get_tools().items()
+                    if cname == d["context_name"]
+                ]
+            )
             for cname in self.context_names
-        }
-        data["requests"] = {
-            cname: [
-                str(r) for r in self.context(cname).requested_packages()
-            ]
+        ]  # type: list[tuple[str, list[tuple[str, str, str, str]]]]
+
+        data["requests"] = [
+            (
+                cname,
+                [str(r) for r in self.context(cname).requested_packages()],
+            )
             for cname in self.context_names
-        }
+        ]  # type: list[tuple[str, list[str]]]
+
         return data
 
     @classmethod
@@ -194,8 +211,10 @@ class SweetSuite(_Suite):
         s = super(SweetSuite, cls).from_dict(d)
         s._description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
-        s._saved_tools = d.get("tools")
-        s._saved_requests = d.get("requests")
+        # for data process convenience, turn these two to into ordered dict
+        s._saved_tools = odict(d.get("tools") or [])
+        s._saved_requests = odict(d.get("requests") or [])
+
         return s
 
     def add_context(self, name, context, prefix_char=None):
@@ -235,11 +254,11 @@ class SweetSuite(_Suite):
 
     @property
     def saved_tools(self):
-        return self._saved_tools or dict()
+        return self._saved_tools or odict()
 
     @property
     def saved_requests(self):
-        return self._saved_requests or dict()
+        return self._saved_requests or odict()
 
     @property
     def description(self):
@@ -337,7 +356,7 @@ class SweetSuite(_Suite):
     flush_tools = Suite._flush_tools
 
 
-def read_suite_description(filepath):
+def read_suite_description(filepath):  # todo: deprecate this
     """
     Args:
         filepath (str): path to suite.yaml
