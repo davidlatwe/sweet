@@ -86,18 +86,15 @@ def _thread(name, blocks=None):
             ]  # type: list[BusyWidget]
 
             for widget in busy_widgets:
-                def on_finished():
-                    widget.set_overwhelmed(False)
-                    thread.finished.disconnect(on_finished)
-
-                thread.finished.connect(on_finished)
                 widget.set_overwhelmed(True)
 
-            def on_finished_message():
+            def on_finished():
+                for w in busy_widgets:
+                    w.set_overwhelmed(False)
+                thread.finished.disconnect(on_finished)
                 print(f"Thread {name!r} finished {fn_name!r}.")
-                thread.finished.disconnect(on_finished_message)
 
-            thread.finished.connect(on_finished_message)
+            thread.finished.connect(on_finished)
 
             print(f"Thread {name!r} is about to run {fn_name!r}.")
             thread.set_job(func, *args, **kwargs)
