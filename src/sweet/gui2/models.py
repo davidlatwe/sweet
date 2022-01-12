@@ -1,5 +1,6 @@
 
 import os
+from contextlib import contextmanager
 from rez.packages import Variant
 from rez.config import config as rezconfig
 from .. import constants, util
@@ -97,6 +98,16 @@ class BaseItemModel(QtGui.QStandardItemModel):
         super(BaseItemModel, self).clear()  # also clears header items, hence..
         self.setHorizontalHeaderLabels(self.Headers)
 
+    def flags(self, index):
+        """
+
+        :param index:
+        :type index: QtCore.QModelIndex
+        :return:
+        :rtype: QtCore.Qt.ItemFlags
+        """
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
 
 class ToolTreeModel(BaseItemModel):
     alias_changed = QtCore.Signal(str, str, str)
@@ -117,12 +128,14 @@ class ToolTreeModel(BaseItemModel):
             constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
             constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
             constants.TOOL_MISSING: res.icon("images", "x"),
+            constants.TOOL_CACHED: res.icon("images", "gear-fill"),
         }
         self._status_tip = {
             constants.TOOL_VALID: "Can be accessed.",
             constants.TOOL_HIDDEN: "Is hidden from context.",
             constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
             constants.TOOL_MISSING: "Missing from last resolve.",
+            constants.TOOL_CACHED: "Loaded from saved suite.",
         }
         self._root_items = dict()
         self._editable = editable
@@ -135,21 +148,27 @@ class ToolTreeModel(BaseItemModel):
         if name in self._root_items:
             return self._root_items[name].index()
 
-    def update_tools(self, tools):
+    def update_tools(self, tools, suite=None):
         """
 
         :param tools:
+        :param suite:
         :type tools: list[SuiteTool]
+        :type suite: str or None
         :return:
         """
         indicator = _LocationIndicator()
 
-        for root_item in self._root_items.values():
+        for root_name, root_item in self._root_items.items():
+            if suite and suite != root_name:
+                continue
             root_item.removeRows(0, root_item.rowCount())
 
         for tool in sorted(tools, key=lambda t: t.name):
-            root_items = self._root_items[tool.ctx_name]
+            root_name = suite or tool.ctx_name
+            root_item = self._root_items[root_name]
             is_hidden = tool.status == constants.TOOL_HIDDEN
+            is_cached = tool.status == constants.TOOL_CACHED
 
             name_item = QtGui.QStandardItem(tool.alias)
             name_item.setData(tool.name, self.ToolNameRole)
@@ -161,11 +180,12 @@ class ToolTreeModel(BaseItemModel):
             status_item.setIcon(self._status_icon[tool.status])
             status_item.setToolTip(self._status_tip[tool.status])
 
-            _, loc_icon = indicator.compute(tool.variant.resource.location)
-            pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
+            _, loc_icon = indicator.compute(tool.location)
+            _name = tool.variant if is_cached else tool.variant.qualified_name
+            pkg_item = QtGui.QStandardItem(_name)
             pkg_item.setIcon(loc_icon)
 
-            root_items.appendRow([name_item, status_item, pkg_item])
+            root_item.appendRow([name_item, status_item, pkg_item])
 
     def flags(self, index):
         """
@@ -292,8 +312,29 @@ class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
 
 class SuiteToolTreeModel(ToolTreeModel):
 
-    def on_suite_added(self):
-        pass
+    @contextmanager
+    def open_suite(self, saved_suite):
+        """
+
+        :param saved_suite:
+        :type saved_suite: SavedSuite
+        :return:
+        """
+        name = saved_suite.name
+        is_opened = name in self._root_items
+
+        if is_opened:
+            root_item = self._root_items[name]
+        else:
+            root_item = QtGui.QStandardItem(name)
+            self.appendRow(root_item)
+            self._root_items[name] = root_item
+
+        yield root_item.index()
+
+        if not is_opened:
+            suite_tools = list(saved_suite.iter_tools(as_resolved=False))
+            self.update_tools(suite_tools, suite=name)
 
     def on_suite_removed(self):
         pass
@@ -484,16 +525,6 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
             return item.data(self.PackageObjectRole)
 
         return super(InstalledPackagesModel, self).data(index, role)
-
-    def flags(self, index):
-        """
-
-        :param index:
-        :type index: QtCore.QModelIndex
-        :return:
-        :rtype: QtCore.Qt.ItemFlags
-        """
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
 
 class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):

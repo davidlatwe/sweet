@@ -107,10 +107,6 @@ class StoragePage(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(body_split)
 
-        # signals
-
-        storage.suite_selected.connect(tool_view.on_suite_selected)
-
 
 class PackagesPage(QtWidgets.QWidget):
 

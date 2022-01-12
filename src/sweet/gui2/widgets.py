@@ -1198,10 +1198,20 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
 
+        # signals
+
+        view.selectionModel().currentChanged.connect(self._on_current_changed)
+
         self._model = model
 
     def model(self):
         return self._model
+
+    def _on_current_changed(self, index):
+        saved_suite = index.data(self._model.SavedSuiteRole)
+        if saved_suite is None:
+            return  # possible root item (the branch)
+        self.suite_selected.emit(saved_suite)
 
 
 class SuiteToolsWidget(QtWidgets.QWidget):
@@ -1228,7 +1238,5 @@ class SuiteToolsWidget(QtWidgets.QWidget):
         :type saved_suite: core.SavedSuite
         :return:
         """
-        pass
-
-    def set_view_root(self, index):
-        pass
+        with self._model.open_suite(saved_suite) as index:
+            self._view.setRootIndex(index)
