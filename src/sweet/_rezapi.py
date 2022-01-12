@@ -74,7 +74,7 @@ class SweetSuite(_Suite):
             context._set_parent_suite(self.load_path, name)  # noqa
             if _saved_context is not None:
                 if context != _saved_context:
-                    self._save_context(name, context, self.load_path)
+                    self._save_context_rxt(name, context, self.load_path)
                     # todo: save previous context for future diff (into a
                     #  sqlite db maybe), but in what perspective ? context
                     #  or tool ?
@@ -126,9 +126,7 @@ class SweetSuite(_Suite):
         for context_name in self.context_names:
             context = self.context(context_name)
             context._set_parent_suite(path, context_name)  # noqa
-            self._save_context(
-                context_name, context, path, verbose=verbose
-            )
+            self._save_context_rxt(context_name, context, path)
 
         # create alias wrappers
         tools_path = os.path.join(path, "bin")
@@ -215,15 +213,21 @@ class SweetSuite(_Suite):
     # New methods that are not in rez.suite.Suite
     #
 
-    def _save_context(self, name, context, path, verbose=False):
+    def _save_context_rxt(self, name, context, path):
+        """Save context .rxt
+
+        :param name: context name
+        :param context: a resolved context object
+        :param path: path to save the context
+        :type name: str
+        :type context: ResolvedContext
+        :type path: str
+        :return:
+        """
         filepath = self._context_path(name, path)
-        if verbose:
-            print("writing %r..." % filepath)
-
-        dir_path = os.path.dirname(filepath)
-        if not os.path.isdir(dir_path):
-            os.makedirs(dir_path)
-
+        _dir_path = os.path.dirname(filepath)
+        if not os.path.isdir(_dir_path):
+            os.makedirs(_dir_path)
         context.save(filepath)
 
     def is_live(self):
