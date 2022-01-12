@@ -74,7 +74,7 @@ class SuitePage(BusyWidget):
         body_split.setObjectName("suitePageBodySplit")
 
 
-class StoragePage(QtWidgets.QWidget):
+class StoragePage(BusyWidget):
     """
      ____________
     /storage view\
@@ -91,6 +91,7 @@ class StoragePage(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(StoragePage, self).__init__(*args, **kwargs)
+        self.setObjectName("StoragePage")
 
         storage = SuiteBranchWidget()
         tool_view = SuiteInsightWidget()

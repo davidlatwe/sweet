@@ -90,6 +90,7 @@ class Session(object):
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
         current_suite.new_clicked.connect(ctrl.on_suite_new_clicked)
         current_suite.save_clicked.connect(ctrl.on_suite_save_clicked)
+        storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.clear)
@@ -103,12 +104,16 @@ class Session(object):
         ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
         ctrl.suite_newed.connect(tool_stack_model.on_suite_newed)
+        ctrl.suite_saved.connect(storage_model.add_new_saved_suite)
+
+        # control -> view
         ctrl.suite_newed.connect(stacked_resolve.on_suite_newed)
         ctrl.suite_newed.connect(context_list.on_suite_newed)
         ctrl.suite_newed.connect(current_suite.on_suite_newed)
         ctrl.suite_saved.connect(current_suite.on_suite_saved)
-
-        # control -> view
+        ctrl.suite_save_failed.connect(current_suite.on_suite_save_failed)
+        ctrl.suite_loaded.connect(current_suite.on_suite_loaded)
+        ctrl.suite_loaded.connect(lambda *_: view_.switch_tab(1))  # editor
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
         ctrl.context_renamed.connect(context_list.on_context_renamed)

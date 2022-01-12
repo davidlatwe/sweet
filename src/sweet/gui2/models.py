@@ -543,19 +543,39 @@ class SuiteStorageModel(BaseItemModel):
         "Name",
     ]
 
-    def add_saved_suites(self, branch, suites):
+    def ensure_branch_item(self, branch):
+        branch_item = next(iter(self.findItems(branch)),
+                           None)  # type: QtGui.QStandardItem
+
+        if branch_item is None:
+            branch_item = QtGui.QStandardItem(branch)
+            self.appendRow(branch_item)
+
+        return branch_item
+
+    def add_saved_suites(self, suites):
         """
 
-        :param branch:
         :param suites:
-        :type branch: str
         :type suites: list[SavedSuite]
         :return:
         """
-        branch_item = QtGui.QStandardItem(branch)
-        self.appendRow(branch_item)
-
+        branches = dict()
         for suite in suites:
+            if suite.branch not in branches:
+                branches[suite.branch] = self.ensure_branch_item(suite.branch)
+
             suite_item = QtGui.QStandardItem(suite.name)
             suite_item.setData(suite, self.SavedSuiteRole)
-            branch_item.appendRow(suite_item)
+            branches[suite.branch].appendRow(suite_item)
+
+    def add_new_saved_suite(self, suite):
+        suite_item = next(iter(self.findItems(suite.name)),
+                          None)  # type: QtGui.QStandardItem
+
+        if suite_item is not None:
+            return  # should be a loaded suite and just being saved over
+
+        suite_item = QtGui.QStandardItem(suite.name)
+        suite_item.setData(suite, self.SavedSuiteRole)
+        self.ensure_branch_item(suite.branch).appendRow(suite_item)

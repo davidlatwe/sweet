@@ -7,6 +7,7 @@ from ..core import (
     InstalledPackages,
     Storage,
     SuiteCtx,
+    SavedSuite,
     PkgFamily,
     PkgVersion,
 )
@@ -108,8 +109,9 @@ class Controller(QtCore.QObject):
     """Application controller
     """
     suite_newed = QtCore.Signal()
-    suite_saved = QtCore.Signal(str)
-    suite_loaded = QtCore.Signal(str, str, str)
+    suite_saved = QtCore.Signal(SavedSuite)
+    suite_save_failed = QtCore.Signal(str)
+    suite_loaded = QtCore.Signal(str, str, str, str)
     context_added = QtCore.Signal(SuiteCtx)
     context_resolved = QtCore.Signal(str, SuiteCtx)
     context_dropped = QtCore.Signal(str)
@@ -121,7 +123,7 @@ class Controller(QtCore.QObject):
     pkg_versions_scanned = QtCore.Signal(list)
     pkg_scan_ended = QtCore.Signal()
     storage_scan_started = QtCore.Signal()
-    storage_scanned = QtCore.Signal(str, list)
+    storage_scanned = QtCore.Signal(list)
     storage_scan_ended = QtCore.Signal()
     status_message = QtCore.Signal(str)
 
@@ -148,15 +150,19 @@ class Controller(QtCore.QObject):
 
     @QtCore.Slot()  # noqa
     def on_suite_dirty_asked(self):
-        self.sender().set_dirty(self._dirty)
+        self.sender().answer_dirty(self._dirty)
 
     @QtCore.Slot()  # noqa
     def on_storage_branches_asked(self):
-        self.sender().set_branches(self._sto.branches())
+        self.sender().answer_branches(self._sto.branches())
 
     @QtCore.Slot()  # noqa
     def on_suite_new_clicked(self):
         self.new_suite()
+
+    @QtCore.Slot()  # noqa
+    def on_suite_load_clicked(self, name, branch, as_import):
+        self.load_suite(name, branch, as_import)
 
     @QtCore.Slot()  # noqa
     def on_suite_save_clicked(self, branch, name, description):
@@ -265,18 +271,44 @@ class Controller(QtCore.QObject):
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def new_suite(self):
-        self._sop.reset()
-        self._dirty = False
-        self.suite_newed.emit()
+        self._reset_suite()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def save_suite(self, branch, name, description):
         path = self._sto.suite_path(branch, name)
         self._sop.set_description(description)
-        self._sop.save(path)
+        try:
+            self._sop.save(path)
+        except Exception as e:
+            self.suite_save_failed.emit(str(e))
+        else:
+            saved_suite = SavedSuite(
+                name=name,
+                branch=branch,
+                path=path,
+                suite=None,  # lazy load
+            )
+            self._dirty = False
+            self.suite_saved.emit(saved_suite)
+
+    @_thread(name="suiteOp", blocks=("SuitePage", "StoragePage"))
+    def load_suite(self, name, branch, as_import):
+        self._reset_suite()
+        path = self._sto.suite_path(branch, name)
+        self._sop.load(path, as_import)
+        # loaded
+        description = self._sop.get_description()
+        load_path = self._sop.loaded_from() or ""
+        for ctx in self._sop.iter_contexts(ascending=True):
+            self.context_added.emit(ctx)
+        self._tools_updated()
         self._dirty = False
-        self.suite_saved.emit(path)
-        # todo: update saved suite into storage list
+        self.suite_loaded.emit(name, description, load_path, branch)
+
+    def _reset_suite(self):
+        self._sop.reset()
+        self._dirty = False
+        self.suite_newed.emit()
 
     @_thread(name="scanPkg")
     def scan_installed_packages(self):
@@ -326,7 +358,7 @@ class Controller(QtCore.QObject):
         self.pkg_scan_ended.emit()
         self.status_message.emit("All installed packages scanned.")
 
-    @_thread(name="scanSuite")
+    @_thread(name="scanSuite", blocks=("StoragePage",))
     def scan_suite_storage(self):
         ct = QtCore.QThread.currentThread()
         self.status_message.emit("Start scanning saved suites...")
@@ -336,7 +368,6 @@ class Controller(QtCore.QObject):
             if ct.isInterruptionRequested():  # could be long running proc
                 break
             self.storage_scanned.emit(
-                branch,
                 list(self._sto.iter_saved_suites(branch)),
             )
 

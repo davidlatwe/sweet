@@ -26,6 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
         tabs.setCurrentIndex(1)  # editor
 
         self._body = body
+        self._tabs = tabs
         self._state = state
         self._splitters = {
             s.objectName(): s
@@ -41,6 +42,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)
+
+    def switch_tab(self, index):
+        self._tabs.setCurrentIndex(index)
 
     def reset_layout(self):
         with self._state.group("default"):

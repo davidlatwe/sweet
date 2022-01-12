@@ -267,6 +267,8 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
         self._name = name
         self._desc = description
         self._path = load_path
+        self._loaded_branch = None
+        # fields for asking
         self._dirty = None
         self._branches = None
 
@@ -281,24 +283,32 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
         self._name.setText("")
         self._desc.setPlainText("")
         self._path.setText("")
+        self._loaded_branch = None
 
     @QtCore.Slot()  # noqa
-    def on_suite_saved(self, load_path):
-        self._path.setText(load_path)
+    def on_suite_saved(self, saved_suite):
+        self._path.setText(saved_suite.path)
 
     @QtCore.Slot()  # noqa
-    def on_suite_loaded(self, name, description, load_path):
+    def on_suite_save_failed(self, err_message):
+        print(err_message)  # todo: a modal dialog
+
+    @QtCore.Slot()  # noqa
+    def on_suite_loaded(self, name, description, load_path, branch):
+        is_import = load_path == ""
         self._name.setText(name)
         self._desc.setPlainText(description)
         self._path.setText(load_path)
+        self._loaded_branch = None if is_import else branch
 
-    def set_branches(self, result):
+    def answer_branches(self, result):
         self._branches = result
 
-    def set_dirty(self, value):
+    def answer_dirty(self, value):
         self._dirty = value
 
     def on_suite_new_clicked(self):
+        self._dirty = None
         self.dirty_asked.emit()
         assert self._dirty is not None  # todo: prompt error to status bar
 
@@ -321,8 +331,11 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
             self.new_clicked.emit()
 
     def on_suite_save_clicked(self):
+        self._branches = None
         self.branch_asked.emit()
-        assert self._branches  # todo: prompt error to status bar
+        assert self._branches is not None  # todo: prompt error to status bar
+        assert self._loaded_branch is None \
+               or self._loaded_branch in self._branches
 
         # todo: remember the selected branch in preference
         # todo: use qargparse
@@ -334,6 +347,9 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(widget)
         layout.addWidget(hint)
         layout.addWidget(box)
+
+        if self._loaded_branch:
+            box.setCurrentText(self._loaded_branch)
 
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Save Suite")
@@ -1186,14 +1202,20 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
 class SuiteBranchWidget(QtWidgets.QWidget):
     suite_selected = QtCore.Signal(core.SavedSuite)
+    suite_load_clicked = QtCore.Signal(str, str, bool)
 
     def __init__(self, *args, **kwargs):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
 
         view = TreeView()
+        proxy = QtCore.QSortFilterProxyModel()
         model = SuiteStorageModel()
 
-        view.setModel(model)
+        proxy.setSourceModel(model)
+        view.setModel(proxy)
+        view.setSortingEnabled(True)
+        view.setSelectionMode(view.SingleSelection)
+        view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
@@ -1201,7 +1223,9 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         # signals
 
         view.selectionModel().currentChanged.connect(self._on_current_changed)
+        view.customContextMenuRequested.connect(self._on_right_click)
 
+        self._view = view
         self._model = model
 
     def model(self):
@@ -1213,6 +1237,45 @@ class SuiteBranchWidget(QtWidgets.QWidget):
             return  # possible root item (the branch)
         self.suite_selected.emit(saved_suite)
 
+    def _on_right_click(self, position):
+        index = self._view.indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        menu = QtWidgets.QMenu(self._view)
+        open_ = QtWidgets.QAction("Open suite (loaded)", menu)
+        import_ = QtWidgets.QAction("Open suite (import)", menu)
+        explore = QtWidgets.QAction("Show in Explorer", menu)
+
+        def on_open():
+            saved_suite = index.data(role=self._model.SavedSuiteRole)
+            name = saved_suite.name
+            branch = saved_suite.branch
+            self.suite_load_clicked.emit(name, branch, False)
+
+        def on_import():
+            saved_suite = index.data(role=self._model.SavedSuiteRole)
+            name = saved_suite.name
+            branch = saved_suite.branch
+            self.suite_load_clicked.emit(name, branch, True)
+
+        def on_explore():
+            saved_suite = index.data(role=self._model.SavedSuiteRole)
+            util.open_file_location(saved_suite.path)
+
+        open_.triggered.connect(on_open)
+        import_.triggered.connect(on_import)
+        explore.triggered.connect(on_explore)
+
+        menu.addAction(open_)
+        menu.addAction(import_)
+        menu.addAction(explore)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
 
 class SuiteInsightWidget(QtWidgets.QWidget):
 
@@ -1223,6 +1286,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         desc = QtWidgets.QTextEdit()
         view = ToolsView()
         model = SuiteToolTreeModel(editable=False)
+
+        # todo: tools are not ordered by contexts
 
         view.setModel(model)
         desc.setReadOnly(True)
