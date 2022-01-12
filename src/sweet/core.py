@@ -68,12 +68,14 @@ class SuiteCtx:
 
 @dataclass
 class SuiteTool:
-    __slots__ = "name", "alias", "status", "ctx_name", "variant", "uri"
+    __slots__ = "name", "alias", "status", "ctx_name", "variant", \
+                "location", "uri"
     name: str
     alias: str
     status: int
     ctx_name: str
     variant: Variant or str
+    location: str
     uri: str
 
 
@@ -144,13 +146,14 @@ class SavedSuite:
 
         else:
             for ctx_name, tools in self._suite.saved_tools.items():
-                for t_alias, t_name, var_name, uri in tools:
+                for t_alias, t_name, var_name, location, uri in tools:
                     yield SuiteTool(
                         name=t_name,
                         alias=t_alias,
                         status=TOOL_CACHED,
                         ctx_name=ctx_name,
                         variant=var_name,
+                        location=location,
                         uri=uri,
                     )
 
@@ -543,13 +546,14 @@ class SuiteOp(object):
 
         status = TOOL_MISSING
         for ctx_name, tools in self._suite.saved_tools.items():
-            for t_alias, t_name, var_name, uri in tools:
+            for t_alias, t_name, var_name, location, uri in tools:
                 if t_alias not in seen:
                     d = {
                         "tool_name": t_name,
                         "tool_alias": t_alias,
                         "context_name": ctx_name,
                         "variant": var_name,
+                        "location": location,
                         "uri": uri,
                     }
                     if _match_context(d):
@@ -576,6 +580,7 @@ class SuiteOp(object):
         )
 
     def _tool_data_to_tuple(self, d, status=0):
+        location = d.get("location") or d["variant"].resource.location
         uri = d.get("uri") or d["variant"].uri
         return SuiteTool(
             name=d["tool_name"],
@@ -583,6 +588,7 @@ class SuiteOp(object):
             status=status,
             ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages,
+            location=location,
             uri=uri,
         )
 

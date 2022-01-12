@@ -187,6 +187,7 @@ class SweetSuite(_Suite):
                         tool_alias,
                         d["tool_name"],
                         d["variant"].qualified_name,
+                        d["variant"].resource.location,
                         d["variant"].uri,
                      )
                     for tool_alias, d in self.get_tools().items()
