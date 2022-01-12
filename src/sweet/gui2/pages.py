@@ -6,14 +6,14 @@ from .widgets import (
     BusyWidget,
 
     # suite storage
-    SuiteStorageWidget,
-    SuiteStorageToolsView,
+    SuiteBranchWidget,
+    SuiteToolsWidget,
 
     # suite page
-    CurrentSuite,
+    CurrentSuiteWidget,
     ContextListWidget,
-    StackedResolveView,
-    ToolStackWidget,
+    StackedResolveWidget,
+    ContextToolTreeWidget,
 
     # packages page
     InstalledPackagesWidget,
@@ -40,11 +40,11 @@ class SuitePage(BusyWidget):
         super(SuitePage, self).__init__(*args, **kwargs)
         self.setObjectName("SuitePage")
 
-        current_suite = CurrentSuite()
+        current_suite = CurrentSuiteWidget()
 
         context_list = ContextListWidget()
-        stacked_resolve = StackedResolveView()
-        tool_stack = ToolStackWidget()
+        stacked_resolve = StackedResolveWidget()
+        tool_stack = ContextToolTreeWidget()
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
@@ -92,8 +92,8 @@ class StoragePage(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(StoragePage, self).__init__(*args, **kwargs)
 
-        storage = SuiteStorageWidget()
-        tool_view = SuiteStorageToolsView()
+        storage = SuiteBranchWidget()
+        tool_view = SuiteToolsWidget()
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(storage)

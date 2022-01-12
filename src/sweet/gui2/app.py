@@ -56,14 +56,14 @@ class Session(object):
 
         # signals
 
-        current_suite = view_.find(widgets.CurrentSuite)
+        current_suite = view_.find(widgets.CurrentSuiteWidget)
         context_list = view_.find(widgets.ContextListWidget)
-        stacked_resolve = view_.find(widgets.StackedResolveView)
-        tool_stack = view_.find(widgets.ToolStackWidget)
+        stacked_resolve = view_.find(widgets.StackedResolveWidget)
+        tool_stack = view_.find(widgets.ContextToolTreeWidget)
         tool_stack_model = tool_stack.model()
         installed_pkg = view_.find(widgets.InstalledPackagesWidget)
         installed_pkg_model = installed_pkg.model()
-        storage_view = view_.find(widgets.SuiteStorageWidget)
+        storage_view = view_.find(widgets.SuiteBranchWidget)
         storage_model = storage_view.model()
         preference = view_.find(pages.PreferencePage)
         busy_filter = widgets.BusyEventFilterSingleton()

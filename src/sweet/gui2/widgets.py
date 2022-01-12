@@ -104,6 +104,24 @@ class BusyWidget(QtWidgets.QWidget):
         action(self)
 
 
+class DragDropListWidget(QtWidgets.QListWidget):
+    dropped = QtCore.Signal()
+
+    def __init__(self, *args, **kwargs):
+        super(DragDropListWidget, self).__init__(*args, **kwargs)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(self.InternalMove)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+
+    def dropEvent(self, event):
+        rte = super(DragDropListWidget, self).dropEvent(event)
+        if event.isAccepted():
+            self.dropped.emit()
+        return rte
+
+
 class TreeView(qoverview.VerticalExtendedTreeView):
 
     def __init__(self, *args, **kwargs):
@@ -118,18 +136,98 @@ class TreeView(qoverview.VerticalExtendedTreeView):
         """)
 
 
-class CurrentSuite(QtWidgets.QWidget):
+class JsonView(TreeView):
+
+    def __init__(self, parent=None):
+        super(JsonView, self).__init__(parent)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.on_right_click)
+
+    def on_right_click(self, position):
+        index = self.indexAt(position)
+
+        if not index.isValid():
+            # Clicked outside any item
+            return
+
+        model_ = index.model()
+        menu = QtWidgets.QMenu(self)
+        copy = QtWidgets.QAction("Copy JSON", menu)
+        copy_full = QtWidgets.QAction("Copy full JSON", menu)
+
+        menu.addAction(copy)
+        menu.addAction(copy_full)
+        menu.addSeparator()
+
+        def on_copy():
+            text = str(model_.data(index, JsonModel.JsonRole))
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        def on_copy_full():
+            if isinstance(model_, QtCore.QSortFilterProxyModel):
+                data = model_.sourceModel().json()
+            else:
+                data = model_.json()
+
+            text = json.dumps(data,
+                              indent=4,
+                              sort_keys=True,
+                              ensure_ascii=False)
+
+            app = QtWidgets.QApplication.instance()
+            app.clipboard().setText(text)
+
+        copy.triggered.connect(on_copy)
+        copy_full.triggered.connect(on_copy_full)
+
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
+
+class YesNoDialog(QtWidgets.QDialog):
+    """An Accept/Cancel modal dialog for wrapping custom widget
+
+    If widget has signal 'validated', it will be connected with Accept
+    button's `setEnabled()` slot to block invalid input.
+
+    """
+
+    def __init__(self, widget, yes_as_default=True, *args, **kwargs):
+        super(YesNoDialog, self).__init__(*args, **kwargs)
+
+        btn_accept = QtWidgets.QPushButton("Accept")
+        btn_reject = QtWidgets.QPushButton("Cancel")
+
+        btn_accept.setObjectName("AcceptButton")
+        btn_reject.setObjectName("CancelButton")
+        btn_accept.setDefault(yes_as_default)
+        btn_reject.setDefault(not yes_as_default)
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.addWidget(widget, 0, 0, 1, 2)
+        layout.addWidget(btn_accept, 1, 0, 1, 1)
+        layout.addWidget(btn_reject, 1, 1, 1, 1)
+
+        btn_accept.clicked.connect(lambda: self.done(self.Accepted))
+        btn_reject.clicked.connect(lambda: self.done(self.Rejected))
+        if hasattr(widget, "validated"):
+            widget.validated.connect(btn_accept.setEnabled)
+            btn_accept.setEnabled(False)
+
+
+class CurrentSuiteWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()
     dirty_asked = QtCore.Signal()
     new_clicked = QtCore.Signal()
     save_clicked = QtCore.Signal(str, str, str)  # branch, name, description
 
     def __init__(self, *args, **kwargs):
-        super(CurrentSuite, self).__init__(*args, **kwargs)
+        super(CurrentSuiteWidget, self).__init__(*args, **kwargs)
         self.setObjectName("SuiteView")
 
         top = QtWidgets.QWidget()
-        name = ValidNameEdit()
+        name = ValidNameLineEdit()
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
         description = QtWidgets.QTextEdit()
@@ -176,7 +274,7 @@ class CurrentSuite(QtWidgets.QWidget):
         h = event.size().height()
         for w in self._hide_on_min:
             w.setVisible(h > self._min_height)
-        return super(CurrentSuite, self).resizeEvent(event)
+        return super(CurrentSuiteWidget, self).resizeEvent(event)
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
@@ -249,24 +347,6 @@ class CurrentSuite(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
-
-
-class DragDropListWidget(QtWidgets.QListWidget):
-    dropped = QtCore.Signal()
-
-    def __init__(self, *args, **kwargs):
-        super(DragDropListWidget, self).__init__(*args, **kwargs)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
-        self.setDragDropMode(self.InternalMove)
-        self.setDefaultDropAction(QtCore.Qt.MoveAction)
-
-    def dropEvent(self, event):
-        rte = super(DragDropListWidget, self).dropEvent(event)
-        if event.isAccepted():
-            self.dropped.emit()
-        return rte
 
 
 class ContextListWidget(QtWidgets.QWidget):
@@ -347,7 +427,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def add_context(self):
         existing = self.context_names()
-        widget = ContextNameEditor(existing=existing)
+        widget = ContextNameEditWidget(existing=existing)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
 
@@ -368,7 +448,7 @@ class ContextListWidget(QtWidgets.QWidget):
         existing = self.context_names()
         existing.remove(old_name)
 
-        widget = ContextNameEditor(existing=existing, default=old_name)
+        widget = ContextNameEditWidget(existing=existing, default=old_name)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Rename Context")
 
@@ -402,44 +482,13 @@ class ContextListWidget(QtWidgets.QWidget):
         self.reordered.emit(new_order)
 
 
-class YesNoDialog(QtWidgets.QDialog):
-    """An Accept/Cancel modal dialog for wrapping custom widget
-
-    If widget has signal 'validated', it will be connected with Accept
-    button's `setEnabled()` slot to block invalid input.
-
-    """
-
-    def __init__(self, widget, yes_as_default=True, *args, **kwargs):
-        super(YesNoDialog, self).__init__(*args, **kwargs)
-
-        btn_accept = QtWidgets.QPushButton("Accept")
-        btn_reject = QtWidgets.QPushButton("Cancel")
-
-        btn_accept.setObjectName("AcceptButton")
-        btn_reject.setObjectName("CancelButton")
-        btn_accept.setDefault(yes_as_default)
-        btn_reject.setDefault(not yes_as_default)
-
-        layout = QtWidgets.QGridLayout(self)
-        layout.addWidget(widget, 0, 0, 1, 2)
-        layout.addWidget(btn_accept, 1, 0, 1, 1)
-        layout.addWidget(btn_reject, 1, 1, 1, 1)
-
-        btn_accept.clicked.connect(lambda: self.done(self.Accepted))
-        btn_reject.clicked.connect(lambda: self.done(self.Rejected))
-        if hasattr(widget, "validated"):
-            widget.validated.connect(btn_accept.setEnabled)
-            btn_accept.setEnabled(False)
-
-
-class ValidNameEdit(QtWidgets.QLineEdit):
+class ValidNameLineEdit(QtWidgets.QLineEdit):
     blacked = QtCore.Signal()
     prompted = QtCore.Signal(str)
     validated = QtCore.Signal(bool)
 
     def __init__(self, blacklist=None, default="", *args, **kwargs):
-        super(ValidNameEdit, self).__init__(*args, **kwargs)
+        super(ValidNameLineEdit, self).__init__(*args, **kwargs)
         colors = {
             "ready": QtGui.QColor("#191919"),
             "invalid": QtGui.QColor("#C84747"),
@@ -516,14 +565,14 @@ class ValidNameEdit(QtWidgets.QLineEdit):
     _qproperty_color = QtCore.Property(QtGui.QColor, _get_color, _set_color)
 
 
-class ContextNameEditor(QtWidgets.QWidget):
+class ContextNameEditWidget(QtWidgets.QWidget):
     validated = QtCore.Signal(bool)
 
     def __init__(self, existing, default="", *args, **kwargs):
-        super(ContextNameEditor, self).__init__(*args, **kwargs)
+        super(ContextNameEditWidget, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
 
-        name = ValidNameEdit(blacklist=existing, default=default)
+        name = ValidNameLineEdit(blacklist=existing, default=default)
         name.setPlaceholderText("Input context name..")
         message = QtWidgets.QLabel()
 
@@ -572,10 +621,10 @@ class ToolsView(TreeView):
         # todo: auto expand this
 
 
-class ToolStackWidget(QtWidgets.QWidget):
+class ContextToolTreeWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
-        super(ToolStackWidget, self).__init__(*args, **kwargs)
+        super(ContextToolTreeWidget, self).__init__(*args, **kwargs)
         self.setObjectName("ToolStack")
 
         label = QtWidgets.QLabel("Tool Stack")
@@ -614,13 +663,13 @@ class ToolStackWidget(QtWidgets.QWidget):
         return self._model
 
 
-class StackedResolveView(QtWidgets.QStackedWidget):
+class StackedResolveWidget(QtWidgets.QStackedWidget):
     requested = QtCore.Signal(str, list)
     prefix_changed = QtCore.Signal(str, str)
     suffix_changed = QtCore.Signal(str, str)
 
     def __init__(self, *args, **kwargs):
-        super(StackedResolveView, self).__init__(*args, **kwargs)
+        super(StackedResolveWidget, self).__init__(*args, **kwargs)
         self._add_panel_0()
         self._names = []
 
@@ -685,7 +734,7 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         self._add_panel_0()
 
     def add_panel(self, name, enabled=True):
-        panel = ResolvePanel()
+        panel = ContextRequestWidget()
         panel.set_name(name)
         panel.setEnabled(enabled)
         panel.prefix_changed.connect(
@@ -703,13 +752,13 @@ class StackedResolveView(QtWidgets.QStackedWidget):
         self.add_panel("", enabled=False)
 
 
-class ResolvePanel(QtWidgets.QWidget):
+class ContextRequestWidget(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
     prefix_changed = QtCore.Signal(str)
     suffix_changed = QtCore.Signal(str)
 
     def __init__(self, *args, **kwargs):
-        super(ResolvePanel, self).__init__(*args, **kwargs)
+        super(ContextRequestWidget, self).__init__(*args, **kwargs)
 
         label = QtWidgets.QLabel()
 
@@ -892,55 +941,6 @@ class ResolvedPackages(QtWidgets.QWidget):
 
         openfile.triggered.connect(on_openfile)
         copyfile.triggered.connect(on_copyfile)
-
-        menu.move(QtGui.QCursor.pos())
-        menu.show()
-
-
-class JsonView(TreeView):
-
-    def __init__(self, parent=None):
-        super(JsonView, self).__init__(parent)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.on_right_click)
-
-    def on_right_click(self, position):
-        index = self.indexAt(position)
-
-        if not index.isValid():
-            # Clicked outside any item
-            return
-
-        model_ = index.model()
-        menu = QtWidgets.QMenu(self)
-        copy = QtWidgets.QAction("Copy JSON", menu)
-        copy_full = QtWidgets.QAction("Copy full JSON", menu)
-
-        menu.addAction(copy)
-        menu.addAction(copy_full)
-        menu.addSeparator()
-
-        def on_copy():
-            text = str(model_.data(index, JsonModel.JsonRole))
-            app = QtWidgets.QApplication.instance()
-            app.clipboard().setText(text)
-
-        def on_copy_full():
-            if isinstance(model_, QtCore.QSortFilterProxyModel):
-                data = model_.sourceModel().json()
-            else:
-                data = model_.json()
-
-            text = json.dumps(data,
-                              indent=4,
-                              sort_keys=True,
-                              ensure_ascii=False)
-
-            app = QtWidgets.QApplication.instance()
-            app.clipboard().setText(text)
-
-        copy.triggered.connect(on_copy)
-        copy_full.triggered.connect(on_copy_full)
 
         menu.move(QtGui.QCursor.pos())
         menu.show()
@@ -1184,11 +1184,11 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         self.refreshed.emit()
 
 
-class SuiteStorageWidget(QtWidgets.QWidget):
+class SuiteBranchWidget(QtWidgets.QWidget):
     suite_selected = QtCore.Signal(core.SavedSuite)
 
     def __init__(self, *args, **kwargs):
-        super(SuiteStorageWidget, self).__init__(*args, **kwargs)
+        super(SuiteBranchWidget, self).__init__(*args, **kwargs)
 
         view = TreeView()
         model = SuiteStorageModel()
@@ -1204,10 +1204,10 @@ class SuiteStorageWidget(QtWidgets.QWidget):
         return self._model
 
 
-class SuiteStorageToolsView(QtWidgets.QWidget):
+class SuiteToolsWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
-        super(SuiteStorageToolsView, self).__init__(*args, **kwargs)
+        super(SuiteToolsWidget, self).__init__(*args, **kwargs)
 
         view = ToolsView()
         model = ToolStackModel()
