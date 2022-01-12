@@ -1214,20 +1214,33 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self.suite_selected.emit(saved_suite)
 
 
-class SuiteToolsWidget(QtWidgets.QWidget):
+class SuiteInsightWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
-        super(SuiteToolsWidget, self).__init__(*args, **kwargs)
+        super(SuiteInsightWidget, self).__init__(*args, **kwargs)
 
+        name = QtWidgets.QLabel()
+        desc = QtWidgets.QTextEdit()
         view = ToolsView()
         model = SuiteToolTreeModel(editable=False)
 
         view.setModel(model)
-        # pin view index root on selection changed
+        desc.setReadOnly(True)
+        name.setFont(QtGui.QFont("OpenSans", 14))
+
+        splitter = QtWidgets.QSplitter()
+        splitter.setOrientation(QtCore.Qt.Vertical)
+        splitter.addWidget(desc)
+        splitter.addWidget(view)
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 8)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(view)
+        layout.addWidget(name)
+        layout.addWidget(splitter)
 
+        self._name = name
+        self._desc = desc
         self._view = view
         self._model = model
 
@@ -1238,5 +1251,7 @@ class SuiteToolsWidget(QtWidgets.QWidget):
         :type saved_suite: core.SavedSuite
         :return:
         """
+        self._name.setText(saved_suite.name)
+        self._desc.setPlainText(saved_suite.description)
         with self._model.open_suite(saved_suite) as index:
             self._view.setRootIndex(index)

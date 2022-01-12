@@ -63,7 +63,7 @@ class Session(object):
         tool_stack_model = tool_stack.model()
         installed_pkg = view_.find(widgets.InstalledPackagesWidget)
         installed_pkg_model = installed_pkg.model()
-        storage_tools = view_.find(widgets.SuiteToolsWidget)
+        storage_suite = view_.find(widgets.SuiteInsightWidget)
         storage_view = view_.find(widgets.SuiteBranchWidget)
         storage_model = storage_view.model()
         preference = view_.find(pages.PreferencePage)
@@ -119,7 +119,7 @@ class Session(object):
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
 
         # view -> view
-        storage_view.suite_selected.connect(storage_tools.on_suite_selected)
+        storage_view.suite_selected.connect(storage_suite.on_suite_selected)
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
 

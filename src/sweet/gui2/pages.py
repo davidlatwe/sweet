@@ -7,7 +7,7 @@ from .widgets import (
 
     # suite storage
     SuiteBranchWidget,
-    SuiteToolsWidget,
+    SuiteInsightWidget,
 
     # suite page
     CurrentSuiteWidget,
@@ -93,7 +93,7 @@ class StoragePage(QtWidgets.QWidget):
         super(StoragePage, self).__init__(*args, **kwargs)
 
         storage = SuiteBranchWidget()
-        tool_view = SuiteToolsWidget()
+        tool_view = SuiteInsightWidget()
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(storage)
