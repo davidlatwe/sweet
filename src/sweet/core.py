@@ -199,8 +199,15 @@ class SuiteOp(object):
 
         return suite_dict
 
-    def load(self, path):
-        # type: (str) -> None
+    def load(self, path, as_import=False):
+        """Load existing suite
+
+        :param path: Location to save current working suite
+        :param as_import: If True, `load_path` will not be set
+        :type path: str
+        :type as_import: bool
+        :return:
+        """
 
         filepath = os.path.join(path, "suite.yaml")
         if not os.path.exists(filepath):
@@ -213,7 +220,7 @@ class SuiteOp(object):
             raise SuiteIOError("Failed loading suite: %s" % str(e))
 
         suite = SweetSuite.from_dict(suite_dict)
-        suite.load_path = os.path.realpath(path)
+        suite.load_path = None if as_import else os.path.realpath(path)
 
         self._working_suite = suite
 
@@ -255,6 +262,13 @@ class SuiteOp(object):
 
         if as_released:
             pass  # todo: ensure all packages are from released path
+
+    def get_description(self):
+        """Get suite description
+        :return: suite description string
+        :rtype: str
+        """
+        return self._suite.description
 
     def set_description(self, text):
         """Set suite description
