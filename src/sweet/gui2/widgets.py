@@ -128,7 +128,7 @@ class CurrentSuite(QtWidgets.QWidget):
         self.setObjectName("SuiteView")
 
         top = QtWidgets.QWidget()
-        name = QtWidgets.QLineEdit()
+        name = ValidNameEdit()
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
         description = QtWidgets.QTextEdit()
@@ -138,6 +138,7 @@ class CurrentSuite(QtWidgets.QWidget):
         save_btn.setIcon(res.icon("images", "egg-fried"))
         save_btn.setEnabled(False)
 
+        name.setFont(QtGui.QFont("OpenSans", 14))
         name.setPlaceholderText("Suite name.. (must given before save)")
         description.setPlaceholderText("Suite description.. (optional)")
         load_path.setPlaceholderText("Suite load path..")
@@ -404,6 +405,12 @@ class ContextListWidget(QtWidgets.QWidget):
 
 
 class YesNoDialog(QtWidgets.QDialog):
+    """An Accept/Cancel modal dialog for wrapping custom widget
+
+    If widget has signal 'validated', it will be connected with Accept
+    button's `setEnabled()` slot to block invalid input.
+
+    """
 
     def __init__(self, widget, yes_as_default=True, *args, **kwargs):
         super(YesNoDialog, self).__init__(*args, **kwargs)
@@ -428,89 +435,117 @@ class YesNoDialog(QtWidgets.QDialog):
             btn_accept.setEnabled(False)
 
 
+class ValidNameEdit(QtWidgets.QLineEdit):
+    blacked = QtCore.Signal()
+    prompted = QtCore.Signal(str)
+    validated = QtCore.Signal(bool)
+
+    def __init__(self, blacklist=None, default="", *args, **kwargs):
+        super(ValidNameEdit, self).__init__(*args, **kwargs)
+        colors = {
+            "ready": QtGui.QColor("#191919"),
+            "invalid": QtGui.QColor("#C84747"),
+        }
+        interval = 1000
+        blacklist = blacklist or []
+
+        validator = RegExpValidator("^[a-zA-Z0-9_.-]*$")
+        self.setText(default)
+        self.setValidator(validator)
+        self.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
+                        "_, -, . are allowed.")
+
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.setInterval(interval)
+
+        anim = QtCore.QPropertyAnimation()
+        anim.setEasingCurve(QtCore.QEasingCurve.InCubic)
+        anim.setDuration(interval)
+        anim.setStartValue(colors["invalid"])
+        anim.setEndValue(colors["ready"])
+
+        anim.finished.connect(self._on_anim_finished)
+        timer.timeout.connect(lambda: self.prompted.emit(""))
+        validator.validated.connect(self._on_validator_validated)
+        self.textChanged.connect(self._on_changed_check_blacklist)
+
+        self._anim = anim
+        self._timer = timer
+        self._color = colors["ready"]
+        self._interval = interval
+        self._blacklist = blacklist
+
+        anim.setTargetObject(self)
+        anim.setPropertyName(QtCore.QByteArray(b"_qproperty_color"))
+        # disabling yes-no-dialog's accept button on launch if no default
+        self.validated.emit(bool(default))
+
+    def _on_validator_validated(self, state):
+        if state == QtGui.QValidator.Invalid:
+            self.prompted.emit("Invalid char.")
+            self._anim.stop()
+            self._anim.start()
+            self._timer.start()
+
+    def _on_anim_finished(self):
+        self._blacked_hint(self.text() in self._blacklist)
+
+    def _on_changed_check_blacklist(self, value):
+        is_blacked = value in self._blacklist
+        self._blacked_hint(is_blacked)
+        self.validated.emit(not is_blacked and bool(value))
+
+    def _blacked_hint(self, show):
+        self._anim.start()
+        self._anim.pause()
+        if show:
+            self.blacked.emit()
+            self._anim.setCurrentTime(0)
+        else:
+            self.prompted.emit("")
+            self._anim.setCurrentTime(self._interval - 1)
+            # finished signal emitted when the current time equals to
+            # totalDuration (interval).
+
+    def _get_color(self):
+        return self._color
+
+    def _set_color(self, color):
+        self._color = color
+        self.setStyleSheet("border-color: %s;" % color.name())
+
+    _qproperty_color = QtCore.Property(QtGui.QColor, _get_color, _set_color)
+
+
 class ContextNameEditor(QtWidgets.QWidget):
     validated = QtCore.Signal(bool)
-    colors = {
-        "ready": QtGui.QColor("#78879b"),
-        "invalid": QtGui.QColor("#C84747"),
-    }
 
     def __init__(self, existing, default="", *args, **kwargs):
         super(ContextNameEditor, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
 
-        validator = RegExpValidator("^[a-zA-Z0-9_.-]*$")
-
-        name = QtWidgets.QLineEdit()
-        name.setText(default)
-        name.setValidator(validator)
+        name = ValidNameEdit(blacklist=existing, default=default)
         name.setPlaceholderText("Input context name..")
-        name.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
-                        "_, -, . are allowed.")
-
         message = QtWidgets.QLabel()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(name)
         layout.addWidget(message)
 
-        timer = QtCore.QTimer(self)
+        name.prompted.connect(message.setText)
+        name.blacked.connect(lambda: message.setText("Duplicated Name."))
+        name.validated.connect(self.validated)
+        name.textChanged.connect(self._on_text_changed)
 
-        anim = QtCore.QPropertyAnimation()
-        anim.setEasingCurve(QtCore.QEasingCurve.InCubic)
-        anim.setDuration(1000)
-        anim.setStartValue(self.colors["invalid"])
-        anim.setEndValue(self.colors["ready"])
-
-        validator.validated.connect(self.on_validated)
-        name.textChanged.connect(self.on_named)
-        timer.timeout.connect(lambda: message.setText(""))
-
-        self._timer = timer
-        self.animation = anim
-        self._status_color = self.colors["ready"]
         self._name = ""
         self._message = message
-        self._existing_names = existing
 
-        anim.setTargetObject(self)
-        anim.setPropertyName(QtCore.QByteArray(b"status_color"))
-
-        self.validated.emit(False)
-
-    def on_validated(self, state):
-        if state == QtGui.QValidator.Invalid:
-            self.log("Invalid char.")
-            self.animation.stop()
-            self.animation.start()
-
-    def on_named(self, value):
-        unique_name = value not in self._existing_names
-        self._name = value
-        self.validated.emit(unique_name and bool(value))
-        if not unique_name:
-            self.log("Duplicated name.")
-            self.animation.stop()
-            self.animation.start()
+    def _on_text_changed(self, text):
+        self._name = text
 
     def get_name(self):
         return self._name
-
-    def log(self, message):
-        self._message.setText(str(message))
-        self._timer.setSingleShot(True)
-        self._timer.start(1000)
-
-    def _get_status_color(self):
-        return self._status_color
-
-    def _set_status_color(self, color):
-        self._status_color = color
-        self.setStyleSheet("border-color: %s;" % color.name())
-
-    status_color = QtCore.Property(QtGui.QColor,
-                                   _get_status_color,
-                                   _set_status_color)
 
 
 class RegExpValidator(QtGui.QRegExpValidator):
