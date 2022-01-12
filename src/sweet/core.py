@@ -118,6 +118,16 @@ class SavedSuite:
     def description(self):
         return self._suite.description
 
+    def iter_contexts(self):
+        """
+
+        :return: An SuiteCtx object iterator
+        :rtype: collections.Iterator[SuiteCtx]
+        """
+        sop = SuiteOp()
+        sop._working_suite = self._suite
+        return sop.iter_contexts(as_resolved=False)
+
     def iter_tools(self, as_resolved=False):
         """
 
