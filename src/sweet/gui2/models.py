@@ -22,6 +22,31 @@ class QSingleton(type(QtCore.QObject), type):
         return cls._instances[cls]
 
 
+class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
+
+    def __init__(self, *args, **kwargs):
+        super(_LocationIndicator, self).__init__(*args, **kwargs)
+        self._location_icon = [
+            res.icon("images", "person-circle"),  # local
+            res.icon("images", "people-fill.svg"),  # non-local
+            res.icon("images", "people-fill-ok.svg"),  # released
+        ]
+        self._location_text = [
+            "local", "non-local", "released"
+        ]
+        self._non_local = util.normpaths(*rezconfig.nonlocal_packages_path)
+        self._release = util.normpath(rezconfig.release_packages_path)
+
+    def compute(self, location):
+        norm_location = util.normpath(location)
+        is_released = int(norm_location == self._release) * 2
+        is_nonlocal = int(norm_location in self._non_local)
+        location_text = self._location_text[is_released or is_nonlocal]
+        location_icon = self._location_icon[is_released or is_nonlocal]
+
+        return location_text, location_icon
+
+
 class JsonModel(qjsonmodel.QJsonModel):
 
     JsonRole = QtCore.Qt.UserRole + 1
@@ -143,6 +168,8 @@ class ToolStackModel(BaseItemModel):
         :type tools: list[SuiteTool]
         :return:
         """
+        indicator = _LocationIndicator()
+
         for context in self._context_items.values():
             context.removeRows(0, context.rowCount())
 
@@ -160,7 +187,9 @@ class ToolStackModel(BaseItemModel):
             status_item.setIcon(self._status_icon[tool.status])
             status_item.setToolTip(self._status_tip[tool.status])
 
+            _, loc_icon = indicator.compute(tool.variant.resource.location)
             pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
+            pkg_item.setIcon(loc_icon)
 
             context_item.appendRow([name_item, status_item, pkg_item])
 
@@ -258,18 +287,10 @@ class ResolvedPackagesModel(BaseItemModel):
     Headers = [
         "Name",
         "Version",
-        "Is Local",
+        "Local/Released",
     ]
 
     PackageRole = QtCore.Qt.UserRole + 10
-
-    def __init__(self, *args, **kwargs):
-        super(ResolvedPackagesModel, self).__init__(*args, **kwargs)
-        self._is_local_icon = [
-            res.icon("images", "person-circle"),  # local
-            res.icon("images", "people-fill.svg"),  # non-local
-        ]
-        self._non_local = util.normpaths(*rezconfig.nonlocal_packages_path)
 
     def load(self, packages):
         """
@@ -278,17 +299,17 @@ class ResolvedPackagesModel(BaseItemModel):
         :return:
         """
         self.clear()
+        indicator = _LocationIndicator()
 
         for pkg in packages:
-            norm_location = util.normpath(pkg.resource.location)
-            is_nonlocal = norm_location in self._non_local
+            loc_text, loc_icon = indicator.compute(pkg.resource.location)
 
             name_item = QtGui.QStandardItem(pkg.name)
             version_item = QtGui.QStandardItem(str(pkg.version))
-            is_local_item = QtGui.QStandardItem()
-            is_local_item.setIcon(self._is_local_icon[is_nonlocal])
+            location_item = QtGui.QStandardItem(loc_text)
+            location_item.setIcon(loc_icon)
 
-            self.appendRow([name_item, version_item, is_local_item])
+            self.appendRow([name_item, version_item, location_item])
 
 
 class ResolvedEnvironmentModel(JsonModel):
