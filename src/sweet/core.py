@@ -578,7 +578,7 @@ class Storage(object):
         :param branch: Suite storage branch. Iter all branches if not given.
         :type branch: str or None
         :return: A SavedSuite object iterator
-        :rtype: list[SavedSuite]
+        :rtype: collections.Iterator[SavedSuite]
         """
         for b, root in self._roots.items():
             if branch and b != branch:
@@ -645,7 +645,7 @@ class InstalledPackages(object):
             paths (`packages_path`) if not given.
         :type location: str or None
         :return: An iterator that yields `PkgFamily` objects
-        :rtype: Iterator[PkgFamily]
+        :rtype: collections.Iterator[PkgFamily]
         """
         paths = [location] if location else self._paths
 
@@ -668,7 +668,7 @@ class InstalledPackages(object):
         :type name: str
         :type location: str or None
         :return: An iterator that yields `PkgVersion` objects
-        :rtype: Iterator[PkgVersion]
+        :rtype: collections.Iterator[PkgVersion]
         """
         paths = [location] if location else self._paths
 
