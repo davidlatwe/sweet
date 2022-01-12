@@ -98,12 +98,12 @@ class BaseItemModel(QtGui.QStandardItemModel):
         self.setHorizontalHeaderLabels(self.Headers)
 
 
-class ToolStackModel(BaseItemModel):
+class ToolTreeModel(BaseItemModel):
     alias_changed = QtCore.Signal(str, str, str)
     hidden_changed = QtCore.Signal(str, str, bool)
 
     ToolNameRole = QtCore.Qt.UserRole + 10
-    ContextSortRole = QtCore.Qt.UserRole + 11
+
     Headers = [
         "Name",  # context name and tool alias
         "Status",
@@ -111,7 +111,7 @@ class ToolStackModel(BaseItemModel):
     ]
 
     def __init__(self, editable=True, *args, **kwargs):
-        super(ToolStackModel, self).__init__(*args, **kwargs)
+        super(ToolTreeModel, self).__init__(*args, **kwargs)
         self._status_icon = {
             constants.TOOL_VALID: res.icon("images", "check-ok"),
             constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
@@ -124,42 +124,16 @@ class ToolStackModel(BaseItemModel):
             constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
             constants.TOOL_MISSING: "Missing from last resolve.",
         }
-        self._context_items = dict()
+        self._root_items = dict()
         self._editable = editable
 
-    def on_context_added(self, ctx):
-        """
+    def clear(self):
+        self._root_items.clear()
+        super(ToolTreeModel, self).clear()
 
-        :param ctx:
-        :type ctx: SuiteCtx
-        :return:
-        """
-        c = QtGui.QStandardItem(ctx.name)
-        c.setData(ctx.priority, self.ContextSortRole)
-        self.appendRow(c)
-        self._context_items[ctx.name] = c
-
-        # for keeping header visible after view resets it's rootIndex.
-        c.appendRow([QtGui.QStandardItem() for _ in range(len(self.Headers))])
-        c.removeRow(0)
-
-    def on_context_renamed(self, name, new_name):
-        item = self._context_items.pop(name)
-        item.setText(new_name)
-        self._context_items[new_name] = item
-
-    def on_context_dropped(self, name):
-        item = self._context_items.pop(name)
-        self.removeRow(item.row())
-
-    def on_context_reordered(self, new_order):
-        for priority, name in enumerate(reversed(new_order)):
-            c = self._context_items[name]
-            c.setData(priority, self.ContextSortRole)
-
-    def on_suite_newed(self):
-        self._context_items.clear()
-        self.clear()
+    def find_root_index(self, name):
+        if name in self._root_items:
+            return self._root_items[name].index()
 
     def update_tools(self, tools):
         """
@@ -170,11 +144,11 @@ class ToolStackModel(BaseItemModel):
         """
         indicator = _LocationIndicator()
 
-        for context in self._context_items.values():
-            context.removeRows(0, context.rowCount())
+        for root_item in self._root_items.values():
+            root_item.removeRows(0, root_item.rowCount())
 
         for tool in sorted(tools, key=lambda t: t.name):
-            context_item = self._context_items[tool.ctx_name]
+            root_items = self._root_items[tool.ctx_name]
             is_hidden = tool.status == constants.TOOL_HIDDEN
 
             name_item = QtGui.QStandardItem(tool.alias)
@@ -191,11 +165,7 @@ class ToolStackModel(BaseItemModel):
             pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
             pkg_item.setIcon(loc_icon)
 
-            context_item.appendRow([name_item, status_item, pkg_item])
-
-    def find_context_index(self, name):
-        if name in self._context_items:
-            return self._context_items[name].index()
+            root_items.appendRow([name_item, status_item, pkg_item])
 
     def flags(self, index):
         """
@@ -257,18 +227,55 @@ class ToolStackModel(BaseItemModel):
                     self.alias_changed.emit(ctx_name, tool_name, value)
                 return True
 
-        return super(ToolStackModel, self).setData(index, value, role)
+        return super(ToolTreeModel, self).setData(index, value, role)
 
 
-class ToolStackModelSingleton(ToolStackModel, metaclass=QSingleton):
+class ContextToolTreeModel(ToolTreeModel):
+    ContextSortRole = QtCore.Qt.UserRole + 20
+
+    def on_context_added(self, ctx):
+        """
+
+        :param ctx:
+        :type ctx: SuiteCtx
+        :return:
+        """
+        c = QtGui.QStandardItem(ctx.name)
+        c.setData(ctx.priority, self.ContextSortRole)
+        self.appendRow(c)
+        self._root_items[ctx.name] = c
+
+        # for keeping header visible after view resets it's rootIndex.
+        c.appendRow([QtGui.QStandardItem() for _ in range(len(self.Headers))])
+        c.removeRow(0)
+
+    def on_context_renamed(self, name, new_name):
+        item = self._root_items.pop(name)
+        item.setText(new_name)
+        self._root_items[new_name] = item
+
+    def on_context_dropped(self, name):
+        item = self._root_items.pop(name)
+        self.removeRow(item.row())
+
+    def on_context_reordered(self, new_order):
+        for priority, name in enumerate(reversed(new_order)):
+            c = self._root_items[name]
+            c.setData(priority, self.ContextSortRole)
+
+    def on_suite_newed(self):
+        self.clear()
+
+
+class ContextToolTreeModelSingleton(ContextToolTreeModel, metaclass=QSingleton):
     """A singleton model for sharing across tool widgets"""
 
 
-class ToolStackSortProxyModel(QtCore.QSortFilterProxyModel):
+class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
 
     def __init__(self, *args, **kwargs):
-        super(ToolStackSortProxyModel, self).__init__(*args, **kwargs)
-        self.setSortRole(ToolStackModel.ContextSortRole)
+        super(ContextToolTreeSortProxyModel, self).__init__(*args, **kwargs)
+        self.setSortRole(ContextToolTreeModel.ContextSortRole)
 
     def sort(self, column, order=QtCore.Qt.AscendingOrder):
         """
@@ -280,7 +287,16 @@ class ToolStackSortProxyModel(QtCore.QSortFilterProxyModel):
         :return:
         """
         order = QtCore.Qt.DescendingOrder  # fixed
-        return super(ToolStackSortProxyModel, self).sort(column, order)
+        return super(ContextToolTreeSortProxyModel, self).sort(column, order)
+
+
+class SuiteToolTreeModel(ToolTreeModel):
+
+    def on_suite_added(self):
+        pass
+
+    def on_suite_removed(self):
+        pass
 
 
 class ResolvedPackagesModel(BaseItemModel):

@@ -12,12 +12,12 @@ from .models import (
     JsonModel,
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
-    ToolStackModelSingleton,
-    ToolStackSortProxyModel,
+    ContextToolTreeModelSingleton,
+    ContextToolTreeSortProxyModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
     SuiteStorageModel,
-    ToolStackModel,
+    SuiteToolTreeModel,
 )
 
 
@@ -633,8 +633,8 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         btn_filter.setIcon(res.icon("images", "funnel-fill.svg"))
 
         view = ToolsView()
-        model = ToolStackModelSingleton()
-        proxy = ToolStackSortProxyModel()
+        model = ContextToolTreeModelSingleton()
+        proxy = ContextToolTreeSortProxyModel()
 
         proxy.setSourceModel(model)
         view.setModel(proxy)
@@ -864,7 +864,7 @@ class ResolvedTools(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedTools, self).__init__(*args, **kwargs)
 
-        model = ToolStackModelSingleton()
+        model = ContextToolTreeModelSingleton()
         view = ToolsView()
         view.setModel(model)
 
@@ -877,7 +877,7 @@ class ResolvedTools(QtWidgets.QWidget):
 
     def set_name(self, ctx_name):
         if ctx_name and not self._view_fixed:
-            index = self._model.find_context_index(ctx_name)
+            index = self._model.find_root_index(ctx_name)
             if index is None:
                 print("Unable to find context item index from model.")
             else:
@@ -1210,7 +1210,7 @@ class SuiteToolsWidget(QtWidgets.QWidget):
         super(SuiteToolsWidget, self).__init__(*args, **kwargs)
 
         view = ToolsView()
-        model = ToolStackModel()
+        model = SuiteToolTreeModel(editable=False)
 
         view.setModel(model)
         # pin view index root on selection changed
@@ -1220,17 +1220,6 @@ class SuiteToolsWidget(QtWidgets.QWidget):
 
         self._view = view
         self._model = model
-
-        # todo:
-        #  item model hierarchy should be like
-        #  this ?
-        #       suite
-        #         > context
-        #             > tool
-        #  or
-        #       suite
-        #         > tool
-        #  ?
 
     def on_suite_selected(self, saved_suite):
         """
