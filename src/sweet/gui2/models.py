@@ -305,11 +305,31 @@ class ResolvedPackagesModel(BaseItemModel):
             loc_text, loc_icon = indicator.compute(pkg.resource.location)
 
             name_item = QtGui.QStandardItem(pkg.name)
+            name_item.setData(pkg, self.PackageRole)
+
             version_item = QtGui.QStandardItem(str(pkg.version))
+
             location_item = QtGui.QStandardItem(loc_text)
             location_item.setIcon(loc_icon)
 
             self.appendRow([name_item, version_item, location_item])
+
+    def pkg_path_from_index(self, index):
+        if not index.isValid():
+            return
+
+        item_index = self.index(index.row(), 0)
+        package = item_index.data(role=self.PackageRole)
+        resource = package.resource
+
+        if resource.key == "filesystem.package":
+            return resource.filepath
+        elif resource.key == "filesystem.variant":
+            return resource.parent.filepath
+        elif resource.key == "filesystem.package.combined":
+            return resource.parent.filepath
+        elif resource.key == "filesystem.variant.combined":
+            return resource.parent.parent.filepath
 
 
 class ResolvedEnvironmentModel(JsonModel):

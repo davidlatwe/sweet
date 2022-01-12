@@ -568,6 +568,8 @@ class ToolsView(TreeView):
         icon_deg = delegates.IconCenterDelegate(self)
         self.setItemDelegateForColumn(1, icon_deg)  # status icon
 
+        # todo: auto expand this
+
 
 class ToolStackWidget(QtWidgets.QWidget):
 
@@ -856,6 +858,7 @@ class ResolvedPackages(QtWidgets.QWidget):
 
     def on_right_click(self, position):
         view = self._view
+        model = self._model
         index = view.indexAt(position)
 
         if not index.isValid():
@@ -870,17 +873,21 @@ class ResolvedPackages(QtWidgets.QWidget):
         menu.addAction(copyfile)
 
         def on_openfile():
-            package = index.data(role=ResolvedPackagesModel.PackageRole)
-            pkg_uri = os.path.dirname(package.uri)
-            fname = os.path.join(pkg_uri, "package.py")
-            util.open_file_location(fname)
+            file_path = model.pkg_path_from_index(index)
+            if file_path:
+                util.open_file_location(file_path)
+            else:
+                print("Not a valid filesystem package.")
+                # todo: put this into log/status-bar message
 
         def on_copyfile():
-            package = index.data(role=ResolvedPackagesModel.PackageRole)
-            pkg_uri = os.path.dirname(package.uri)
-            fname = os.path.join(pkg_uri, "package.py")
-            clipboard = QtWidgets.QApplication.instance().clipboard()
-            clipboard.setText(fname)
+            file_path = model.pkg_path_from_index(index)
+            if file_path:
+                clipboard = QtWidgets.QApplication.instance().clipboard()
+                clipboard.setText(file_path)
+            else:
+                print("Not a valid filesystem package.")
+                # todo: put this into log/status-bar message
 
         openfile.triggered.connect(on_openfile)
         copyfile.triggered.connect(on_copyfile)
