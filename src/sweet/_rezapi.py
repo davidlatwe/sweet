@@ -6,14 +6,10 @@ from rez.utils.execution import create_forwarding_script
 from rez.utils.yaml import dump_yaml
 from rez.packages import iter_package_families, iter_packages
 from rez.resolved_context import ResolvedContext
-from rez.exceptions import ResolvedContextError
-from rez import suite
+from rez.exceptions import ResolvedContextError, SuiteError
+from rez.suite import Suite
 from rez.config import config
-from rez.vendor import yaml
 from rez.vendor.yaml.error import YAMLError  # noqa
-
-Suite = suite.Suite
-SuiteError = suite.SuiteError
 
 
 class _Suite(Suite):
@@ -268,15 +264,6 @@ class SweetSuite(_Suite):
     def set_description(self, text):
         self._description = text
 
-    def sorted_context_names(self):  # todo: deprecate this
-        # deprecate this as a favor for SuiteOp.iter_contexts
-        ctxs = self.contexts
-        return sorted(ctxs.keys(), key=lambda x: ctxs[x]["priority"])
-
-    def read_context(self, name, entry, default=None):  # todo: deprecate this
-        data = self._context(name)
-        return data.get(entry, default)
-
     def has_context(self, name):
         """Is context name exists in suite ?"""
         return name in self.contexts
@@ -357,26 +344,9 @@ class SweetSuite(_Suite):
     flush_tools = Suite._flush_tools
 
 
-def read_suite_description(filepath):  # todo: deprecate this
-    """
-    Args:
-        filepath (str): path to suite.yaml
-    Returns:
-        str
-    """
-    try:
-        with open(filepath) as f:
-            data = yaml.load(f.read(), Loader=yaml.FullLoader)  # noqa
-    except YAMLError:
-        pass
-    else:
-        return data.get("description", "")
-
-
 __all__ = [
     "iter_package_families",
     "iter_packages",
-    "read_suite_description",
 
     "config",
     "SuiteError",
