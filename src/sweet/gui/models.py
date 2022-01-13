@@ -576,6 +576,3 @@ class SuiteToolTreeModel(ToolTreeModel):
         if not is_opened:
             suite_tools = list(saved_suite.iter_tools(as_resolved=False))
             self.update_tools(suite_tools, suite=name)
-
-    def on_suite_removed(self):
-        pass
