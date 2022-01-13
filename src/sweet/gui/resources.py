@@ -180,30 +180,9 @@ def _load_fonts():
     font_root = os.path.join(_res_root, "fonts")
     fonts = [
         "opensans/OpenSans-Bold.ttf",
-        "opensans/OpenSans-BoldItalic.ttf",
-        "opensans/OpenSans-ExtraBold.ttf",
-        "opensans/OpenSans-ExtraBoldItalic.ttf",
         "opensans/OpenSans-Italic.ttf",
-        "opensans/OpenSans-Light.ttf",
-        "opensans/OpenSans-LightItalic.ttf",
         "opensans/OpenSans-Regular.ttf",
-        "opensans/OpenSans-Semibold.ttf",
-        "opensans/OpenSans-SemiboldItalic.ttf",
-
-        "jetbrainsmono/JetBrainsMono-Bold.ttf"
-        "jetbrainsmono/JetBrainsMono-Bold-Italic.ttf"
-        "jetbrainsmono/JetBrainsMono-ExtraBold.ttf"
-        "jetbrainsmono/JetBrainsMono-ExtraBold-Italic.ttf"
-        "jetbrainsmono/JetBrainsMono-ExtraLight.ttf"
-        "jetbrainsmono/JetBrainsMono-ExtraLight-Italic.ttf"
-        "jetbrainsmono/JetBrainsMono-Italic.ttf"
-        "jetbrainsmono/JetBrainsMono-Light.ttf"
-        "jetbrainsmono/JetBrainsMono-Light-Italic.ttf"
-        "jetbrainsmono/JetBrainsMono-Medium.ttf"
-        "jetbrainsmono/JetBrainsMono-Medium-Italic.ttf"
         "jetbrainsmono/JetBrainsMono-Regular.ttf"
-        "jetbrainsmono/JetBrainsMono-SemiLight.ttf"
-        "jetbrainsmono/JetBrainsMono-SemiLight-Italic.ttf"
     ]
 
     for font in fonts:
