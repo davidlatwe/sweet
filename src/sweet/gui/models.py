@@ -310,36 +310,6 @@ class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
         return super(ContextToolTreeSortProxyModel, self).sort(column, order)
 
 
-class SuiteToolTreeModel(ToolTreeModel):
-
-    @contextmanager
-    def open_suite(self, saved_suite):
-        """
-
-        :param saved_suite:
-        :type saved_suite: SavedSuite
-        :return:
-        """
-        name = saved_suite.name
-        is_opened = name in self._root_items
-
-        if is_opened:
-            root_item = self._root_items[name]
-        else:
-            root_item = QtGui.QStandardItem(name)
-            self.appendRow(root_item)
-            self._root_items[name] = root_item
-
-        yield root_item.index()
-
-        if not is_opened:
-            suite_tools = list(saved_suite.iter_tools(as_resolved=False))
-            self.update_tools(suite_tools, suite=name)
-
-    def on_suite_removed(self):
-        pass
-
-
 class ResolvedPackagesModel(BaseItemModel):
     Headers = [
         "Name",
@@ -579,3 +549,33 @@ class SuiteStorageModel(BaseItemModel):
         suite_item = QtGui.QStandardItem(suite.name)
         suite_item.setData(suite, self.SavedSuiteRole)
         self.ensure_branch_item(suite.branch).appendRow(suite_item)
+
+
+class SuiteToolTreeModel(ToolTreeModel):
+
+    @contextmanager
+    def open_suite(self, saved_suite):
+        """
+
+        :param saved_suite:
+        :type saved_suite: SavedSuite
+        :return:
+        """
+        name = saved_suite.name
+        is_opened = name in self._root_items
+
+        if is_opened:
+            root_item = self._root_items[name]
+        else:
+            root_item = QtGui.QStandardItem(name)
+            self.appendRow(root_item)
+            self._root_items[name] = root_item
+
+        yield root_item.index()
+
+        if not is_opened:
+            suite_tools = list(saved_suite.iter_tools(as_resolved=False))
+            self.update_tools(suite_tools, suite=name)
+
+    def on_suite_removed(self):
+        pass
