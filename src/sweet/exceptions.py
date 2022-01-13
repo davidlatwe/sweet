@@ -1,7 +1,7 @@
 
 import sys
 import warnings
-from rez.exceptions import RezError, SuiteError
+from rez.exceptions import RezError, SuiteError, ResolvedContextError
 
 __all__ = (
     "RezError",
@@ -9,6 +9,7 @@ __all__ = (
     "SweetError",
     "SuiteOpError",
     "SuiteIOError",
+    "ResolvedContextError",
 
     "SweetWarning",
     "SuiteOpWarning",

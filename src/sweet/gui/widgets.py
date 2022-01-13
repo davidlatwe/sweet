@@ -1,8 +1,8 @@
 
 import re
-import os
 import json
-from .. import util, core, _rezapi as rez
+from rez.resolved_context import ResolvedContext
+from .. import util, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
 from . import delegates, resources as res
@@ -868,7 +868,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         """
 
         :param context:
-        :type context: rez.ResolvedContext
+        :type context: ResolvedContext
         :return:
         """
         self._packages.model().load(context.resolved_packages)
