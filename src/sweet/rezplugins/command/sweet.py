@@ -48,7 +48,7 @@ def command(opts, parser=None, extra_arg_groups=None):
         sys.exit(print_info())
 
     if opts.gui:
-        from sweet.gui2 import app
+        from sweet.gui import app
         sys.exit(app.launch())
 
     return cli.main()

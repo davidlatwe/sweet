@@ -1,7 +1,7 @@
 
 # todo: test with pyside2 and pyqt5
 
-from sweet.gui2.app import Session
+from sweet.gui.app import Session
 
 # testing reorder context by control
 s = Session()
