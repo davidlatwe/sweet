@@ -2,7 +2,7 @@
 import re
 import json
 from rez.resolved_context import ResolvedContext
-from .. import util, core
+from .. import lib, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
 from . import delegates, resources as res
@@ -941,7 +941,7 @@ class ResolvedPackages(QtWidgets.QWidget):
         def on_openfile():
             file_path = model.pkg_path_from_index(index)
             if file_path:
-                util.open_file_location(file_path)
+                lib.open_file_location(file_path)
             else:
                 print("Not a valid filesystem package.")
                 # todo: put this into log/status-bar message
@@ -1263,7 +1263,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
 
         def on_explore():
             saved_suite = index.data(role=self._model.SavedSuiteRole)
-            util.open_file_location(saved_suite.path)
+            lib.open_file_location(saved_suite.path)
 
         open_.triggered.connect(on_open)
         import_.triggered.connect(on_import)

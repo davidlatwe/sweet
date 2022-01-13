@@ -3,6 +3,7 @@ import os
 from contextlib import contextmanager
 from rez.packages import Variant
 from rez.config import config as rezconfig
+
 from .. import constants, util
 from ..core import SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion
 from ._vendor.Qt5 import QtCore, QtGui

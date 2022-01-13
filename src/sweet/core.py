@@ -20,7 +20,7 @@ from rez.resolved_context import ResolvedContext
 from rez.packages import iter_package_families, iter_packages, Variant
 from rez.package_repository import package_repository_manager
 
-from . import signals, util
+from . import signals, lib, util
 from .constants import (
     TOOL_VALID,
     TOOL_HIDDEN,
@@ -182,9 +182,9 @@ class SuiteOp(object):
             s = SweetSuite()
 
             # Attach signal senders
-            s.flush_tools = s._flush_tools = util.attach_sender(
+            s.flush_tools = s._flush_tools = lib.attach_sender(
                 sender=self, func=s.flush_tools, signal=signals.tool_flushed)
-            s.update_tools = s._update_tools = util.attach_sender(
+            s.update_tools = s._update_tools = lib.attach_sender(
                 sender=self, func=s.update_tools, signal=signals.tool_updated)
 
             self._working_suite = s
