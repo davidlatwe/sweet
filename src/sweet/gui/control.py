@@ -299,8 +299,10 @@ class Controller(QtCore.QObject):
         # loaded
         description = self._sop.get_description()
         load_path = self._sop.loaded_from() or ""
+
         for ctx in self._sop.iter_contexts(ascending=True):
             self.context_added.emit(ctx)
+
         self._tools_updated()
         self._dirty = False
         self.suite_loaded.emit(name, description, load_path, branch)
