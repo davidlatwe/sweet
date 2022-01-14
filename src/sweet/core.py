@@ -555,7 +555,7 @@ class SuiteOp(object):
                     yield self._tool_data_to_tuple(d, status=status)
 
         status = TOOL_MISSING
-        for _tool in self._previous_tools:
+        for _tool in self._previous_tools or []:
             if _match_context(_tool.ctx_name) and _tool.alias not in seen:
                 _tool.status = status
                 yield _tool
