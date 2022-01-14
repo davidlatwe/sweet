@@ -35,8 +35,6 @@ class TestCore(TestBase):
             "contexts": {},
             "description": "",
             "live_resolve": True,
-            "tools": {},
-            "requests": {},
         }
         self.assertEqual(s_dict, expected)
 
