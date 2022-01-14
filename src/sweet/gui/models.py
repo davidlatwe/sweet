@@ -115,12 +115,14 @@ class ToolTreeModel(BaseItemModel):
     hidden_changed = QtCore.Signal(str, str, bool)
 
     ToolNameRole = QtCore.Qt.UserRole + 10
+    ToolEditRole = QtCore.Qt.UserRole + 11
 
     Headers = [
         "Name",  # context name and tool alias
         "Status",
         "From Package",
     ]
+    MissingToolsHolder = "<-missing->"
 
     def __init__(self, editable=True, *args, **kwargs):
         super(ToolTreeModel, self).__init__(*args, **kwargs)
@@ -144,19 +146,40 @@ class ToolTreeModel(BaseItemModel):
         super(ToolTreeModel, self).clear()
 
     def find_root_index(self, name):
+        """
+        :param name:
+        :type name: str
+        :return:
+        :rtype: QtCore.QModelIndex
+        """
         if name in self._root_items:
             return self._root_items[name].index()
 
     def update_tools(self, tools, suite=None):
-        """
+        """Update tools for contexts or a suite
+
+        When `suite` is given, all tools in this batch goes into the root
+        item of that suite. Or goes to each context root item.
 
         :param tools:
-        :param suite:
+        :param suite: suite name, if this model is for storing suite tools.
         :type tools: list[SuiteTool]
         :type suite: str or None
         :return:
         """
         indicator = _LocationIndicator()
+        missing_ctx = self.MissingToolsHolder
+
+        if not suite:
+            if any(t.status == constants.TOOL_MISSING for t in tools):
+                if missing_ctx not in self._root_items:
+                    _item = QtGui.QStandardItem(missing_ctx)
+                    self._root_items[missing_ctx] = _item
+                    self.appendRow(_item)
+            else:
+                if missing_ctx in self._root_items:
+                    _item = self._root_items.pop(missing_ctx)
+                    self.removeRow(_item.row())
 
         for root_name, root_item in self._root_items.items():
             if suite and suite != root_name:
@@ -164,16 +187,21 @@ class ToolTreeModel(BaseItemModel):
             root_item.removeRows(0, root_item.rowCount())
 
         for tool in sorted(tools, key=lambda t: t.name):
-            root_name = suite or tool.ctx_name
-            root_item = self._root_items[root_name]
             is_hidden = tool.status == constants.TOOL_HIDDEN
+            is_missing = tool.status == constants.TOOL_MISSING
+
+            _missing = missing_ctx if is_missing else None
+            root_name = suite or _missing or tool.ctx_name
+            root_item = self._root_items[root_name]
 
             name_item = QtGui.QStandardItem(tool.alias)
             name_item.setData(tool.name, self.ToolNameRole)
-            name_item.setData(
-                QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
-                QtCore.Qt.CheckStateRole
-            )
+            name_item.setData(not is_missing, self.ToolEditRole)
+            if not is_missing:
+                name_item.setData(
+                    QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
+                    QtCore.Qt.CheckStateRole
+                )
             status_item = QtGui.QStandardItem()
             status_item.setIcon(self._status_icon[tool.status])
             status_item.setToolTip(self._status_tip[tool.status])
@@ -199,13 +227,14 @@ class ToolTreeModel(BaseItemModel):
         base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
         if self._editable and index.column() == 0 and not is_context:
-            return (
-                base_flags
-                | QtCore.Qt.ItemIsEditable
-                | QtCore.Qt.ItemIsUserCheckable
-            )
-        else:
-            return base_flags
+            if self.data(index, self.ToolEditRole):
+                return (
+                    base_flags
+                    | QtCore.Qt.ItemIsEditable
+                    | QtCore.Qt.ItemIsUserCheckable
+                )
+
+        return base_flags
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
@@ -282,6 +311,12 @@ class ContextToolTreeModel(ToolTreeModel):
 
     def on_suite_newed(self):
         self.clear()
+
+    def update_tools(self, tools, *_, **__):
+        super(ContextToolTreeModel, self).update_tools(tools, suite=None)
+        index = self.find_root_index(self.MissingToolsHolder)
+        if index is not None:
+            self.setData(index, value=-1, role=self.ContextSortRole)
 
 
 class ContextToolTreeModelSingleton(ContextToolTreeModel, metaclass=QSingleton):

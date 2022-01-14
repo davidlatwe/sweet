@@ -527,14 +527,14 @@ class SuiteOp(object):
         :rtype: collections.Iterator[SuiteTool]
         """
         self._suite.update_tools()
-        seen = set()
+        _visible = set()
 
         def _match_context(d_):
             return context_name is None or context_name == d_["context_name"]
 
         status = TOOL_VALID
         for d in self._suite.tools.values():
-            seen.add(d["tool_alias"])
+            _visible.add(d["tool_alias"])
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
@@ -543,22 +543,21 @@ class SuiteOp(object):
 
         status = TOOL_HIDDEN
         for d in self._suite.hidden_tools:
-            seen.add(d["tool_alias"])
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
         status = TOOL_SHADOWED
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
-                seen.add(d["tool_alias"])
                 if _match_context(d):
                     yield self._tool_data_to_tuple(d, status=status)
 
         status = TOOL_MISSING
         for _tool in self._previous_tools or []:
-            if _match_context(_tool.ctx_name) and _tool.alias not in seen:
-                _tool.status = status
-                yield _tool
+            if _match_context(_tool.ctx_name):
+                if _tool.alias not in _visible:
+                    _tool.status = status
+                    yield _tool
 
     def _ctx_tool_exists(self, context, tool_name):
         context_tools = context.get_tools(request_only=True)

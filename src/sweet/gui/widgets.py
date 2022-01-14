@@ -695,10 +695,10 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         is_first = len(self._names) == 0
         if is_first:
             panel = self.widget(0)
-            panel.set_name(name)
+            panel.set_context(ctx)
             panel.setEnabled(True)
         else:
-            self.add_panel(name)
+            self.add_panel(ctx)
             self.setCurrentIndex(0)
 
         self._names.insert(0, name)
@@ -721,7 +721,7 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
     def on_context_renamed(self, name, new_name):
         index = self._names.index(name)
         panel = self.widget(index)
-        panel.set_name(new_name)
+        panel.set_context(new_name)
         self._names.remove(name)
         self._names.insert(index, new_name)
 
@@ -749,9 +749,9 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self._names.clear()
         self._add_panel_0()
 
-    def add_panel(self, name, enabled=True):
+    def add_panel(self, ctx, enabled=True):
         panel = ContextRequestWidget()
-        panel.set_name(name)
+        panel.set_context(ctx)
         panel.setEnabled(enabled)
         panel.prefix_changed.connect(
             lambda text: self.prefix_changed.emit(panel.name(), text)
@@ -844,6 +844,8 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
         self._name = None
         self._label = label
+        self._prefix = prefix
+        self._suffix = suffix
         self._tools = tools
         self._packages = packages
         self._environ = environ
@@ -853,16 +855,25 @@ class ContextRequestWidget(QtWidgets.QWidget):
     def name(self):
         return self._name
 
-    def set_name(self, ctx_name):
+    def set_context(self, ctx):
         """
 
-        :param ctx_name:
-        :type ctx_name: str
+        :param ctx:
+        :type ctx: core.SuiteCtx or str
         :return:
         """
-        self._name = ctx_name
-        self._tools.set_name(ctx_name)
-        self._label.setText("Context: %s" % ctx_name)
+        if isinstance(ctx, str):
+            self._name = ctx
+            self._label.setText("Context: %s" % ctx)
+            self._tools.set_name(ctx)
+        else:
+            self.blockSignals(True)
+            self._name = ctx.name
+            self._prefix.setText(ctx.prefix)
+            self._suffix.setText(ctx.suffix)
+            self._tools.set_name(ctx.name)
+            self._label.setText("Context: %s" % ctx.name)
+            self.blockSignals(False)
 
     def set_resolved(self, context):
         """
