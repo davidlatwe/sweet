@@ -5,7 +5,6 @@ import os
 import warnings
 from typing import List
 from dataclasses import dataclass
-from collections import OrderedDict as odict
 
 from rez.vendor import yaml
 from rez.suite import Suite
@@ -26,14 +25,12 @@ from .constants import (
     TOOL_HIDDEN,
     TOOL_SHADOWED,
     TOOL_MISSING,
-    TOOL_CACHED,
 )
 from .exceptions import (
     RezError,
     SuiteError,
     SuiteOpError,
     SuiteIOError,
-    ResolvedContextError,
     SuiteOpWarning,
     ContextNameWarning,
     ContextBrokenWarning,
@@ -62,15 +59,21 @@ __all__ = (
 
 @dataclass
 class SuiteCtx:
-    __slots__ = "name", "context", "priority", "prefix", "suffix", \
-                "loaded", "from_rxt"
+    __slots__ = "name", "priority", "prefix", "suffix", \
+                "context", "requests", "resolves"
     name: str
-    context: ResolvedContext or None
     priority: int
     prefix: str
     suffix: str
-    loaded: bool
-    from_rxt: bool
+    context: ResolvedContext
+    requests: List[PackageRequest]
+    resolves: List[Variant]
+    # Advance options
+    # timestamp
+    # package_paths
+    # package_filter
+    # package_orderers
+    # building
 
 
 @dataclass
@@ -81,7 +84,7 @@ class SuiteTool:
     alias: str
     status: int
     ctx_name: str
-    variant: Variant or str
+    variant: Variant
     location: str
     uri: str
 
@@ -120,49 +123,25 @@ class SavedSuite:
     @property
     def _suite(self):
         if self.suite is None:
-            self.suite = SweetSuite.load(self.path)
+            self.suite = SweetSuite.load(self.path)  # context not yet loaded
         return self.suite
+
+    @property
+    def is_live(self):
+        return self._suite.is_live()
 
     @property
     def description(self):
         return self._suite.description
 
-    def iter_contexts(self):
+    def iter_saved_tools(self):
         """
-
-        :return: An SuiteCtx object iterator
-        :rtype: collections.Iterator[SuiteCtx]
-        """
-        sop = SuiteOp()
-        sop._working_suite = self._suite
-        return sop.iter_contexts(as_resolved=False)
-
-    def iter_tools(self, as_resolved=False):
-        """
-
         :return: A SuiteTool object iterator
         :rtype: collections.Iterator[SuiteTool]
         """
-        if as_resolved:
-            sop = SuiteOp()
-            sop._working_suite = self._suite
-            for tool in sop.iter_tools():
-                if tool.status != TOOL_VALID:
-                    break
-                yield tool
-
-        else:
-            for ctx_name, tools in self._suite.saved_tools.items():
-                for t_alias, t_name, var_name, location, uri in tools:
-                    yield SuiteTool(
-                        name=t_name,
-                        alias=t_alias,
-                        status=TOOL_CACHED,
-                        ctx_name=ctx_name,
-                        variant=var_name,
-                        location=location,
-                        uri=uri,
-                    )
+        sop = SuiteOp()
+        sop._working_suite = self._suite
+        return sop.iter_tools(visible_only=True)
 
 
 def _warn(message, category=None):
@@ -174,7 +153,8 @@ class SuiteOp(object):
     """Suite operator"""
 
     def __init__(self):
-        self._working_suite = None
+        self._working_suite = None   # type: SweetSuite or None
+        self._previous_tools = None  # type: list[SuiteTool] or None
 
     @property
     def _suite(self):
@@ -191,7 +171,8 @@ class SuiteOp(object):
         return self._working_suite
 
     def reset(self):
-        self._working_suite = None
+        self._working_suite = None   # type: SweetSuite or None
+        self._previous_tools = None  # type: list[SuiteTool] or None
 
     def dump(self):
         suite_dict = self._suite.to_dict()
@@ -209,8 +190,12 @@ class SuiteOp(object):
     def load(self, path, as_import=False):
         """Load existing suite
 
+        When loading suite, all contexts requests and .rxt files will be
+        resolved and loaded.
+
         :param path: Location to save current working suite
-        :param as_import: If True, `load_path` will not be set
+        :param as_import: If True, suite could not save over to where it
+            was loaded from.
         :type path: str
         :type as_import: bool
         :return:
@@ -228,8 +213,8 @@ class SuiteOp(object):
 
         suite = SweetSuite.from_dict(suite_dict)
         suite.load_path = None if as_import else os.path.realpath(path)
-
         self._working_suite = suite
+        self._previous_tools = list(self.iter_tools(visible_only=True))
 
     def save(self, path):
         # type: (str) -> None
@@ -503,15 +488,13 @@ class SuiteOp(object):
         """
         return self._suite.find_contexts(in_request, in_resolve)
 
-    def iter_contexts(self, as_resolved=False, ascending=False):
+    def iter_contexts(self, ascending=False):
         """Iterate contexts in suite in priority ordered
 
         By default (descending ordered), the context that has higher priority
         will be iterated first.
 
-        :param as_resolved: Ensure context resolved if True.
         :param ascending: Iter contexts by priority in ascending order.
-        :type as_resolved: bool or False
         :type ascending: bool or False
         :return: An SuiteCtx object iterator
         :rtype: collections.Iterator[SuiteCtx]
@@ -521,22 +504,25 @@ class SuiteOp(object):
             reverse=not ascending
         )
         for d in ctx_data:
-            yield self._ctx_data_to_tuple(d, as_resolved=as_resolved)
+            yield self._ctx_data_to_tuple(d)
 
-    def iter_tools(self, context_name=None):
+    def iter_tools(self, context_name=None, visible_only=False):
         """Iterate all tools in suite
 
         Suite tools will be iterated in following order:
             - Valid, not being hidden, not in conflict
             - Hidden
             - Shadowed (name/alias conflicts with other tool)
-            - Missing (due to failed context resolved)
+            - Missing (failed context or new one has different tools/aliases)
 
         A previously saved suite may have missing tools due to the request
         of the context is no longer resolvable in current condition.
 
         :param context_name: Only yield tools in this context.
         :type context_name: str or None
+        :param visible_only: If True, only yield tools that are not
+            hidden/shadowed/missing. Default False.
+        :type visible_only: bool
         :return: An SuiteTool object iterator
         :rtype: collections.Iterator[SuiteTool]
         """
@@ -552,6 +538,9 @@ class SuiteOp(object):
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
+        if visible_only:
+            return
+
         status = TOOL_HIDDEN
         for d in self._suite.hidden_tools:
             seen.add(d["tool_alias"])
@@ -566,19 +555,10 @@ class SuiteOp(object):
                     yield self._tool_data_to_tuple(d, status=status)
 
         status = TOOL_MISSING
-        for ctx_name, tools in self._suite.saved_tools.items():
-            for t_alias, t_name, var_name, location, uri in tools:
-                if t_alias not in seen:
-                    d = {
-                        "tool_name": t_name,
-                        "tool_alias": t_alias,
-                        "context_name": ctx_name,
-                        "variant": var_name,
-                        "location": location,
-                        "uri": uri,
-                    }
-                    if _match_context(d):
-                        yield self._tool_data_to_tuple(d, status=status)
+        for _tool in self._previous_tools:
+            if _match_context(_tool.ctx_name) and _tool.alias not in seen:
+                _tool.status = status
+                yield _tool
 
     def _ctx_tool_exists(self, context, tool_name):
         context_tools = context.get_tools(request_only=True)
@@ -587,30 +567,32 @@ class SuiteOp(object):
                 return True
         return False
 
-    def _ctx_data_to_tuple(self, d, as_resolved=False):
-        n = d["name"]
-        c = self._suite.context(n) if as_resolved else d.get("context")
+    def _ctx_data_to_tuple(self, d):
+        try:
+            context = self._suite.context(d["name"])
+        except FileNotFoundError as e:
+            context = BrokenContext(str(e))
+        rq = [r for r in context.requested_packages(include_implicit=True)]
+        rs = [r for r in context.resolved_packages]
         return SuiteCtx(
-            name=n,
-            context=c.copy() if c else None,
+            name=d["name"],
             priority=d["priority"],
             prefix=d.get("prefix", ""),
             suffix=d.get("suffix", ""),
-            loaded=d.get("loaded"),
-            from_rxt=c.load_path if c else None,
+            requests=rq,
+            resolves=rs,
+            context=context,
         )
 
     def _tool_data_to_tuple(self, d, status=0):
-        location = d.get("location") or d["variant"].resource.location
-        uri = d.get("uri") or d["variant"].uri
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
             status=status,
             ctx_name=d["context_name"],
             variant=d["variant"],  # see TestCore.test_tool_by_multi_packages,
-            location=location,
-            uri=uri,
+            location=d["variant"].resource.location,
+            uri=d["variant"].uri,
         )
 
     def _resolve_context(self, requests):
@@ -637,6 +619,9 @@ class BrokenContext(object):
     def __init__(self, failure_description):
         self.failure_description = failure_description
 
+    def __str__(self):
+        return f"{self.__class__.__name__}:broken({self.failure_description})"
+
     @property
     def success(self):
         return False
@@ -644,6 +629,13 @@ class BrokenContext(object):
     @property
     def status(self):
         return ResolverStatus.failed
+
+    @property
+    def resolved_packages(self):
+        return []
+
+    def requested_packages(self, *_, **__):
+        return []
 
 
 class Storage(object):
@@ -815,6 +807,35 @@ class InstalledPackages(object):
             )
 
 
+def re_resolve_rxt(context):
+    """Re-resolve context loaded from .rxt file
+
+    This takes following entries from input context to resolve a new one:
+        - package_requests
+        - timestamp
+        - package_paths
+        - package_filters
+        - package_orderers
+        - building
+
+    :param context: .rxt loaded context
+    :type context: ResolvedContext
+    :return: new resolved context
+    :rtype: ResolvedContext
+    :raises AssertionError: If no context.load_path (not loaded from .rxt)
+    """
+    assert context.load_path, "Not a loaded context."
+    rxt = context
+    return ResolvedContext(
+        package_requests=rxt.requested_packages(),
+        timestamp=rxt.requested_timestamp,
+        package_paths=rxt.package_paths,
+        package_filter=rxt.package_filter,
+        package_orderers=rxt.package_orderers,
+        building=rxt.building,
+    )
+
+
 class _Suite(Suite):
     @classmethod
     def from_dict(cls, d):
@@ -832,67 +853,34 @@ class _Suite(Suite):
 
 
 class SweetSuite(_Suite):
+    """A collection of contexts. (run tools in live resolved context)
 
+    A suite is a collection of contexts. A suite stores its contexts in a
+    single directory, and creates wrapper scripts for each tool in each context,
+    which it stores into a single bin directory. When a tool is invoked, it
+    executes the actual tool in its associated context. When you add a suite's
+    bin directory to PATH, you have access to all these tools, which will
+    automatically run in correctly configured environments.
+
+    Tool clashes can occur when a tool of the same name is present in more than
+    one context. When a context is added to a suite, or prefixed/suffixed, that
+    context's tools override tools from other contexts.
+
+    There are several ways to avoid tool name clashes:
+    - Hide a tool. This removes it from the suite even if it does not clash;
+    - Prefix/suffix a context. When you do this, all the tools in the context
+      have the prefix/suffix applied;
+    - Explicitly alias a tool using the `alias_tool` method. This takes
+      precedence over context prefix/suffixing.
+
+    Additional entries SweetSuite's suite.yaml:
+        - description
+        - is_live
+    """
     def __init__(self):
         super(SweetSuite, self).__init__()
         self._description = ""
         self._is_live = True
-        self._saved_tools = None
-        self._saved_requests = None
-
-    def context(self, name):
-        """Get a context.
-
-        Args:
-            name (str): Name to store the context under.
-
-        Returns:
-            `ResolvedContext` object.
-        """
-        data = self._context(name)
-        context = data.get("context")
-        if context:
-            return context
-
-        _saved_context = None
-
-        if self.load_path:
-            context_path = self._context_path(name, self.load_path)
-            if os.path.isfile(context_path):
-                try:
-                    _saved_context = ResolvedContext.load(context_path)
-                except ResolvedContextError:
-                    pass  # possible that .rxt contains inaccessible packages
-
-        if self._is_live:
-            try:
-                # note: live resolved `context.load_path` is None
-                context = ResolvedContext(self._saved_requests[name])
-            except Exception as e:
-                if _saved_context is None:
-                    raise e
-                # fallback to saved .rxt
-                context = _saved_context
-                # todo: should have a warning.
-
-            context._set_parent_suite(self.load_path, name)  # noqa
-            if _saved_context is not None:
-                if context != _saved_context:
-                    self._save_context_rxt(name, context, self.load_path)
-                    # todo: save previous context for future diff (into a
-                    #  sqlite db maybe), but in what perspective ? context
-                    #  or tool ?
-                    #  - on context, and purge record if no match context
-                    #    during suite save.
-
-        else:
-            assert self.load_path
-            context = _saved_context
-
-        data["context"] = context
-        if context.load_path:
-            data["loaded"] = True
-        return context
 
     def save(self, path, verbose=False):
         """Save the suite to disk.
@@ -905,6 +893,11 @@ class SweetSuite(_Suite):
         """
         if verbose and self._is_live:
             print("saving live suite...")
+
+        # todo:
+        #   1. instead of wiping it all out, cherry-pick tools to update/remove
+        #       by requests.
+        #   2. make a copy of current suite (in timestamp dir)
 
         path = os.path.realpath(path)
         if os.path.exists(path):
@@ -974,60 +967,32 @@ class SweetSuite(_Suite):
             create_forwarding_script(filepath, **kwargs)
 
     def to_dict(self):
+        """Parse suite into dict
+        :return:
+        :rtype: dict
+        """
         data = super(SweetSuite, self).to_dict()
         data["description"] = self._description
         data["live_resolve"] = self._is_live
-
-        data["tools"] = [
-            (
-                cname,
-                [
-                    (
-                        tool_alias,
-                        d["tool_name"],
-                        d["variant"].qualified_name,
-                        d["variant"].resource.location,
-                        d["variant"].uri,
-                     )
-                    for tool_alias, d in self.get_tools().items()
-                    if cname == d["context_name"]
-                ]
-            )
-            for cname in self.context_names
-        ]  # type: list[tuple[str, list[tuple[str, str, str, str]]]]
-
-        data["requests"] = [
-            (
-                cname,
-                [str(r) for r in self.context(cname).requested_packages()],
-            )
-            for cname in self.context_names
-        ]  # type: list[tuple[str, list[str]]]
-
         return data
 
     @classmethod
     def from_dict(cls, d):
+        """Parse dict into suite
+        :return:
+        :rtype: SweetSuite
+        """
         s = super(SweetSuite, cls).from_dict(d)
         s._description = d.get("description", "")
         s._is_live = d.get("live_resolve", False)
-        # for data process convenience, turn these two to into ordered dict
-        s._saved_tools = odict(d.get("tools") or [])
-        s._saved_requests = odict(d.get("requests") or [])
-
         return s
 
     def add_context(self, name, context, prefix_char=None):
         if not name:
+            # todo: implement filesystem valid name check and push the
+            #   change into nerdvegas/rez.
             raise SuiteError("Invalid context name.")
         super(SweetSuite, self).add_context(name, context, prefix_char)
-
-    def remove_context(self, name):
-        super(SweetSuite, self).remove_context(name)
-        if name in self.saved_requests:
-            del self._saved_requests[name]
-        if name in self.saved_tools:
-            del self._saved_tools[name]
 
     # New methods that are not in rez.suite.Suite
     #
@@ -1049,16 +1014,11 @@ class SweetSuite(_Suite):
             os.makedirs(_dir_path)
         context.save(filepath)
 
+    def set_live(self, value):
+        self._is_live = value
+
     def is_live(self):
         return self._is_live
-
-    @property
-    def saved_tools(self):
-        return self._saved_tools or odict()
-
-    @property
-    def saved_requests(self):
-        return self._saved_requests or odict()
 
     @property
     def description(self):
@@ -1091,11 +1051,6 @@ class SweetSuite(_Suite):
         data = self.contexts.pop(old_name)
         data["name"] = new_name
         self.contexts[new_name] = data
-
-        if old_name in self.saved_requests:
-            self._saved_requests[new_name] = self._saved_requests.pop(old_name)
-        if old_name in self.saved_tools:
-            self._saved_tools[new_name] = self._saved_tools.pop(old_name)
 
         self._flush_tools()
 
@@ -1141,6 +1096,15 @@ class SweetSuite(_Suite):
             data.pop("loaded", None)
 
         self._flush_tools()
+
+    def re_resolve_rxt_contexts(self):
+        """Re-resolve all contexts that loaded from .rxt files
+        :return:
+        """
+        for name in list(self.contexts.keys()):
+            context = self.context(name)
+            if context.load_path:
+                self.update_context(name, re_resolve_rxt(context))
 
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools

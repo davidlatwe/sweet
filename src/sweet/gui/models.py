@@ -129,14 +129,12 @@ class ToolTreeModel(BaseItemModel):
             constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
             constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
             constants.TOOL_MISSING: res.icon("images", "x"),
-            constants.TOOL_CACHED: res.icon("images", "gear-fill"),
         }
         self._status_tip = {
             constants.TOOL_VALID: "Can be accessed.",
             constants.TOOL_HIDDEN: "Is hidden from context.",
             constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
             constants.TOOL_MISSING: "Missing from last resolve.",
-            constants.TOOL_CACHED: "Loaded from saved suite.",
         }
         self._root_items = dict()
         self._editable = editable
@@ -169,7 +167,6 @@ class ToolTreeModel(BaseItemModel):
             root_name = suite or tool.ctx_name
             root_item = self._root_items[root_name]
             is_hidden = tool.status == constants.TOOL_HIDDEN
-            is_cached = tool.status == constants.TOOL_CACHED
 
             name_item = QtGui.QStandardItem(tool.alias)
             name_item.setData(tool.name, self.ToolNameRole)
@@ -182,8 +179,7 @@ class ToolTreeModel(BaseItemModel):
             status_item.setToolTip(self._status_tip[tool.status])
 
             _, loc_icon = indicator.compute(tool.location)
-            _name = tool.variant if is_cached else tool.variant.qualified_name
-            pkg_item = QtGui.QStandardItem(_name)
+            pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
             pkg_item.setIcon(loc_icon)
 
             root_item.appendRow([name_item, status_item, pkg_item])
@@ -575,5 +571,6 @@ class SuiteToolTreeModel(ToolTreeModel):
         yield root_item.index()
 
         if not is_opened:
-            suite_tools = list(saved_suite.iter_tools(as_resolved=False))
+            # todo: this may takes times
+            suite_tools = list(saved_suite.iter_saved_tools())
             self.update_tools(suite_tools, suite=name)
