@@ -768,6 +768,18 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self.add_panel("", enabled=False)
 
 
+class RequestTable(QtWidgets.QWidget):
+
+    def __init__(self, read_only=False, *args, **kwargs):
+        super(RequestTable, self).__init__(*args, **kwargs)
+
+
+class RequestEditor(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(RequestEditor, self).__init__(*args, **kwargs)
+
+
 class ContextRequestWidget(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
     prefix_changed = QtCore.Signal(str)
@@ -996,6 +1008,10 @@ class ResolvedCode(QtWidgets.QWidget):
 
 
 class ResolvedGraph(QtWidgets.QWidget):
+    pass
+
+
+class ResolvedLog(QtWidgets.QWidget):
     pass
 
 
