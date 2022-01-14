@@ -589,7 +589,14 @@ class SuiteOp(object):
             alias=d["tool_alias"],
             status=status,
             ctx_name=d["context_name"],
-            variant=d["variant"],  # see TestCore.test_tool_by_multi_packages,
+            # todo:
+            #  A single tool could be given by multiple variants (same tool
+            #  name in their `tools` property).
+            #  When that happens, we can't for sure which actual executable
+            #  will be executed (depends on which come first in PATH), so
+            #  we must list them all out here.
+            #  See `TestCore.test_tool_by_multi_packages`.
+            variant=d["variant"],
             location=d["variant"].resource.location,
             uri=d["variant"].uri,
         )
