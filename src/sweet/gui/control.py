@@ -2,10 +2,12 @@
 import inspect
 import functools
 from itertools import groupby
+from rez.resolved_context import ResolvedContext
 from ..core import (
     SuiteOp,
     InstalledPackages,
     Storage,
+    BrokenContext,
     SuiteCtx,
     SavedSuite,
     PkgFamily,
@@ -117,6 +119,8 @@ class Controller(QtCore.QObject):
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
+    resolve_logged = QtCore.Signal(str)
+    resolve_failed = QtCore.Signal()
     tools_updated = QtCore.Signal(list)
     pkg_scan_started = QtCore.Signal()
     pkg_families_scanned = QtCore.Signal(list)
@@ -213,11 +217,11 @@ class Controller(QtCore.QObject):
         self.scan_installed_packages()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
-    def add_context(self, name, requests=None):
-        requests = requests or []
-        ctx = self._sop.add_context(name, requests=requests)
+    def add_context(self, name, context=None):
+        _context = context or self._sop.resolve_context([])
+        ctx = self._sop.add_context(name, _context)
         self.context_added.emit(ctx)
-        if requests:
+        if context is not None:
             self._tools_updated()
         self._dirty = True
 
@@ -261,9 +265,24 @@ class Controller(QtCore.QObject):
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def resolve_context(self, name, requests):
-        ctx = self._sop.update_context(name, requests=requests)
-        self.context_resolved.emit(name, ctx)
-        self._tools_updated()
+        context = self._sop.resolve_context(requests)
+        if context.success:
+            ctx = self._sop.update_context(name, context=context)
+            self.resolve_logged.emit("")
+            self.context_resolved.emit(name, ctx)
+            self._tools_updated()
+
+        elif isinstance(context, ResolvedContext):
+            context.print_info()
+            self.resolve_logged.emit("")
+            self.resolve_failed.emit()
+
+        elif isinstance(context, BrokenContext):
+            self.resolve_logged.emit(context.failure_description)
+            self.resolve_failed.emit()
+
+        else:
+            raise RuntimeError
 
     def _tools_updated(self):
         self._dirty = True

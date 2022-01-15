@@ -28,6 +28,7 @@ from .constants import (
 )
 from .exceptions import (
     RezError,
+    ResolvedContextError,
     SuiteError,
     SuiteOpError,
     SuiteIOError,
@@ -54,6 +55,7 @@ __all__ = (
     "SavedSuite",
     "PkgFamily",
     "PkgVersion",
+    "BrokenContext",
 )
 
 
@@ -212,9 +214,12 @@ class SuiteOp(object):
             raise SuiteIOError("Failed loading suite: %s" % str(e))
 
         suite = SweetSuite.from_dict(suite_dict)
-        suite.load_path = None if as_import else os.path.realpath(path)
+        suite.load_path = os.path.realpath(path)
+
         self._working_suite = suite
         self._previous_tools = list(self.iter_tools(visible_only=True))
+
+        suite.load_path = None if as_import else os.path.realpath(path)
 
     def save(self, path):
         # type: (str) -> None
@@ -278,7 +283,25 @@ class SuiteOp(object):
         """
         self._suite.load_path = path
 
-    def add_context(self, name, requests):
+    def resolve_context(self, requests):
+        """Try resolving a context
+
+        :param requests: List of strings or PackageRequest objects representing
+            the request for resolving a context.
+        :type requests: list[str or PackageRequest]
+        :return: A ResolvedContext object if succeed or BrokenContext if not.
+        :rtype: ResolvedContext or BrokenContext
+        """
+        try:
+            context = ResolvedContext(requests)
+        except RezError as e:
+            context = BrokenContext(str(e), requests)
+
+        signals.ctx_resolved.send(self, context=context)
+
+        return context
+
+    def add_context(self, name, context):
         """Add one resolved context to suite
 
         The context `name` must not exists in suite nor an empty string. And
@@ -289,9 +312,8 @@ class SuiteOp(object):
         warnings are being treated as error).
 
         :param str name: Name to store the context under.
-        :param requests: List of strings or PackageRequest objects representing
-            the request for resolving a context to add.
-        :type requests: list[str or PackageRequest]
+        :param context: Context to add. Must be a success resolved context.
+        :type context: ResolvedContext
         :return: None if failed, or a SuiteCtx that represents the context
             just being added.
         :rtype: None or SuiteCtx
@@ -299,8 +321,6 @@ class SuiteOp(object):
         if self._suite.has_context(name):
             _warn("Context already in suite: %r" % name)
             return
-
-        context = self._resolve_context(requests)
 
         if not context.success:
             _d = context.failure_description
@@ -363,7 +383,7 @@ class SuiteOp(object):
             self,
             name,
             new_name=None,
-            requests=None,
+            context=None,
             prefix=None,
             suffix=None,
             tool_name=None,
@@ -391,15 +411,14 @@ class SuiteOp(object):
 
         :param str name: The name of existing suite context.
         :param new_name: Rename context.
-        :param requests: List of strings or PackageRequest objects representing
-            the request for resolving a context to replace one if given.
+        :param context: Context to update. Must be a success resolved context.
         :param prefix: Change context prefix.
         :param suffix: Change context suffix.
         :param tool_name: The name of the tool in context `name`.
         :param new_alias: Change tool alias, `tool_name` must be given.
         :param set_hidden: Change tool visibility, `tool_name` must be given.
         :type new_name: str or None
-        :type requests: list[str or PackageRequest] or None
+        :type context: ResolvedContext or None
         :type prefix: str or None
         :type suffix: str or None
         :type tool_name: str or None
@@ -413,8 +432,6 @@ class SuiteOp(object):
         if not self._suite.has_context(ctx_name):
             _warn("No such context in suite: %r" % ctx_name)
             return
-
-        context = None if requests is None else self._resolve_context(requests)
 
         if context is not None and not context.success:
             _d = context.failure_description
@@ -601,29 +618,23 @@ class SuiteOp(object):
             uri=d["variant"].uri,
         )
 
-    def _resolve_context(self, requests):
-        """Try resolving a context
-
-        :param requests: List of strings or PackageRequest objects representing
-            the request for resolving a context.
-        :type requests: list[str or PackageRequest]
-        :return: A ResolvedContext object if succeed or BrokenContext if not.
-        :rtype: ResolvedContext or BrokenContext
-        """
-        try:
-            context = ResolvedContext(requests)
-        except RezError as e:
-            context = BrokenContext(str(e))
-
-        signals.ctx_resolved.send(self, success=context.success)
-
-        return context
-
 
 class BrokenContext(object):
-    """A simple representation of a failed context"""
-    def __init__(self, failure_description):
+    """A simple replacement for a failed context
+
+    This should survive through most of the Suite operations but error will
+    raised when trying to add into or save suite.
+
+    """
+    def __init__(self, failure_description, package_requests=None):
         self.failure_description = failure_description
+        self.load_path = None
+
+        self._package_requests = []
+        for req in package_requests or []:
+            if isinstance(req, str):
+                req = PackageRequest(req)
+            self._package_requests.append(req)
 
     def __str__(self):
         return f"{self.__class__.__name__}:broken({self.failure_description})"
@@ -641,7 +652,21 @@ class BrokenContext(object):
         return []
 
     def requested_packages(self, *_, **__):
-        return []
+        return self._package_requests
+
+    def get_tools(self, *_, **__):
+        return dict()
+
+    def get_resolved_package(self, *_, **__):
+        return None
+
+    def validate(self):
+        raise ResolvedContextError(str(self))
+
+    def _invalid_action(self, *_, **__):
+        raise SuiteError("Invalid action.")
+
+    save = _set_parent_suite = _invalid_action
 
 
 class Storage(object):
@@ -887,6 +912,22 @@ class SweetSuite(_Suite):
         super(SweetSuite, self).__init__()
         self._description = ""
         self._is_live = True
+
+    def context(self, name):
+        """Get a context.
+        :param name:
+        :return:
+        """
+        try:
+            context = super(SweetSuite, self).context(name)
+        except AssertionError:
+            raise
+        except Exception as e:
+            context = BrokenContext(str(e))
+            data = self._context(name)
+            data["context"] = context
+
+        return context
 
     def save(self, path, verbose=False):
         """Save the suite to disk.

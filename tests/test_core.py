@@ -1,6 +1,8 @@
 
+import os
 from rez.packages import Variant
-from sweet.core import SuiteOp, Storage
+from sweet.core import SuiteOp, Storage, BrokenContext
+from sweet.exceptions import SuiteError, SuiteOpError
 from sweet.constants import (
     TOOL_VALID,
     TOOL_HIDDEN,
@@ -42,7 +44,7 @@ class TestCore(TestBase):
         self.repo.add("foo")
 
         sop = SuiteOp()
-        ctx = sop.add_context("foo", ["foo"])
+        ctx = sop.add_context("foo", sop.resolve_context(["foo"]))
         self.assertEqual("foo", ctx.name)
 
         s_dict = sop.dump()
@@ -50,7 +52,7 @@ class TestCore(TestBase):
 
     def test_rename_context(self):
         sop = SuiteOp()
-        sop.add_context("foo", [])
+        sop.add_context("foo", sop.resolve_context([]))
         sop.update_context("foo", new_name="bar")
 
         ctx = next(sop.iter_contexts())
@@ -61,8 +63,8 @@ class TestCore(TestBase):
         self.repo.add("bar", tools=["beer"])
 
         sop = SuiteOp()
-        foo = sop.add_context("foo", ["foo"])
-        bar = sop.add_context("bar", ["bar", "foo"])
+        foo = sop.add_context("foo", sop.resolve_context(["foo"]))
+        bar = sop.add_context("bar", sop.resolve_context(["bar", "foo"]))
 
         beer, food_1, food_2 = sop.iter_tools()
         self.assertEqual("beer", beer.name)
@@ -90,7 +92,7 @@ class TestCore(TestBase):
         self.repo.add("bar", tools=["beer"])
 
         sop = SuiteOp()
-        foo = sop.add_context("foo", ["foo"])
+        foo = sop.add_context("foo", sop.resolve_context(["foo"]))
 
         food, fuzz = sop.iter_tools()
         self.assertEqual("food", food.name)
@@ -102,7 +104,8 @@ class TestCore(TestBase):
         self.assertEqual("fruit", food.alias)
         self.assertEqual(TOOL_HIDDEN, fuzz.status)
 
-        sop.update_context(foo.name, requests=["foo", "bar"])
+        _context = sop.resolve_context(["foo", "bar"])
+        sop.update_context(foo.name, context=_context)
 
         food, beer, fuzz = sop.iter_tools()
         self.assertEqual("fruit", food.alias)
@@ -114,9 +117,9 @@ class TestCore(TestBase):
         self.repo.add("bee", tools=["honey"])
 
         sop = SuiteOp()
-        sop.add_context("a", ["bee"])
-        sop.add_context("b", ["bee"])
-        sop.add_context("c", ["bee"])
+        sop.add_context("a", sop.resolve_context(["bee"]))
+        sop.add_context("b", sop.resolve_context(["bee"]))
+        sop.add_context("c", sop.resolve_context(["bee"]))
 
         c, b, a = list(sop.iter_contexts())
         self.assertEqual("a", a.name)
@@ -134,9 +137,9 @@ class TestCore(TestBase):
     def test_context_reordering(self):
         """Test entire suite contexts can be reordered as expected"""
         sop = SuiteOp()
-        sop.add_context("a", [])
-        sop.add_context("b", [])
-        sop.add_context("c", [])
+        sop.add_context("a", sop.resolve_context([]))
+        sop.add_context("b", sop.resolve_context([]))
+        sop.add_context("c", sop.resolve_context([]))
 
         c, b, a = list(sop.iter_contexts())
         self.assertEqual("a", a.name)
@@ -150,7 +153,7 @@ class TestCore(TestBase):
         self.assertEqual("b", b.name)
         self.assertEqual("c", c.name)
 
-        sop.add_context("d", [])
+        sop.add_context("d", sop.resolve_context([]))
 
         d, b, a, c = list(sop.iter_contexts())
         self.assertEqual("a", a.name)
@@ -165,8 +168,8 @@ class TestCore(TestBase):
         self.repo.add("bez", tools=["honey"])
 
         sop = SuiteOp()
-        sop.add_context("B", ["bee", "bez"])
-        sop.add_context("F", ["foo"])
+        sop.add_context("B", sop.resolve_context(["bee", "bez"]))
+        sop.add_context("F", sop.resolve_context(["foo"]))
 
         fruit, honey = sop.iter_tools()
         self.assertTrue(type(fruit.variant) is Variant)
@@ -179,7 +182,7 @@ class TestCore(TestBase):
 
         self.repo.add("foo", tools=["fruit"])
         sop = SuiteOp()
-        sop.add_context("FOO", ["foo"])
+        sop.add_context("FOO", sop.resolve_context(["foo"]))
 
         path = storage.suite_path("test", "my-foo")
         sop.save(path)
@@ -193,8 +196,44 @@ class TestCore(TestBase):
 
         sop = SuiteOp()
         with self.wait_signals([signals.tool_flushed]):
-            sop.add_context("FOO", ["foo"])
+            sop.add_context("FOO", sop.resolve_context(["foo"]))
 
         with self.wait_signals([signals.tool_flushed,
                                 signals.tool_updated]):
             sop.refresh()
+
+    def test_failed_context_loaded_1(self):
+        broken = BrokenContext(
+            "A fallback replacement when suite is loaded with bad .rxt file."
+        )
+        sop = SuiteOp()
+        sop.add_context("BAD", sop.resolve_context([]))
+        sop._suite.contexts["BAD"]["context"] = broken  # force it for testing
+
+        tools = list(sop.iter_tools())  # should not raise any error
+        self.assertEqual(0, len(tools))
+
+        tempdir = self.make_tempdir()
+        storage = Storage(roots={"test": tempdir})
+
+        path = storage.suite_path("test", "my-bad")
+        self.assertRaises(SuiteOpError, sop.save, (path,))
+        self.assertRaises(SuiteError, sop._suite.save, path)
+
+    def test_failed_context_loaded_2(self):
+        tempdir = self.make_tempdir()
+        storage = Storage(roots={"test": tempdir})
+
+        self.repo.add("foo", tools=["fruit"])
+        sop = SuiteOp()
+        sop.add_context("FOO", sop.resolve_context(["foo"]))
+
+        path = storage.suite_path("test", "my-foo")
+        sop.save(path)
+
+        rxt = sop._suite._context_path("FOO", path)
+        os.remove(rxt)
+
+        sop.load(path)
+        ctx = next(sop.iter_contexts())
+        self.assertFalse(ctx.context.success)

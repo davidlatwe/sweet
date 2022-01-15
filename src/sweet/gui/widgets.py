@@ -412,8 +412,9 @@ class ContextListWidget(QtWidgets.QWidget):
         self._view = view
 
     def on_context_added(self, ctx):
+        # todo: context may be a failed one when the suite is loaded with
+        #   bad .rxt files. Add icon to indicate this unfortunate.
         item = QtWidgets.QListWidgetItem(ctx.name)
-        # item.setData(ctx, role=self._model.ItemRole)
         self._view.insertItem(0, item)
         self._view.setCurrentRow(0)
 
@@ -886,6 +887,8 @@ class ContextRequestWidget(QtWidgets.QWidget):
             self._tools.set_name(ctx.name)
             self._label.setText("Context: %s" % ctx.name)
             self.blockSignals(False)
+            # todo: context may be a failed one when the suite is loaded with
+            #   bad .rxt files. Change label's bg color into red as indication.
 
     def set_resolved(self, context):
         """
