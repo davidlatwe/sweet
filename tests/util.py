@@ -109,7 +109,7 @@ class MemPkgRepo(object):
         return self._path
 
     def add(self, name, **kwargs):
-        version = kwargs.get("version", "_NO_VERSION")
+        version = str(kwargs.get("version", "_NO_VERSION"))
         if name not in self._repo.data:
             self._repo.data[name] = dict()
         self._repo.data[name].update({
