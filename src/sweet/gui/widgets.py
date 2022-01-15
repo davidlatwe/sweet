@@ -814,7 +814,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         tabs.addTab(graph, "Graph")
 
         layout = QtWidgets.QHBoxLayout(naming_editor)
-        layout.setContentsMargins(0, 4, 0, 4)
+        layout.setContentsMargins(0, 2, 0, 2)
         layout.addWidget(prefix)
         layout.addWidget(suffix)
 
@@ -837,6 +837,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(label)
         layout.addWidget(splitter)
 
