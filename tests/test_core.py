@@ -237,3 +237,38 @@ class TestCore(TestBase):
         sop.load(path)
         ctx = next(sop.iter_contexts())
         self.assertFalse(ctx.context.success)
+
+    def test_tool_missing_in_edit(self):
+        tempdir = self.make_tempdir()
+        storage = Storage(roots={"test": tempdir})
+
+        self.repo.add("foo", version=1, tools=["fruit"])
+
+        sop = SuiteOp()
+        sop.add_context("FOO", sop.resolve_context(["foo"]))
+
+        path = storage.suite_path("test", "my-foo")
+        sop.save(path)
+
+        sop.load(path)
+        sop.drop_context("FOO")
+        tool = next(sop.iter_tools())
+        self.assertEqual(TOOL_MISSING, tool.status)
+
+    def test_tool_missing_on_pkg_update(self):
+        tempdir = self.make_tempdir()
+        storage = Storage(roots={"test": tempdir})
+
+        self.repo.add("foo", version=1, tools=["fruit"])
+
+        sop = SuiteOp()
+        sop.add_context("FOO", sop.resolve_context(["foo"]))
+
+        path = storage.suite_path("test", "my-foo")
+        sop.save(path)
+
+        self.repo.add("foo", version=2, tools=[])
+
+        sop.load(path)
+        tool = next(sop.iter_tools())
+        self.assertEqual(TOOL_MISSING, tool.status)

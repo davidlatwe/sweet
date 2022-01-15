@@ -219,6 +219,7 @@ class SuiteOp(object):
         self._working_suite = suite
         self._previous_tools = list(self.iter_tools(visible_only=True))
 
+        suite.re_resolve_rxt_contexts()
         suite.load_path = None if as_import else os.path.realpath(path)
 
     def save(self, path):
