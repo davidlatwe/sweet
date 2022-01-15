@@ -764,18 +764,6 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self.add_panel("", enabled=False)
 
 
-class RequestTable(QtWidgets.QWidget):
-
-    def __init__(self, read_only=False, *args, **kwargs):
-        super(RequestTable, self).__init__(*args, **kwargs)
-
-
-class RequestEditor(QtWidgets.QWidget):
-
-    def __init__(self, *args, **kwargs):
-        super(RequestEditor, self).__init__(*args, **kwargs)
-
-
 class ContextRequestWidget(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
     prefix_changed = QtCore.Signal(str)
@@ -786,14 +774,15 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
         label = QtWidgets.QLabel()
 
-        naming_editor = QtWidgets.QWidget()
+        naming = QtWidgets.QWidget()
         prefix = QtWidgets.QLineEdit()
         prefix.setPlaceholderText("context prefix..")
         suffix = QtWidgets.QLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
-        request_editor = QtWidgets.QWidget()
         request = RequestTextEdit()
+
+        options = QtWidgets.QWidget()
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
@@ -803,8 +792,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         code = ResolvedCode()
         graph = ResolvedGraph()
 
-        resolved_info = QtWidgets.QWidget()
-        info = QtWidgets.QLabel("Resolved Context Info")
+        body = QtWidgets.QWidget()
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(tools, "Tools")
         tabs.addTab(packages, "Packages")
@@ -812,35 +800,35 @@ class ContextRequestWidget(QtWidgets.QWidget):
         tabs.addTab(code, "Code")
         tabs.addTab(graph, "Graph")
 
-        layout = QtWidgets.QHBoxLayout(naming_editor)
-        layout.setContentsMargins(0, 2, 0, 2)
+        layout = QtWidgets.QHBoxLayout(naming)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(prefix)
         layout.addWidget(suffix)
 
-        layout = QtWidgets.QVBoxLayout(request_editor)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(naming_editor)
-        layout.addWidget(request)
+        layout = QtWidgets.QHBoxLayout(options)
+        layout.setContentsMargins(0, 2, 0, 2)
         layout.addWidget(resolve)
-        layout.addSpacing(8)
+        # advance resolve options..
+        #   e.g. timestamp
 
-        layout = QtWidgets.QVBoxLayout(resolved_info)
-        layout.setContentsMargins(0, 4, 0, 4)
-        layout.addWidget(info)
+        layout = QtWidgets.QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(options)
+        layout.addWidget(naming)
         layout.addWidget(tabs)
 
         splitter = QtWidgets.QSplitter()
-        splitter.addWidget(request_editor)
-        splitter.addWidget(resolved_info)
+        splitter.addWidget(request)
+        splitter.addWidget(body)
 
-        splitter.setOrientation(QtCore.Qt.Vertical)
+        splitter.setOrientation(QtCore.Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
         splitter.setStretchFactor(0, 30)
         splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(label)
-        layout.addWidget(splitter)
+        layout.addWidget(splitter, stretch=True)
 
         # signal
         prefix.textChanged.connect(
