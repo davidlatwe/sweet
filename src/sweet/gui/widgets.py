@@ -632,10 +632,6 @@ class ToolsView(TreeView):
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
         self.setObjectName("ToolView")
-        icon_deg = delegates.IconCenterDelegate(self)
-        self.setItemDelegateForColumn(1, icon_deg)  # status icon
-
-        # todo: auto expand this
 
 
 class ContextToolTreeWidget(QtWidgets.QWidget):
@@ -653,7 +649,10 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         view.setSortingEnabled(True)
-        view.header().setSortIndicatorShown(False)
+
+        header = view.header()
+        header.setSortIndicatorShown(False)
+        header.setSectionResizeMode(0, header.ResizeToContents)
 
         # layout
 
@@ -906,6 +905,9 @@ class ResolvedTools(QtWidgets.QWidget):
         model = ContextToolTreeModelSingleton()
         view = ToolsView()
         view.setModel(model)
+
+        header = view.header()
+        header.setSectionResizeMode(0, header.ResizeToContents)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)

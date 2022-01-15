@@ -119,7 +119,6 @@ class ToolTreeModel(BaseItemModel):
 
     Headers = [
         "Name",  # context name and tool alias
-        "Status",
         "From Package",
     ]
     MissingToolsHolder = "<-missing->"
@@ -195,6 +194,8 @@ class ToolTreeModel(BaseItemModel):
             root_item = self._root_items[root_name]
 
             name_item = QtGui.QStandardItem(tool.alias)
+            name_item.setIcon(self._status_icon[tool.status])
+            name_item.setToolTip(self._status_tip[tool.status])
             name_item.setData(tool.name, self.ToolNameRole)
             name_item.setData(not is_missing, self.ToolEditRole)
             if not is_missing:
@@ -202,15 +203,12 @@ class ToolTreeModel(BaseItemModel):
                     QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
                     QtCore.Qt.CheckStateRole
                 )
-            status_item = QtGui.QStandardItem()
-            status_item.setIcon(self._status_icon[tool.status])
-            status_item.setToolTip(self._status_tip[tool.status])
 
             _, loc_icon = indicator.compute(tool.location)
             pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
             pkg_item.setIcon(loc_icon)
 
-            root_item.appendRow([name_item, status_item, pkg_item])
+            root_item.appendRow([name_item, pkg_item])
 
     def flags(self, index):
         """
