@@ -277,6 +277,7 @@ class ToolTreeModel(BaseItemModel):
 
 
 class ContextToolTreeModel(ToolTreeModel):
+    require_expanded = QtCore.Signal(list)
     ContextSortRole = QtCore.Qt.UserRole + 20
 
     def on_context_added(self, ctx):
@@ -296,6 +297,8 @@ class ContextToolTreeModel(ToolTreeModel):
         # for keeping header visible after view resets it's rootIndex.
         c.appendRow([QtGui.QStandardItem() for _ in range(len(self.Headers))])
         c.removeRow(0)
+
+        self.require_expanded.emit([c.index()])
 
     def on_context_renamed(self, name, new_name):
         item = self._root_items.pop(name)
@@ -319,6 +322,7 @@ class ContextToolTreeModel(ToolTreeModel):
         index = self.find_root_index(self.MissingToolsHolder)
         if index is not None:
             self.setData(index, value=-1, role=self.ContextSortRole)
+            self.require_expanded.emit([index])
 
 
 class ContextToolTreeModelSingleton(ContextToolTreeModel, metaclass=QSingleton):

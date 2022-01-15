@@ -646,9 +646,6 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
 
         label = QtWidgets.QLabel("Tool Stack")
 
-        btn_filter = QtWidgets.QPushButton()  # toggleable
-        btn_filter.setIcon(res.icon("images", "funnel-fill.svg"))
-
         view = ToolsView()
         model = ContextToolTreeModelSingleton()
         proxy = ContextToolTreeSortProxyModel()
@@ -660,24 +657,23 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
 
         # layout
 
-        action_layout = QtWidgets.QVBoxLayout()
-        action_layout.addWidget(btn_filter)
-        action_layout.addStretch()
-
-        stack_layout = QtWidgets.QHBoxLayout()
-        stack_layout.addLayout(action_layout)
-        stack_layout.addWidget(view)
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(label)
-        layout.addLayout(stack_layout)
+        layout.addWidget(view)
 
         # signals
+        model.require_expanded.connect(self._on_model_require_expanded)
 
+        self._view = view
+        self._proxy = proxy
         self._model = model
 
     def model(self):
         return self._model
+
+    def _on_model_require_expanded(self, indexes):
+        for index in indexes:
+            self._view.expand(self._proxy.mapFromSource(index))
 
 
 class StackedResolveWidget(QtWidgets.QStackedWidget):
