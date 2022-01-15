@@ -818,11 +818,14 @@ class ContextRequestWidget(QtWidgets.QWidget):
         layout.addWidget(suffix)
 
         layout = QtWidgets.QVBoxLayout(request_editor)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(naming_editor)
         layout.addWidget(request)
         layout.addWidget(resolve)
+        layout.addSpacing(8)
 
         layout = QtWidgets.QVBoxLayout(resolved_info)
+        layout.setContentsMargins(0, 4, 0, 4)
         layout.addWidget(info)
         layout.addWidget(tabs)
 
@@ -836,7 +839,6 @@ class ContextRequestWidget(QtWidgets.QWidget):
         splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(label)
         layout.addWidget(splitter)
 
