@@ -198,7 +198,7 @@ class ToolTreeModel(BaseItemModel):
             name_item.setToolTip(self._status_tip[tool.status])
             name_item.setData(tool.name, self.ToolNameRole)
             name_item.setData(not is_missing, self.ToolEditRole)
-            if not is_missing:
+            if not is_missing and self._editable:
                 name_item.setData(
                     QtCore.Qt.Unchecked if is_hidden else QtCore.Qt.Checked,
                     QtCore.Qt.CheckStateRole

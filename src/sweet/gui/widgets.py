@@ -649,6 +649,7 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         view.setSortingEnabled(True)
+        view.setIndentation(10)
 
         header = view.header()
         header.setSortIndicatorShown(False)
@@ -1305,10 +1306,12 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         desc = QtWidgets.QTextEdit()
         view = ToolsView()
         model = SuiteToolTreeModel(editable=False)
+        header = view.header()
 
         # todo: tools are not ordered by contexts
 
         view.setModel(model)
+        header.setSectionResizeMode(0, header.ResizeToContents)
         desc.setReadOnly(True)
         name.setFont(QtGui.QFont("OpenSans", 14))
 
