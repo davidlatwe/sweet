@@ -7,7 +7,6 @@ from ..core import (
     SuiteOp,
     InstalledPackages,
     Storage,
-    BrokenContext,
     SuiteCtx,
     SavedSuite,
     PkgFamily,
@@ -115,11 +114,10 @@ class Controller(QtCore.QObject):
     suite_save_failed = QtCore.Signal(str)
     suite_loaded = QtCore.Signal(str, str, str, str)
     context_added = QtCore.Signal(SuiteCtx)
-    context_resolved = QtCore.Signal(str, SuiteCtx)
+    context_resolved = QtCore.Signal(str, ResolvedContext)  # or BrokenContext
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
-    resolve_logged = QtCore.Signal(str)
     resolve_failed = QtCore.Signal()
     tools_updated = QtCore.Signal(list)
     pkg_scan_started = QtCore.Signal()
@@ -266,23 +264,12 @@ class Controller(QtCore.QObject):
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def resolve_context(self, name, requests):
         context = self._sop.resolve_context(requests)
+        self.context_resolved.emit(name, context)
         if context.success:
-            ctx = self._sop.update_context(name, context=context)
-            self.resolve_logged.emit("")
-            self.context_resolved.emit(name, ctx)
+            self._sop.update_context(name, context=context)
             self._tools_updated()
-
-        elif isinstance(context, ResolvedContext):
-            context.print_info()
-            self.resolve_logged.emit("")
-            self.resolve_failed.emit()
-
-        elif isinstance(context, BrokenContext):
-            self.resolve_logged.emit(context.failure_description)
-            self.resolve_failed.emit()
-
         else:
-            raise RuntimeError
+            self.resolve_failed.emit()
 
     def _tools_updated(self):
         self._dirty = True

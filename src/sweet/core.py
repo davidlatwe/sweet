@@ -2,6 +2,8 @@
 Main business logic, with event notification
 """
 import os
+import sys
+import time
 import warnings
 from typing import List
 from dataclasses import dataclass
@@ -629,6 +631,7 @@ class BrokenContext(object):
     """
     def __init__(self, failure_description, package_requests=None):
         self.failure_description = failure_description
+        self.timestamp = int(time.time())
         self.load_path = None
 
         self._package_requests = []
@@ -663,6 +666,18 @@ class BrokenContext(object):
 
     def validate(self):
         raise ResolvedContextError(str(self))
+
+    def print_info(self, buf=sys.stdout, *_, **__):
+        from rez.utils.colorize import critical, warning
+        from rez.resolved_context import Printer
+        # the Printer may gets patched in GUI for writing HTML formatted log
+        _pr = Printer(buf)
+        _pr(f"Context is broken: \n{self.failure_description}", critical)
+        if self._package_requests:
+            _req = "\n".join(map(str, self._package_requests))
+            _pr()
+            _pr(f"The requests were: \n{_req}", warning)
+            _pr()
 
     def _invalid_action(self, *_, **__):
         raise SuiteError("Invalid action.")

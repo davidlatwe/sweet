@@ -1,8 +1,13 @@
 
 import re
 import json
+from io import StringIO
+from contextlib import contextmanager
+
 from rez.system import system
 from rez.resolved_context import ResolvedContext
+from rez.utils import colorize
+
 from .. import lib, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
@@ -702,18 +707,18 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self._names.insert(0, name)
 
     @QtCore.Slot()  # noqa
-    def on_context_resolved(self, name, ctx):
+    def on_context_resolved(self, name, context):
         """
 
         :param name:
-        :param ctx:
+        :param context:
         :type name: str
-        :type ctx: core.SuiteCtx
+        :type context: ResolvedContext or core.BrokenContext
         :return:
         """
         index = self._names.index(name)
         panel = self.widget(index)
-        panel.set_resolved(ctx.context)
+        panel.set_resolved(context)
 
     @QtCore.Slot()  # noqa
     def on_context_renamed(self, name, new_name):
@@ -793,6 +798,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         environ = ResolvedEnvironment()
         code = ResolvedCode()
         graph = ResolvedGraph()
+        log = ResolvedLog()
 
         body = QtWidgets.QWidget()
         tabs = QtWidgets.QTabWidget()
@@ -801,6 +807,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         tabs.addTab(environ, "Environment")
         tabs.addTab(code, "Code")
         tabs.addTab(graph, "Graph")
+        tabs.addTab(log, "Log")
 
         layout = QtWidgets.QHBoxLayout(naming)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -848,11 +855,13 @@ class ContextRequestWidget(QtWidgets.QWidget):
         self._prefix = prefix
         self._suffix = suffix
         self._request = request
+        self._tabs = tabs
         self._tools = tools
         self._packages = packages
         self._environ = environ
         self._code = code
         self._graph = graph
+        self._log = log
 
     def name(self):
         return self._name
@@ -887,9 +896,24 @@ class ContextRequestWidget(QtWidgets.QWidget):
         :type context: ResolvedContext
         :return:
         """
-        self._packages.model().load(context.resolved_packages)
-        self._environ.model().load(context.get_environ())
-        self._code.set_shell_code(context.get_shell_code())
+        if context.success:
+            self._packages.model().load(context.resolved_packages)
+            self._environ.model().load(context.get_environ())
+            self._code.set_shell_code(context.get_shell_code())
+        else:
+            self._tabs.setCurrentIndex(self._tabs.count() - 1)  # Log widget
+
+        with HtmlPrinter.patch_context_printer():
+            stream = StringIO()
+            context.print_info(stream,
+                               verbosity=2,  # noqa, type hint incorrect
+                               source_order=True,
+                               show_resolved_uris=True)
+            stream.seek(0)
+            _sep = "=" * 60
+            html = "<br>".join(stream.readlines())
+            html = html.replace("\t", "&nbsp;" * 4)
+            self._log.append_log(f'<p>{_sep}</p><p>{html}</p>')
 
 
 class ResolvedTools(QtWidgets.QWidget):
@@ -1033,7 +1057,27 @@ class ResolvedGraph(QtWidgets.QWidget):
 
 
 class ResolvedLog(QtWidgets.QWidget):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedLog, self).__init__(*args, **kwargs)
+
+        text = QtWidgets.QPlainTextEdit()
+        text.setPlaceholderText("Context resolve details..")
+        text.setLineWrapMode(text.NoWrap)
+        text.setReadOnly(True)
+
+        clear = QtWidgets.QPushButton("clear")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(text)
+        layout.addWidget(clear)
+
+        clear.clicked.connect(text.clear)
+
+        self._text = text
+
+    def append_log(self, html):
+        self._text.appendHtml(html)
 
 
 class VerticalDocTabBar(QtWidgets.QTabBar):
@@ -1370,3 +1414,39 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._desc.setPlainText(saved_suite.description)
         with self._model.open_suite(saved_suite) as index:
             self._view.setRootIndex(index)
+
+
+class HtmlPrinter(colorize.Printer):
+
+    def __init__(self, buf):
+        super(HtmlPrinter, self).__init__(buf=buf)
+        _html = (lambda m, c: f'<span style="color:{c};">{m}</span>')
+        self.colorize = True
+        self._html_style = {
+            colorize.critical: lambda m: _html(m,  "red"),
+            colorize.error: lambda m: _html(m,     "red"),
+            colorize.warning: lambda m: _html(m,   "yellow"),
+            colorize.info: lambda m: _html(m,      "green"),
+            colorize.debug: lambda m: _html(m,     "blue"),
+            colorize.heading: lambda m: _html(m,   "white"),
+            colorize.local: lambda m: _html(m,     "green"),
+            colorize.implicit: lambda m: _html(m,  "cyan"),
+            colorize.ephemeral: lambda m: _html(m, "blue"),
+            colorize.alias: lambda m: _html(m,     "cyan"),
+        }
+
+    def get(self, msg, style=None):
+        if style and self.colorize:
+            _style = self._html_style.get(style)
+            _style = _style or style
+            msg = _style(msg)
+        return msg
+
+    @classmethod
+    @contextmanager
+    def patch_context_printer(cls):
+        from rez import resolved_context
+        _Printer = getattr(resolved_context, "Printer")
+        setattr(resolved_context, "Printer", cls)
+        yield
+        setattr(resolved_context, "Printer", _Printer)
