@@ -37,6 +37,7 @@ def standalone_cli():
 def setup_parser(parser, completions=False):
     parser.add_argument("--version", action="store_true",
                         help="Print out version of this plugin command.")
+    parser.add_argument("--gui", action="store_true")
 
 
 def command(opts, parser=None, extra_arg_groups=None):
@@ -45,6 +46,10 @@ def command(opts, parser=None, extra_arg_groups=None):
     if opts.version:
         from sweet._version import print_info
         sys.exit(print_info())
+
+    if opts.gui:
+        from sweet.gui import app
+        sys.exit(app.launch())
 
     return cli.main()
 
