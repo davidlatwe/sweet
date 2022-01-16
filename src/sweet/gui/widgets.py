@@ -1,6 +1,7 @@
 
 import re
 import json
+from rez.system import system
 from rez.resolved_context import ResolvedContext
 from .. import lib, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
@@ -886,6 +887,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         """
         self._packages.model().load(context.resolved_packages)
         self._environ.model().load(context.get_environ())
+        self._code.set_shell_code(context.get_shell_code())
 
 
 class ResolvedTools(QtWidgets.QWidget):
@@ -997,7 +999,31 @@ class ResolvedEnvironment(QtWidgets.QWidget):
 
 
 class ResolvedCode(QtWidgets.QWidget):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedCode, self).__init__(*args, **kwargs)
+
+        text = QtWidgets.QTextEdit()
+        text.setPlaceholderText("Context environment shell code..")
+        text.setLineWrapMode(text.NoWrap)
+        text.setReadOnly(True)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(text)
+
+        self._text = text
+
+    def set_shell_code(self, text):
+        comment = "REM " if system.shell == "cmd" else "# "
+
+        pretty = []
+        for ln in text.split("\n"):
+            # todo: the color should be managed in styling module
+            level = "lightgrey" if ln.startswith(comment) else "grey"
+            color = "<font color=\"%s\">" % level
+            pretty.append("%s%s</font>" % (color, ln.replace(" ", "&nbsp;")))
+
+        self._text.setText("<br>".join(pretty))
 
 
 class ResolvedGraph(QtWidgets.QWidget):
