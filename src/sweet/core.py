@@ -230,6 +230,7 @@ class SuiteOp(object):
         self.sanity_check()
         # note: cannot save over if load_path is None
         self._suite.save(path)
+        # todo: hookup callback
 
     def loaded_from(self):
         """Returns location where suite previously saved at
