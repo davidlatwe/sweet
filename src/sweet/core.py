@@ -736,6 +736,10 @@ class Storage(object):
         :return: A SavedSuite object iterator
         :rtype: collections.Iterator[SavedSuite]
         """
+        # todo:
+        #   1. able to set suite as archived and omitted in view.
+        #   2. implement a package release hook that checks if tools consists.
+
         for b, root in self._roots.items():
             if branch and b != branch:
                 continue
