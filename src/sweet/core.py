@@ -589,7 +589,7 @@ class SuiteOp(object):
             context = self._suite.context(d["name"])
         except FileNotFoundError as e:
             context = BrokenContext(str(e))
-        rq = [r for r in context.requested_packages(include_implicit=True)]
+        rq = [r for r in context.requested_packages()]
         rs = [r for r in context.resolved_packages]
         return SuiteCtx(
             name=d["name"],

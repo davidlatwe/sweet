@@ -847,6 +847,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         self._label = label
         self._prefix = prefix
         self._suffix = suffix
+        self._request = request
         self._tools = tools
         self._packages = packages
         self._environ = environ
@@ -872,6 +873,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
             self._name = ctx.name
             self._prefix.setText(ctx.prefix)
             self._suffix.setText(ctx.suffix)
+            self._request.setPlainText("\n".join(map(str, ctx.requests)))
             self._tools.set_name(ctx.name)
             self._label.setText("Context: %s" % ctx.name)
             self.blockSignals(False)
