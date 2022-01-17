@@ -22,12 +22,6 @@ from rez.packages import iter_package_families, iter_packages, Variant
 from rez.package_repository import package_repository_manager
 
 from . import util
-from .constants import (
-    TOOL_VALID,
-    TOOL_HIDDEN,
-    TOOL_SHADOWED,
-    TOOL_MISSING,
-)
 from .exceptions import (
     RezError,
     ResolvedContextError,
@@ -54,7 +48,18 @@ __all__ = (
     "PkgFamily",
     "PkgVersion",
     "BrokenContext",
+
+    "Constants",
 )
+
+
+class Constants:
+    # suite tool status code
+    #
+    TOOL_VALID = 0
+    TOOL_HIDDEN = 1
+    TOOL_SHADOWED = 2
+    TOOL_MISSING = -1
 
 
 @dataclass
@@ -536,7 +541,7 @@ class SuiteOp(object):
         def _match_context(d_):
             return context_name is None or context_name == d_["context_name"]
 
-        status = TOOL_VALID
+        status = Constants.TOOL_VALID
         for d in self._suite.tools.values():
             _visible.add(d["tool_alias"])
             if _match_context(d):
@@ -545,18 +550,18 @@ class SuiteOp(object):
         if visible_only:
             return
 
-        status = TOOL_HIDDEN
+        status = Constants.TOOL_HIDDEN
         for d in self._suite.hidden_tools:
             if _match_context(d):
                 yield self._tool_data_to_tuple(d, status=status)
 
-        status = TOOL_SHADOWED
+        status = Constants.TOOL_SHADOWED
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
                 if _match_context(d):
                     yield self._tool_data_to_tuple(d, status=status)
 
-        status = TOOL_MISSING
+        status = Constants.TOOL_MISSING
         for _tool in self._previous_tools or []:
             if _match_context(_tool.ctx_name):
                 if _tool.alias not in _visible:

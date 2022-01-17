@@ -1,14 +1,8 @@
 
 import os
 from rez.packages import Variant
-from sweet.core import SuiteOp, Storage, BrokenContext
+from sweet.core import SuiteOp, Storage, BrokenContext, Constants
 from sweet.exceptions import SuiteError, SuiteOpError
-from sweet.constants import (
-    TOOL_VALID,
-    TOOL_HIDDEN,
-    TOOL_SHADOWED,
-    TOOL_MISSING,
-)
 from .util import TestBase, MemPkgRepo
 
 
@@ -68,14 +62,14 @@ class TestCore(TestBase):
         beer, food_1, food_2 = sop.iter_tools()
         self.assertEqual("beer", beer.name)
         self.assertEqual(bar.name, beer.ctx_name)
-        self.assertEqual(TOOL_VALID, beer.status)
+        self.assertEqual(Constants.TOOL_VALID, beer.status)
         self.assertEqual("food", food_1.name)
         self.assertEqual(bar.name, food_1.ctx_name)
-        self.assertEqual(TOOL_VALID, food_1.status)
+        self.assertEqual(Constants.TOOL_VALID, food_1.status)
         self.assertEqual("food", food_2.name)
         self.assertEqual("food", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
-        self.assertEqual(TOOL_SHADOWED, food_2.status)
+        self.assertEqual(Constants.TOOL_SHADOWED, food_2.status)
 
         sop.update_context(foo.name, tool_name="food", new_alias="fruit")
         food_2 = next(t for t in sop.iter_tools(foo.name) if t.name == "food")
@@ -83,7 +77,7 @@ class TestCore(TestBase):
         self.assertEqual("food", food_2.name)
         self.assertEqual("fruit", food_2.alias)
         self.assertEqual(foo.name, food_2.ctx_name)
-        self.assertEqual(TOOL_VALID, food_2.status)
+        self.assertEqual(Constants.TOOL_VALID, food_2.status)
 
     def test_update_tool_2(self):
         """Test updating context with tool alias/hidden preserved"""
@@ -101,7 +95,7 @@ class TestCore(TestBase):
         food, fuzz = sop.iter_tools()
 
         self.assertEqual("fruit", food.alias)
-        self.assertEqual(TOOL_HIDDEN, fuzz.status)
+        self.assertEqual(Constants.TOOL_HIDDEN, fuzz.status)
 
         _context = sop.resolve_context(["foo", "bar"])
         sop.update_context(foo.name, context=_context)
@@ -109,7 +103,7 @@ class TestCore(TestBase):
         food, beer, fuzz = sop.iter_tools()
         self.assertEqual("fruit", food.alias)
         self.assertEqual("beer", beer.alias)
-        self.assertEqual(TOOL_HIDDEN, fuzz.status)
+        self.assertEqual(Constants.TOOL_HIDDEN, fuzz.status)
 
     def test_iterating_contexts(self):
         """Test contexts iterated by priority"""
@@ -241,7 +235,7 @@ class TestCore(TestBase):
         sop.load(path)
         sop.drop_context("FOO")
         tool = next(sop.iter_tools())
-        self.assertEqual(TOOL_MISSING, tool.status)
+        self.assertEqual(Constants.TOOL_MISSING, tool.status)
 
     def test_tool_missing_on_pkg_update(self):
         tempdir = self.make_tempdir()
@@ -259,4 +253,4 @@ class TestCore(TestBase):
 
         sop.load(path)
         tool = next(sop.iter_tools())
-        self.assertEqual(TOOL_MISSING, tool.status)
+        self.assertEqual(Constants.TOOL_MISSING, tool.status)

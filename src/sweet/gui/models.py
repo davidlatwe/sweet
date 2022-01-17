@@ -4,8 +4,9 @@ from contextlib import contextmanager
 from rez.packages import Variant
 from rez.config import config as rezconfig
 
-from .. import constants, util
-from ..core import SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion
+from .. import util
+from ..core import \
+    SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
 from . import resources as res
@@ -126,16 +127,16 @@ class ToolTreeModel(BaseItemModel):
     def __init__(self, editable=True, *args, **kwargs):
         super(ToolTreeModel, self).__init__(*args, **kwargs)
         self._status_icon = {
-            constants.TOOL_VALID: res.icon("images", "check-ok"),
-            constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
-            constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
-            constants.TOOL_MISSING: res.icon("images", "x"),
+            Constants.TOOL_VALID: res.icon("images", "check-ok"),
+            Constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
+            Constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
+            Constants.TOOL_MISSING: res.icon("images", "x"),
         }
         self._status_tip = {
-            constants.TOOL_VALID: "Can be accessed.",
-            constants.TOOL_HIDDEN: "Is hidden from context.",
-            constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
-            constants.TOOL_MISSING: "Missing from last resolve.",
+            Constants.TOOL_VALID: "Can be accessed.",
+            Constants.TOOL_HIDDEN: "Is hidden from context.",
+            Constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
+            Constants.TOOL_MISSING: "Missing from last resolve.",
         }
         self._root_items = dict()
         self._editable = editable
@@ -170,7 +171,7 @@ class ToolTreeModel(BaseItemModel):
         missing_ctx = self.MissingToolsHolder
 
         if not suite:
-            if any(t.status == constants.TOOL_MISSING for t in tools):
+            if any(t.status == Constants.TOOL_MISSING for t in tools):
                 if missing_ctx not in self._root_items:
                     _item = QtGui.QStandardItem(missing_ctx)
                     self._root_items[missing_ctx] = _item
@@ -186,8 +187,8 @@ class ToolTreeModel(BaseItemModel):
             root_item.removeRows(0, root_item.rowCount())
 
         for tool in sorted(tools, key=lambda t: t.name):
-            is_hidden = tool.status == constants.TOOL_HIDDEN
-            is_missing = tool.status == constants.TOOL_MISSING
+            is_hidden = tool.status == Constants.TOOL_HIDDEN
+            is_missing = tool.status == Constants.TOOL_MISSING
 
             _missing = missing_ctx if is_missing else None
             root_name = suite or _missing or tool.ctx_name
