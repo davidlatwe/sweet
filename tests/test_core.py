@@ -9,7 +9,6 @@ from sweet.constants import (
     TOOL_SHADOWED,
     TOOL_MISSING,
 )
-from sweet import signals
 from .util import TestBase, MemPkgRepo
 
 
@@ -190,17 +189,6 @@ class TestCore(TestBase):
         saved = next(storage.iter_saved_suites())
         self.assertEqual("test", saved.branch)
         self.assertEqual("my-foo", saved.name)
-
-    def test_signals(self):
-        self.repo.add("foo", tools=["fruit"])
-
-        sop = SuiteOp()
-        with self.wait_signals([signals.tool_flushed]):
-            sop.add_context("FOO", sop.resolve_context(["foo"]))
-
-        with self.wait_signals([signals.tool_flushed,
-                                signals.tool_updated]):
-            sop.refresh()
 
     def test_failed_context_loaded_1(self):
         broken = BrokenContext(

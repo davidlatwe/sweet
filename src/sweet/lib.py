@@ -1,6 +1,5 @@
 
 import os
-import functools
 import webbrowser
 import subprocess
 
@@ -14,15 +13,6 @@ def open_file_location(fname):
             webbrowser.open(os.path.dirname(fname))
     else:
         raise OSError("%s did not exist" % fname)
-
-
-def attach_sender(sender, func, signal):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        returned = func(*args, **kwargs)
-        signal.send(sender)
-        return returned
-    return wrapper
 
 
 class Singleton(type):

@@ -21,7 +21,7 @@ from rez.resolved_context import ResolvedContext
 from rez.packages import iter_package_families, iter_packages, Variant
 from rez.package_repository import package_repository_manager
 
-from . import signals, lib, util
+from . import util
 from .constants import (
     TOOL_VALID,
     TOOL_HIDDEN,
@@ -41,10 +41,6 @@ from .exceptions import (
 
 
 sweetconfig = rezconfig.plugins.command.sweet
-
-
-# TODO:
-#     * use signal to set suite dirty ?
 
 
 __all__ = (
@@ -164,13 +160,6 @@ class SuiteOp(object):
     def _suite(self):
         if self._working_suite is None:
             s = SweetSuite()
-
-            # Attach signal senders
-            s.flush_tools = s._flush_tools = lib.attach_sender(
-                sender=self, func=s.flush_tools, signal=signals.tool_flushed)
-            s.update_tools = s._update_tools = lib.attach_sender(
-                sender=self, func=s.update_tools, signal=signals.tool_updated)
-
             self._working_suite = s
         return self._working_suite
 
@@ -300,9 +289,6 @@ class SuiteOp(object):
             context = ResolvedContext(requests)
         except RezError as e:
             context = BrokenContext(str(e), requests)
-
-        signals.ctx_resolved.send(self, context=context)
-
         return context
 
     def add_context(self, name, context):
@@ -455,7 +441,6 @@ class SuiteOp(object):
                 return
 
         # updating context
-        signals.ctx_updating.send(self)
 
         if new_name is not None:
             try:
@@ -485,8 +470,6 @@ class SuiteOp(object):
                 self._suite.hide_tool(ctx_name, tool_name)
             else:
                 self._suite.unhide_tool(ctx_name, tool_name)
-
-        signals.ctx_updated.send(self)
 
         # results
 
