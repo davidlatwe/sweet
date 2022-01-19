@@ -771,10 +771,36 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self.add_panel("", enabled=False)
 
 
+class RequestTableItem(QtWidgets.QTableWidgetItem):
+    def __init__(self, *args, **kwargs):
+        super(RequestTableItem, self).__init__(*args, **kwargs)
+        self.setFont(QtGui.QFont("JetBrains Mono"))
+
+
+class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
+
+    def createEditor(self, parent, option, index):
+        """
+        :type parent: QtWidgets.QWidget
+        :type option: QtWidgets.QStyleOptionViewItem
+        :type index: QtCore.QModelIndex
+        :rtype: QtWidgets.QWidget or None
+        """
+        if not index.isValid():
+            return
+        if index.column() == 0:
+            editor = QtWidgets.QLineEdit(parent)
+            editor.setPlaceholderText("add request...")
+            editor.setObjectName("RequestTextEdit")
+            return editor
+
+
 class RequestTableEdit(QtWidgets.QTableWidget):
 
     def __init__(self, *args, **kwargs):
         super(RequestTableEdit, self).__init__(*args, **kwargs)
+
+        delegate = RequestTableItemDelegate(self)
 
         self.setRowCount(1)
         self.setColumnCount(1)
@@ -783,19 +809,15 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         self.verticalHeader().setVisible(False)
         self.setShowGrid(True)
         self.setEditTriggers(self.AllEditTriggers)
+        self.setItemPrototype(RequestTableItem())
+        self.setItemDelegate(delegate)
 
-        self.currentCellChanged.connect(self.on_current_cell_changed)
         self.itemChanged.connect(self.on_item_changed)
 
     def on_item_changed(self, item):
         if item.row() < self.rowCount() - 1:
             if not item.text():
                 self.removeRow(item.row())
-
-    def on_current_cell_changed(self, row, *_, **__):
-        editor = self.cellWidget(row, 0)
-        if isinstance(editor, QtWidgets.QLineEdit):
-            editor.setPlaceholderText("add request...")
 
     def open_editor(self, row):
         if row < 0:
@@ -812,7 +834,6 @@ class RequestTableEdit(QtWidgets.QTableWidget):
                 self.closePersistentEditor(self.model().index(_row, 0))
 
         editor.editingFinished.connect(on_editing_finished)
-        editor.setPlaceholderText("add request...")
         self.setCurrentCell(row, 0)
 
     def process_row_edited(self, text, row):
@@ -831,7 +852,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
 
         for row, text in enumerate(requests):
             self.insertRow(row)
-            self.setItem(row, 0, QtWidgets.QTableWidgetItem(text))
+            self.setItem(row, 0, RequestTableItem(text))
 
         row = self.rowCount()
         self.insertRow(row)
