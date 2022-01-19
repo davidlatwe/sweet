@@ -816,12 +816,6 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         self.setCurrentCell(row, 0)
 
     def process_row_edited(self, text, row):
-        item = self.item(row, 0)
-        if item is None:
-            print(f"no item at row {row} for input {text!r}.")
-        else:
-            item.setText(text)
-
         if row == self.rowCount() - 1:
             if text:
                 row += 1
