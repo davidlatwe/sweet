@@ -771,6 +771,133 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         self.add_panel("", enabled=False)
 
 
+class RequestTableEdit(QtWidgets.QTableWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(RequestTableEdit, self).__init__(*args, **kwargs)
+
+        self.setRowCount(1)
+        self.setColumnCount(1)
+        self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setVisible(False)
+        self.verticalHeader().setVisible(False)
+        self.setShowGrid(True)
+        self.setEditTriggers(self.AllEditTriggers)
+
+        self.currentCellChanged.connect(self.on_current_cell_changed)
+        self.itemChanged.connect(self.on_item_changed)
+
+    def on_item_changed(self, item):
+        if item.row() < self.rowCount() - 1:
+            if not item.text():
+                self.removeRow(item.row())
+
+    def on_current_cell_changed(self, row, *_, **__):
+        editor = self.cellWidget(row, 0)
+        if isinstance(editor, QtWidgets.QLineEdit):
+            editor.setPlaceholderText("add request...")
+
+    def open_editor(self, row):
+        if row < 0:
+            return
+        self.openPersistentEditor(self.model().index(row, 0))
+        editor = self.cellWidget(row, 0)  # type: QtWidgets.QLineEdit
+
+        def on_editing_finished():
+            _row = self.currentRow()
+            text = editor.text()
+            if text:
+                editor.editingFinished.disconnect(on_editing_finished)
+                self.closePersistentEditor(self.model().index(_row, 0))
+                self.process_row_edited(text, _row)
+
+        editor.editingFinished.connect(on_editing_finished)
+        editor.setPlaceholderText("add request...")
+        self.setCurrentCell(row, 0)
+
+    def process_row_edited(self, text, row):
+        item = self.item(row, 0)
+        if item is None:
+            print(f"no item at row {row} for input {text!r}.")
+        else:
+            item.setText(text)
+
+        if row == self.rowCount() - 1:
+            if text:
+                row += 1
+                self.insertRow(row)
+                self.open_editor(row)
+        else:
+            if not text:
+                self.removeRow(row)
+
+    def replace_requests(self, requests):
+        self.remove_all_rows()
+
+        for row, text in enumerate(requests):
+            self.insertRow(row)
+            self.setItem(row, 0, QtWidgets.QTableWidgetItem(text))
+
+        row = self.rowCount()
+        self.insertRow(row)
+        self.open_editor(row)
+
+    def fetch_requests(self):
+        requests = []
+        for row in range(self.rowCount()):
+            item = self.item(row, 0)
+            if item is not None:
+                text = item.text()
+                if text:
+                    requests.append(text)
+        return requests
+
+    def remove_all_rows(self):
+        self.clearContents()
+        for _ in range(self.rowCount()):
+            self.removeRow(0)
+        self.setRowCount(0)
+
+
+class RequestEditorWidget(QtWidgets.QTabWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(RequestEditorWidget, self).__init__(*args, **kwargs)
+
+        text_editor = RequestTextEdit()
+        table_editor = RequestTableEdit()
+        self.addTab(table_editor, "Table")
+        self.addTab(text_editor, "Text")
+        self.currentChanged.connect(self.on_tab_changed)
+        self._text = text_editor
+        self._table = table_editor
+
+    def on_tab_changed(self, index):
+        if index == 0:
+            # text -> table
+            requests = self._text.toPlainText().split()
+            self._table.replace_requests(requests)
+        elif index == 1:
+            # table -> text
+            requests = self._table.fetch_requests()
+            self._text.setPlainText("\n".join(requests))
+            self._table.remove_all_rows()
+
+    def set_requests(self, requests):
+        index = self.currentIndex()
+        if index == 0:
+            self._table.replace_requests(list(map(str, requests)))
+        elif index == 1:
+            self._text.setPlainText("\n".join(map(str, requests)))
+
+    def get_requests(self):
+        index = self.currentIndex()
+        if index == 0:
+            return self._table.fetch_requests()
+        elif index == 1:
+            return self._text.toPlainText().split()
+
+
 class ContextRequestWidget(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
     prefix_changed = QtCore.Signal(str)
@@ -787,7 +914,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         suffix = QtWidgets.QLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
-        request = RequestTextEdit()
+        request = RequestEditorWidget()
 
         options = QtWidgets.QWidget()
         resolve = QtWidgets.QPushButton("Resolve")
@@ -847,7 +974,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
             lambda text: self.suffix_changed.emit(text)
         )
         resolve.clicked.connect(
-            lambda: self.requested.emit(request.toPlainText().split())
+            lambda: self.requested.emit(request.get_requests())
         )
 
         self._name = None
@@ -882,7 +1009,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
             self._name = ctx.name
             self._prefix.setText(ctx.prefix)
             self._suffix.setText(ctx.suffix)
-            self._request.setPlainText("\n".join(map(str, ctx.requests)))
+            self._request.set_requests(ctx.requests)
             self._tools.set_name(ctx.name)
             self._label.setText("Context: %s" % ctx.name)
             self.blockSignals(False)
