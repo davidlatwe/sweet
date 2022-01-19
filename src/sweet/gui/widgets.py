@@ -808,8 +808,8 @@ class RequestTableEdit(QtWidgets.QTableWidget):
             text = editor.text()
             if text:
                 editor.editingFinished.disconnect(on_editing_finished)
-                self.closePersistentEditor(self.model().index(_row, 0))
                 self.process_row_edited(text, _row)
+                self.closePersistentEditor(self.model().index(_row, 0))
 
         editor.editingFinished.connect(on_editing_finished)
         editor.setPlaceholderText("add request...")
@@ -821,6 +821,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
                 row += 1
                 self.insertRow(row)
                 self.open_editor(row)
+                self.cellWidget(row - 1, 0).setFocus()  # grab focus on Tab key
         else:
             if not text:
                 self.removeRow(row)
