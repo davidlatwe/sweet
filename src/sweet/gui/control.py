@@ -15,6 +15,9 @@ from ..core import (
 from ._vendor.Qt5 import QtCore
 from .widgets import BusyWidget
 
+# for type hint
+_SigIt = QtCore.SignalInstance
+
 
 def _defer(on_time=500):
     """A decorator for deferring Controller function call
@@ -109,25 +112,25 @@ def _thread(name, blocks=None):
 class Controller(QtCore.QObject):
     """Application controller
     """
-    suite_newed = QtCore.Signal()
-    suite_saved = QtCore.Signal(SavedSuite)
-    suite_save_failed = QtCore.Signal(str)
-    suite_loaded = QtCore.Signal(str, str, str, str)
-    context_added = QtCore.Signal(SuiteCtx)
-    context_resolved = QtCore.Signal(str, ResolvedContext)  # or BrokenContext
-    context_dropped = QtCore.Signal(str)
-    context_renamed = QtCore.Signal(str, str)
-    context_reordered = QtCore.Signal(list)
-    resolve_failed = QtCore.Signal()
-    tools_updated = QtCore.Signal(list)
-    pkg_scan_started = QtCore.Signal()
-    pkg_families_scanned = QtCore.Signal(list)
-    pkg_versions_scanned = QtCore.Signal(list)
-    pkg_scan_ended = QtCore.Signal()
-    storage_scan_started = QtCore.Signal()
-    storage_scanned = QtCore.Signal(list)
-    storage_scan_ended = QtCore.Signal()
-    status_message = QtCore.Signal(str)
+    suite_newed = QtCore.Signal()                           # type: _SigIt
+    suite_saved = QtCore.Signal(SavedSuite)                 # type: _SigIt
+    suite_save_failed = QtCore.Signal(str)                  # type: _SigIt
+    suite_loaded = QtCore.Signal(str, str, str, str)        # type: _SigIt
+    context_added = QtCore.Signal(SuiteCtx)                 # type: _SigIt
+    context_resolved = QtCore.Signal(str, ResolvedContext)  # type: _SigIt
+    context_dropped = QtCore.Signal(str)                    # type: _SigIt
+    context_renamed = QtCore.Signal(str, str)               # type: _SigIt
+    context_reordered = QtCore.Signal(list)                 # type: _SigIt
+    resolve_failed = QtCore.Signal()                        # type: _SigIt
+    tools_updated = QtCore.Signal(list)                     # type: _SigIt
+    pkg_scan_started = QtCore.Signal()                      # type: _SigIt
+    pkg_families_scanned = QtCore.Signal(list)              # type: _SigIt
+    pkg_versions_scanned = QtCore.Signal(list)              # type: _SigIt
+    pkg_scan_ended = QtCore.Signal()                        # type: _SigIt
+    storage_scan_started = QtCore.Signal()                  # type: _SigIt
+    storage_scanned = QtCore.Signal(list)                   # type: _SigIt
+    storage_scan_ended = QtCore.Signal()                    # type: _SigIt
+    status_message = QtCore.Signal(str)                     # type: _SigIt
 
     def __init__(self, state):
         super(Controller, self).__init__(parent=None)

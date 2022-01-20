@@ -11,6 +11,9 @@ from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
 from . import resources as res
 
+# for type hint
+_SigIt = QtCore.SignalInstance
+
 
 class QSingleton(type(QtCore.QObject), type):
     """A metaclass for creating QObject singleton
@@ -112,8 +115,8 @@ class BaseItemModel(QtGui.QStandardItemModel):
 
 
 class ToolTreeModel(BaseItemModel):
-    alias_changed = QtCore.Signal(str, str, str)
-    hidden_changed = QtCore.Signal(str, str, bool)
+    alias_changed = QtCore.Signal(str, str, str)  # type: _SigIt
+    hidden_changed = QtCore.Signal(str, str, bool)  # type: _SigIt
 
     ToolNameRole = QtCore.Qt.UserRole + 10
     ToolEditRole = QtCore.Qt.UserRole + 11
@@ -276,7 +279,7 @@ class ToolTreeModel(BaseItemModel):
 
 
 class ContextToolTreeModel(ToolTreeModel):
-    require_expanded = QtCore.Signal(list)
+    require_expanded = QtCore.Signal(list)  # type: _SigIt
     ContextSortRole = QtCore.Qt.UserRole + 20
 
     def on_context_added(self, ctx):
@@ -413,7 +416,7 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
     """
     Note: This is a singleton.
     """
-    family_updated = QtCore.Signal()
+    family_updated = QtCore.Signal()  # type: _SigIt
 
     FilterRole = QtCore.Qt.UserRole + 10
     CompletionRole = QtCore.Qt.UserRole + 11

@@ -26,9 +26,12 @@ from .models import (
     SuiteToolTreeModel,
 )
 
+# for type hint
+_SigIt = QtCore.SignalInstance
+
 
 class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
-    overwhelmed = QtCore.Signal(str)
+    overwhelmed = QtCore.Signal(str)  # type: _SigIt
 
     def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if event.type() in (
@@ -111,7 +114,7 @@ class BusyWidget(QtWidgets.QWidget):
 
 
 class DragDropListWidget(QtWidgets.QListWidget):
-    dropped = QtCore.Signal()
+    dropped = QtCore.Signal()  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(DragDropListWidget, self).__init__(*args, **kwargs)
@@ -223,10 +226,10 @@ class YesNoDialog(QtWidgets.QDialog):
 
 
 class CurrentSuiteWidget(QtWidgets.QWidget):
-    branch_asked = QtCore.Signal()
-    dirty_asked = QtCore.Signal()
-    new_clicked = QtCore.Signal()
-    save_clicked = QtCore.Signal(str, str, str)  # branch, name, description
+    branch_asked = QtCore.Signal()  # type: _SigIt
+    dirty_asked = QtCore.Signal()   # type: _SigIt
+    new_clicked = QtCore.Signal()   # type: _SigIt
+    save_clicked = QtCore.Signal(str, str, str)  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(CurrentSuiteWidget, self).__init__(*args, **kwargs)
@@ -372,11 +375,11 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
 
 
 class ContextListWidget(QtWidgets.QWidget):
-    added = QtCore.Signal(str)
-    renamed = QtCore.Signal(str, str)
-    dropped = QtCore.Signal(str)
-    reordered = QtCore.Signal(list)
-    selected = QtCore.Signal(str)
+    added = QtCore.Signal(str)          # type: _SigIt
+    renamed = QtCore.Signal(str, str)   # type: _SigIt
+    dropped = QtCore.Signal(str)        # type: _SigIt
+    reordered = QtCore.Signal(list)     # type: _SigIt
+    selected = QtCore.Signal(str)       # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(ContextListWidget, self).__init__(*args, **kwargs)
@@ -506,9 +509,9 @@ class ContextListWidget(QtWidgets.QWidget):
 
 
 class ValidNameLineEdit(QtWidgets.QLineEdit):
-    blacked = QtCore.Signal()
-    prompted = QtCore.Signal(str)
-    validated = QtCore.Signal(bool)
+    blacked = QtCore.Signal()           # type: _SigIt
+    prompted = QtCore.Signal(str)       # type: _SigIt
+    validated = QtCore.Signal(bool)     # type: _SigIt
 
     def __init__(self, blacklist=None, default="", *args, **kwargs):
         super(ValidNameLineEdit, self).__init__(*args, **kwargs)
@@ -619,7 +622,7 @@ class ContextNameEditWidget(QtWidgets.QWidget):
 
 
 class RegExpValidator(QtGui.QRegExpValidator):
-    validated = QtCore.Signal(QtGui.QValidator.State)
+    validated = QtCore.Signal(QtGui.QValidator.State)  # type: _SigIt
 
     def __init__(self, pattern):
         super(RegExpValidator, self).__init__(QtCore.QRegExp(pattern))
@@ -632,8 +635,8 @@ class RegExpValidator(QtGui.QRegExpValidator):
 
 
 class ToolsView(TreeView):
-    alias_changed = QtCore.Signal(str, str, str)
-    hide_changed = QtCore.Signal(str, str, bool)
+    alias_changed = QtCore.Signal(str, str, str)  # type: _SigIt
+    hide_changed = QtCore.Signal(str, str, bool)  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
@@ -683,9 +686,9 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
 
 
 class StackedResolveWidget(QtWidgets.QStackedWidget):
-    requested = QtCore.Signal(str, list)
-    prefix_changed = QtCore.Signal(str, str)
-    suffix_changed = QtCore.Signal(str, str)
+    requested = QtCore.Signal(str, list)        # type: _SigIt
+    prefix_changed = QtCore.Signal(str, str)    # type: _SigIt
+    suffix_changed = QtCore.Signal(str, str)    # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(StackedResolveWidget, self).__init__(*args, **kwargs)
@@ -915,9 +918,9 @@ class RequestEditorWidget(QtWidgets.QTabWidget):
 
 
 class ContextRequestWidget(QtWidgets.QWidget):
-    requested = QtCore.Signal(list)
-    prefix_changed = QtCore.Signal(str)
-    suffix_changed = QtCore.Signal(str)
+    requested = QtCore.Signal(list)         # type: _SigIt
+    prefix_changed = QtCore.Signal(str)     # type: _SigIt
+    suffix_changed = QtCore.Signal(str)     # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(ContextRequestWidget, self).__init__(*args, **kwargs)
@@ -1283,7 +1286,7 @@ class InstalledPackagesView(TreeView):
 
 
 class InstalledPackagesWidget(QtWidgets.QWidget):
-    refreshed = QtCore.Signal()
+    refreshed = QtCore.Signal()  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(InstalledPackagesWidget, self).__init__(*args, **kwargs)
@@ -1436,8 +1439,8 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
 
 class SuiteBranchWidget(QtWidgets.QWidget):
-    suite_selected = QtCore.Signal(core.SavedSuite)
-    suite_load_clicked = QtCore.Signal(str, str, bool)
+    suite_selected = QtCore.Signal(core.SavedSuite)     # type: _SigIt
+    suite_load_clicked = QtCore.Signal(str, str, bool)  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
