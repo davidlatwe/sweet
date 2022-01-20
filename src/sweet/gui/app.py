@@ -2,9 +2,10 @@
 import os
 import sys
 import signal as py_signal
+from importlib import reload
 from contextlib import contextmanager
 from ._vendor.Qt5 import QtCore, QtWidgets
-from . import control, window, pages, widgets, resources
+from . import control, window, pages, widgets, resources, style
 
 
 if sys.platform == "darwin":
@@ -161,7 +162,7 @@ class Session(object):
         elif key == "resetLayout":
             self._view.reset_layout()
         elif key == "reloadTheme":
-            self.apply_theme(self._state.retrieve("theme"))
+            self.reload_theme()
         else:
             print("Unknown preference setting: %s" % key)
 
@@ -189,6 +190,14 @@ class Session(object):
     def close(self):
         self._app.closeAllWindows()
         self._app.quit()
+
+    def reload_theme(self):
+        """For look-dev"""
+        reload(style)
+        reload(resources)
+        resources.load_themes()
+        qss = resources.load_theme(name=self.state.retrieve("theme"))
+        self.view.setStyleSheet(qss)
 
 
 class State(object):

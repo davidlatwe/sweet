@@ -84,59 +84,57 @@ class BaseLightTheme(object):
         if self._composed is None or refresh:
             self.compose_styles()
             self._composed = self.qss.toString()
+            self._composed += "\nQTabBar{qproperty-drawBase: 0;}\n"
         return self._composed
 
     def compose_styles(self):
-        self._global()
-        self._widget()
-        self._label()
-        self._button()
-        self._check_box()
-        self._menu()
-        self._frame()
+        for name in self.__dir__():
+            if name.startswith("_q_"):
+                getattr(self, name)()
 
-    def _global(self):
+    def _q_global(self):
         self.qss.setValues(
+            border="none",
             outline="none",
-            color=self.palette.on_primary,  # text color
-            borderColor=self.palette.primary_dimmed,
             fontFamily="Open Sans",
-        )
-
-    def _widget(self):
-        self.qss.QWidget.setValues(
+            color=self.palette.on_primary,  # text color
+            borderColor=self.palette.background,
             backgroundColor=self.palette.background,
         )
+
+    def _q_widget(self):
         self.qss.QWidget["focus"].setValues(
-            border=f"1px solid {self.palette.primary_bright}",
+            border=f"1px solid {self.palette.on_surface * 1.5}",
         )
         self.qss.QWidget["disabled"].setValues(
-            color=self.palette.primary,
+            color=self.palette.on_background,
         )
 
-    def _label(self):
+    def _q_label(self):
         self.qss.QLabel.setValues(
             paddingTop="2px",
             paddingBottom="2px",
         )
 
-    def _button(self):
+    def _q_button(self):
         self.qss.QPushButton.setValues(
             backgroundColor=self.palette.secondary,
-            border=f"1px solid {self.palette.secondary_dimmed}",
-            borderRadius="20px",
-            minHeight="30px",
-            padding="5px",
+            border="none",
+            borderRadius="0px",
+            minHeight="24px",
+            padding="8px",
         )
         self.qss.QPushButton["hover"].setValues(
-            border=f"1px solid {self.palette.secondary_bright}",
+            backgroundColor=self.palette.primary,
         )
         self.qss.QPushButton["pressed"].setValues(
-            backgroundColor=self.palette.secondary_bright,
-            border=f"1px solid {self.palette.secondary_bright}",
+            backgroundColor=self.palette.primary_bright,
+        )
+        self.qss.QPushButton["focus"].setValues(
+            border="none",
         )
 
-    def _check_box(self):
+    def _q_check_box(self):
         self.qss.QCheckBox.setValues(
             spacing="5px",
             marginBottom="2px",
@@ -168,7 +166,7 @@ class BaseLightTheme(object):
             image="url(:/icons/checkbox_indeterminate_dim)",
         )
 
-    def _menu(self):
+    def _q_menu(self):
         self.qss.QMenu.setValues(
             paddingTop="2px",
             paddingBottom="2px",
@@ -207,10 +205,27 @@ class BaseLightTheme(object):
             image="url(:/icons/checkbox_unchecked)",
         )
 
-    def _frame(self):
+    def _q_frame(self):
         # separator line
         self.qss[".QFrame"].setValues(
-            color=self.palette.background,
+            color=self.palette.on_background,
+        )
+
+    def _q_tabs(self):
+        self.qss.QTabWidget.setValues(
+            border="none",
+        )
+        self.qss.QTabWidget["pane"].setValues(
+            border=f"1px solid {self.palette.on_surface}",
+            borderRadius="0px",
+            padding="3px",
+        )
+        self.qss.QTabBar["focus"].setValues(
+            border="0px transparent",
+        )
+        self.qss.QTabBar["tab"].setValues(
+            border=f"1px solid {self.palette.on_surface}",
+            padding="5px",
         )
 
 
