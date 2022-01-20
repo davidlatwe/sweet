@@ -53,7 +53,7 @@ def compile_qrc():
 
     q_res = []
     # icons
-    for i in Path(resources / "icons").iterdir():
+    for i in sorted(Path(resources / "icons").iterdir()):
         if i.is_file() and any(i.name.endswith(_) for _ in Resources.icons_ext):
             q_res.append(f"\n    <file>icons/{i.name}</file>")
     # fonts
