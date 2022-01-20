@@ -130,3 +130,6 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+# should be generated on publish
+/src/sweet/gui/sweet_rc.py

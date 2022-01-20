@@ -1,38 +1,11 @@
 
 import os
-from ._vendor.Qt5 import QtGui
 from collections import OrderedDict as odict
+from ._vendor.Qt5 import QtGui
 
 dirname = os.path.dirname(__file__)
 _cache = {}
 _themes = odict()
-
-
-def find(*paths):
-    fname = os.path.join(dirname, "resources", *paths)
-    fname = os.path.normpath(fname)  # Conform slashes and backslashes
-    return fname.replace("\\", "/")  # Cross-platform compatibility
-
-
-def pixmap(*paths):
-    path = find(*paths)
-    basename = paths[-1]
-    name, ext = os.path.splitext(basename)
-
-    if not ext:
-        path += ".png"
-
-    try:
-        pixmap = _cache[paths]
-    except KeyError:
-        pixmap = QtGui.QPixmap(find(*paths))
-        _cache[paths] = pixmap
-
-    return pixmap
-
-
-def icon(*paths):
-    return QtGui.QIcon(pixmap(*paths))
 
 
 def load_themes():
@@ -83,12 +56,11 @@ def format_stylesheet(css):
 
 
 def default_themes():
-    _load_fonts()
-    res_root = os.path.join(dirname, "resources", "images").replace("\\", "/")
+    Resources.load()
     return [
         {
             "name": "sweet-dark",
-            "source": find("sweet.qss"),
+            "source": os.path.join(dirname, "sweet.qss"),
             "keywords": {
                 "primary.focus": "#76654B",
                 "primary.bright": "#654F3E",
@@ -124,13 +96,11 @@ def default_themes():
                 "on.dim.surface": "#4D4D4D",
                 "on.dim.background": "#3F3F3F",
                 "on.dim.error": "#9E9E9E",
-
-                "res": res_root,
             }
         },
         {
             "name": "sweet-light",
-            "source": find("sweet.qss"),
+            "source": os.path.join(dirname, "sweet.qss"),
             "keywords": {
                 "primary.focus": "#76654B",
                 "primary.bright": "#654F3E",
@@ -166,25 +136,23 @@ def default_themes():
                 "on.dim.surface": "#4D4D4D",
                 "on.dim.background": "#3F3F3F",
                 "on.dim.error": "#9E9E9E",
-
-                "res": res_root,
             }
         },
     ]
 
 
-def _load_fonts():
-    """Load default fonts from resources"""
-    _res_root = os.path.join(dirname, "resources").replace("\\", "/")
-
-    font_root = os.path.join(_res_root, "fonts")
-    fonts = [
+class Resources:
+    fonts = (
         "opensans/OpenSans-Bold.ttf",
         "opensans/OpenSans-Italic.ttf",
         "opensans/OpenSans-Regular.ttf",
         "jetbrainsmono/JetBrainsMono-Regular.ttf"
-    ]
+    )
+    icons_ext = ".png", ".svg"
 
-    for font in fonts:
-        path = os.path.join(font_root, font)
-        QtGui.QFontDatabase.addApplicationFont(path)
+    @classmethod
+    def load(cls):
+        from . import sweet_rc  # noqa
+        font_db = QtGui.QFontDatabase
+        for f in cls.fonts:
+            font_db.addApplicationFont(":/fonts/" + f)

@@ -9,7 +9,6 @@ from ..core import \
     SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
-from . import resources as res
 
 # for type hint
 _SigIt = QtCore.SignalInstance
@@ -33,9 +32,9 @@ class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
     def __init__(self, *args, **kwargs):
         super(_LocationIndicator, self).__init__(*args, **kwargs)
         self._location_icon = [
-            res.icon("images", "person-circle"),  # local
-            res.icon("images", "people-fill.svg"),  # non-local
-            res.icon("images", "people-fill-ok.svg"),  # released
+            QtGui.QIcon(":/icons/person-circle"),  # local
+            QtGui.QIcon(":/icons/people-fill"),  # non-local
+            QtGui.QIcon(":/icons/people-fill-ok"),  # released
         ]
         self._location_text = [
             "local", "non-local", "released"
@@ -130,10 +129,10 @@ class ToolTreeModel(BaseItemModel):
     def __init__(self, editable=True, *args, **kwargs):
         super(ToolTreeModel, self).__init__(*args, **kwargs)
         self._status_icon = {
-            Constants.TOOL_VALID: res.icon("images", "check-ok"),
-            Constants.TOOL_HIDDEN: res.icon("images", "slash-lg"),
-            Constants.TOOL_SHADOWED: res.icon("images", "exclamation-warn"),
-            Constants.TOOL_MISSING: res.icon("images", "x"),
+            Constants.TOOL_VALID: QtGui.QIcon(":/icons/check-ok"),
+            Constants.TOOL_HIDDEN: QtGui.QIcon(":/icons/slash-lg"),
+            Constants.TOOL_SHADOWED: QtGui.QIcon(":/icons/exclamation-warn"),
+            Constants.TOOL_MISSING: QtGui.QIcon(":/icons/x"),
         }
         self._status_tip = {
             Constants.TOOL_VALID: "Can be accessed.",

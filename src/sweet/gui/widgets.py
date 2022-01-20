@@ -11,7 +11,7 @@ from rez.utils import colorize
 from .. import lib, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
-from . import delegates, resources as res
+from . import delegates
 from .completer import RequestTextEdit
 from .models import (
     QSingleton,
@@ -242,8 +242,8 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
         description = QtWidgets.QTextEdit()
         load_path = QtWidgets.QLineEdit()
 
-        new_btn.setIcon(res.icon("images", "egg-fill"))
-        save_btn.setIcon(res.icon("images", "egg-fried"))
+        new_btn.setIcon(QtGui.QIcon(":/icons/egg-fill"))
+        save_btn.setIcon(QtGui.QIcon(":/icons/egg-fried"))
         save_btn.setEnabled(False)
 
         name.setFont(QtGui.QFont("OpenSans", 14))
