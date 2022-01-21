@@ -50,7 +50,7 @@ class Session(object):
         resources.load_themes()
         qss = resources.load_theme(name=state.retrieve("theme"))
 
-        ctrl = control.Controller(state=state)
+        ctrl = control.Controller()
         view_ = window.MainWindow(state=state)
         view_.setStyleSheet(qss)
 

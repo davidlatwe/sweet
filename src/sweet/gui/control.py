@@ -132,13 +132,12 @@ class Controller(QtCore.QObject):
     storage_scan_ended = QtCore.Signal()                    # type: _SigIt
     status_message = QtCore.Signal(str)                     # type: _SigIt
 
-    def __init__(self, state):
+    def __init__(self):
         super(Controller, self).__init__(parent=None)
 
         self._sop = SuiteOp()
         self._sto = Storage()
         self._pkg = InstalledPackages()
-        self._state = state
         self._dirty = False
         self._timers = dict()
         self._sender = dict()
