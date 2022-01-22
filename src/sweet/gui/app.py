@@ -57,7 +57,7 @@ class Session(object):
 
         # signals
 
-        current_suite = view_.find(widgets.CurrentSuiteWidget)
+        suite_head = view_.find(widgets.SuiteHeadWidget)
         context_list = view_.find(widgets.ContextListWidget)
         stacked_resolve = view_.find(widgets.StackedResolveWidget)
         tool_stack = view_.find(widgets.ContextToolTreeWidget)
@@ -73,8 +73,8 @@ class Session(object):
         # data query (note: this connection has to be made first or the sender()
         #             will be None if the slot is decorated with QtCore.Slot().
         #             this is a bug of pyside2.)
-        current_suite.dirty_asked.connect(ctrl.on_suite_dirty_asked)
-        current_suite.branch_asked.connect(ctrl.on_storage_branches_asked)
+        suite_head.dirty_asked.connect(ctrl.on_suite_dirty_asked)
+        suite_head.branch_asked.connect(ctrl.on_storage_branches_asked)
 
         # model -> control
         tool_stack_model.alias_changed.connect(ctrl.on_tool_alias_changed)
@@ -89,8 +89,8 @@ class Session(object):
         stacked_resolve.prefix_changed.connect(ctrl.on_context_prefix_changed)
         stacked_resolve.suffix_changed.connect(ctrl.on_context_suffix_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
-        current_suite.new_clicked.connect(ctrl.on_suite_new_clicked)
-        current_suite.save_clicked.connect(ctrl.on_suite_save_clicked)
+        suite_head.new_clicked.connect(ctrl.on_suite_new_clicked)
+        suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)
         storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
 
         # control -> model
@@ -110,10 +110,10 @@ class Session(object):
         # control -> view
         ctrl.suite_newed.connect(stacked_resolve.on_suite_newed)
         ctrl.suite_newed.connect(context_list.on_suite_newed)
-        ctrl.suite_newed.connect(current_suite.on_suite_newed)
-        ctrl.suite_saved.connect(current_suite.on_suite_saved)
-        ctrl.suite_save_failed.connect(current_suite.on_suite_save_failed)
-        ctrl.suite_loaded.connect(current_suite.on_suite_loaded)
+        ctrl.suite_newed.connect(suite_head.on_suite_newed)
+        ctrl.suite_saved.connect(suite_head.on_suite_saved)
+        ctrl.suite_save_failed.connect(suite_head.on_suite_save_failed)
+        ctrl.suite_loaded.connect(suite_head.on_suite_loaded)
         ctrl.suite_loaded.connect(lambda *_: view_.switch_tab(1))  # editor
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)

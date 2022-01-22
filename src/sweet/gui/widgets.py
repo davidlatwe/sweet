@@ -225,67 +225,44 @@ class YesNoDialog(QtWidgets.QDialog):
             btn_accept.setEnabled(False)
 
 
-class CurrentSuiteWidget(QtWidgets.QWidget):
+class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()  # type: _SigIt
     dirty_asked = QtCore.Signal()   # type: _SigIt
     new_clicked = QtCore.Signal()   # type: _SigIt
     save_clicked = QtCore.Signal(str, str, str)  # type: _SigIt
 
-    def __init__(self, *args, **kwargs):
-        super(CurrentSuiteWidget, self).__init__(*args, **kwargs)
-        self.setObjectName("SuiteView")
+    def __init__(self, details, *args, **kwargs):
+        super(SuiteHeadWidget, self).__init__(*args, **kwargs)
+        self.setObjectName("SuiteHeadWidget")
 
-        top = QtWidgets.QWidget()
         name = ValidNameLineEdit()
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
-        description = QtWidgets.QTextEdit()
-        load_path = QtWidgets.QLineEdit()
 
         new_btn.setIcon(QtGui.QIcon(":/icons/egg-fill"))
         save_btn.setIcon(QtGui.QIcon(":/icons/egg-fried"))
         save_btn.setEnabled(False)
 
         name.setFont(QtGui.QFont("OpenSans", 14))
-        name.setPlaceholderText("Suite name.. (must given before save)")
-        description.setPlaceholderText("Suite description.. (optional)")
-        load_path.setPlaceholderText("Suite load path..")
-        load_path.setReadOnly(True)
+        name.setPlaceholderText("Suite name..")
 
-        description.setMinimumHeight(5)  # for shrinking with splitter
-        load_path.setMinimumHeight(5)
-
-        layout = QtWidgets.QHBoxLayout(top)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(16, 0, 16, 0)
         layout.addWidget(name)
         layout.addWidget(save_btn)
         layout.addWidget(new_btn)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(top)
-        layout.addWidget(description, stretch=True)
-        layout.addWidget(load_path)
-        layout.addStretch()
 
         name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
         new_btn.clicked.connect(self.on_suite_new_clicked)
         save_btn.clicked.connect(self.on_suite_save_clicked)
 
-        self._min_height = self.minimumSizeHint().height()
-        self._hide_on_min = [description, load_path]
         self._name = name
-        self._desc = description
-        self._path = load_path
+        self._desc = details.description
+        self._path = details.load_path
         self._loaded_branch = None
         # fields for asking
         self._dirty = None
         self._branches = None
-
-    def resizeEvent(self, event):
-        h = event.size().height()
-        for w in self._hide_on_min:
-            w.setVisible(h > self._min_height)
-        return super(CurrentSuiteWidget, self).resizeEvent(event)
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
@@ -372,6 +349,31 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+
+
+class SuiteDetailsWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(SuiteDetailsWidget, self).__init__(*args, **kwargs)
+        self.setObjectName("SuiteDetailsWidget")
+
+        description = QtWidgets.QTextEdit()
+        load_path = QtWidgets.QLineEdit()
+
+        description.setPlaceholderText("description..")
+        load_path.setPlaceholderText(" load path.. (read-only)")
+        load_path.setReadOnly(True)
+
+        description.setMinimumHeight(40)  # for shrinking with splitter
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(16, 0, 16, 0)
+        layout.addWidget(description, stretch=True)
+        layout.addWidget(load_path)
+        layout.addSpacing(8)
+
+        self.description = description
+        self.load_path = load_path
 
 
 class ContextListWidget(QtWidgets.QWidget):
