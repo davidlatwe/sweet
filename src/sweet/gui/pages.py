@@ -10,8 +10,10 @@ from .widgets import (
     SuiteInsightWidget,
 
     # suite page
-    CurrentSuiteWidget,
+    SuiteHeadWidget,
+    SuiteDetailsWidget,
     ContextListWidget,
+    StackedRequestWidget,
     StackedResolveWidget,
     ContextToolTreeWidget,
 
@@ -43,16 +45,22 @@ class SuitePage(BusyWidget):
         super(SuitePage, self).__init__(*args, **kwargs)
         self.setObjectName("SuitePage")
 
-        current_suite = CurrentSuiteWidget()
+        suite_details = SuiteDetailsWidget()
+        suite_head = SuiteHeadWidget(suite_details)
 
         context_list = ContextListWidget()
+        stacked_request = StackedRequestWidget()
         stacked_resolve = StackedResolveWidget()
         tool_stack = ContextToolTreeWidget()
 
+        views = QtWidgets.QTabWidget()
+        views.addTab(stacked_resolve, "Resolved Details")
+        views.addTab(tool_stack, "Tool Stack")
+
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
-        body_split.addWidget(stacked_resolve)
-        body_split.addWidget(tool_stack)
+        body_split.addWidget(stacked_request)
+        body_split.addWidget(views)
 
         body_split.setOrientation(QtCore.Qt.Horizontal)
         body_split.setChildrenCollapsible(False)
@@ -61,16 +69,18 @@ class SuitePage(BusyWidget):
         body_split.setStretchFactor(2, 40)
 
         head_split = QtWidgets.QSplitter()
-        head_split.addWidget(current_suite)
+        head_split.addWidget(suite_details)
         head_split.addWidget(body_split)
 
         head_split.setOrientation(QtCore.Qt.Vertical)
         head_split.setChildrenCollapsible(False)
         head_split.setStretchFactor(0, 40)
         head_split.setStretchFactor(1, 60)
+        head_split.setCollapsible(0, True)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.addWidget(suite_head)
         layout.addWidget(head_split)
 
         head_split.setObjectName("suitePageHeadSplit")

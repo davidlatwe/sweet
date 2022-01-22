@@ -21,6 +21,7 @@ class MainWindow(QtWidgets.QMainWindow):
         tabs.addTab(pages.PreferencePage(state), "Preferences")
 
         layout = QtWidgets.QHBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(tabs)
 
         tabs.setCurrentIndex(1)  # editor

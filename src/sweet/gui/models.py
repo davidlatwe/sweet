@@ -616,3 +616,10 @@ class SuiteToolTreeModel(ToolTreeModel):
             # todo: this may takes times
             suite_tools = list(saved_suite.iter_saved_tools())
             self.update_tools(suite_tools, suite=name)
+
+
+class CompleterProxyModel(QtCore.QSortFilterProxyModel):
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.CheckStateRole:  # disable checkbox
+            return
+        return super(CompleterProxyModel, self).data(index, role)

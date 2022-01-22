@@ -11,8 +11,7 @@ from rez.utils import colorize
 from .. import lib, core
 from ._vendor.Qt5 import QtWidgets, QtGui, QtCore
 from ._vendor import qoverview
-from . import delegates
-from .completer import RequestTextEdit
+from . import delegates, resources as res
 from .models import (
     QSingleton,
     JsonModel,
@@ -24,6 +23,7 @@ from .models import (
     InstalledPackagesProxyModel,
     SuiteStorageModel,
     SuiteToolTreeModel,
+    CompleterProxyModel,
 )
 
 # for type hint
@@ -125,10 +125,10 @@ class DragDropListWidget(QtWidgets.QListWidget):
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
 
     def dropEvent(self, event):
-        rte = super(DragDropListWidget, self).dropEvent(event)
+        # type: (QtGui.QDropEvent) -> None
+        super(DragDropListWidget, self).dropEvent(event)
         if event.isAccepted():
             self.dropped.emit()
-        return rte
 
 
 class TreeView(qoverview.VerticalExtendedTreeView):
@@ -136,6 +136,7 @@ class TreeView(qoverview.VerticalExtendedTreeView):
     def __init__(self, *args, **kwargs):
         super(TreeView, self).__init__(*args, **kwargs)
         self.setAllColumnsShowFocus(True)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setStyleSheet("""
             QTreeView::item{
@@ -225,67 +226,44 @@ class YesNoDialog(QtWidgets.QDialog):
             btn_accept.setEnabled(False)
 
 
-class CurrentSuiteWidget(QtWidgets.QWidget):
+class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()  # type: _SigIt
     dirty_asked = QtCore.Signal()   # type: _SigIt
     new_clicked = QtCore.Signal()   # type: _SigIt
     save_clicked = QtCore.Signal(str, str, str)  # type: _SigIt
 
-    def __init__(self, *args, **kwargs):
-        super(CurrentSuiteWidget, self).__init__(*args, **kwargs)
-        self.setObjectName("SuiteView")
+    def __init__(self, details, *args, **kwargs):
+        super(SuiteHeadWidget, self).__init__(*args, **kwargs)
+        self.setObjectName("SuiteHeadWidget")
 
-        top = QtWidgets.QWidget()
         name = ValidNameLineEdit()
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
-        description = QtWidgets.QTextEdit()
-        load_path = QtWidgets.QLineEdit()
 
         new_btn.setIcon(QtGui.QIcon(":/icons/egg-fill"))
         save_btn.setIcon(QtGui.QIcon(":/icons/egg-fried"))
         save_btn.setEnabled(False)
 
         name.setFont(QtGui.QFont("OpenSans", 14))
-        name.setPlaceholderText("Suite name.. (must given before save)")
-        description.setPlaceholderText("Suite description.. (optional)")
-        load_path.setPlaceholderText("Suite load path..")
-        load_path.setReadOnly(True)
+        name.setPlaceholderText("Suite name..")
 
-        description.setMinimumHeight(5)  # for shrinking with splitter
-        load_path.setMinimumHeight(5)
-
-        layout = QtWidgets.QHBoxLayout(top)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(16, 0, 16, 0)
         layout.addWidget(name)
         layout.addWidget(save_btn)
         layout.addWidget(new_btn)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(top)
-        layout.addWidget(description, stretch=True)
-        layout.addWidget(load_path)
-        layout.addStretch()
 
         name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
         new_btn.clicked.connect(self.on_suite_new_clicked)
         save_btn.clicked.connect(self.on_suite_save_clicked)
 
-        self._min_height = self.minimumSizeHint().height()
-        self._hide_on_min = [description, load_path]
         self._name = name
-        self._desc = description
-        self._path = load_path
+        self._desc = details.description
+        self._path = details.load_path
         self._loaded_branch = None
         # fields for asking
         self._dirty = None
         self._branches = None
-
-    def resizeEvent(self, event):
-        h = event.size().height()
-        for w in self._hide_on_min:
-            w.setVisible(h > self._min_height)
-        return super(CurrentSuiteWidget, self).resizeEvent(event)
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
@@ -374,6 +352,55 @@ class CurrentSuiteWidget(QtWidgets.QWidget):
         dialog.open()
 
 
+class SuiteDetailsWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(SuiteDetailsWidget, self).__init__(*args, **kwargs)
+        self.setObjectName("SuiteDetailsWidget")
+
+        description = QtWidgets.QTextEdit()
+        load_path = QtWidgets.QLineEdit()
+
+        description.setPlaceholderText("description..")
+        load_path.setPlaceholderText(" load path.. (read-only)")
+        load_path.setReadOnly(True)
+
+        description.setMinimumHeight(40)  # for shrinking with splitter
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(16, 0, 16, 0)
+        layout.addWidget(description, stretch=True)
+        layout.addWidget(load_path)
+        layout.addSpacing(8)
+
+        self.description = description
+        self.load_path = load_path
+
+
+class ContextDragDropList(DragDropListWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ContextDragDropList, self).__init__(*args, **kwargs)
+        self.setSortingEnabled(False)  # do not sort this !
+        self.setSelectionMode(self.SingleSelection)
+        self.setStyleSheet("""
+            QListWidget::item{
+                padding: 5px 1px;
+                border: 0px;
+            }
+        """)
+
+    def mouseReleaseEvent(self, event):
+        # type: (QtGui.QMouseEvent) -> None
+        super(ContextDragDropList, self).mouseReleaseEvent(event)
+        # disable item deselecting
+        #   we need the selection as on indicator for knowing which context
+        #   other widgets are representing.
+        item = self.itemAt(event.pos())
+        if item and item == self.currentItem():
+            item.setSelected(True)
+
+
 class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)          # type: _SigIt
     renamed = QtCore.Signal(str, str)   # type: _SigIt
@@ -387,14 +414,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         label = QtWidgets.QLabel("Context Stack")
 
-        view = DragDropListWidget()
-        view.setSortingEnabled(False)  # do not sort this !
-        view.setStyleSheet("""
-            QListWidget::item{
-                padding: 5px 1px;
-                border: 0px;
-            }
-        """)
+        view = ContextDragDropList()
 
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
@@ -429,27 +449,38 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def on_context_dropped(self, name):
         item = self._find_item(name)
+        assert item is not None, f"{name!r} not exists, this is a bug."
         self._view.takeItem(self._view.row(item))
         self._view.removeItemWidget(item)
 
     def on_context_reordered(self, new_order):
+        dragged = self._view.currentItem().text()
+        dropped_in = new_order.index(dragged)
+
         items = []
         for name in new_order:
             item = self._find_item(name)
+            if item is None:  # may happen when the item being dragged is the
+                continue      # only item in list.
             self._view.takeItem(self._view.row(item))
             items.append(item)
+
         for item in items:
             self._view.addItem(item)
 
+        self._view.setCurrentRow(dropped_in)
+
     def on_context_renamed(self, name, new_name):
         item = self._find_item(name)
+        assert item is not None, f"{name!r} not exists, this is a bug."
         item.setText(new_name)
 
     def on_suite_newed(self):
         self._view.clear()
 
     def _find_item(self, name):
-        return next(iter(self._view.findItems(name, QtCore.Qt.MatchExactly)))
+        match_flags = QtCore.Qt.MatchExactly
+        return next(iter(self._view.findItems(name, match_flags)), None)
 
     def add_context(self):
         existing = self.context_names()
@@ -685,29 +716,67 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
             self._view.expand(self._proxy.mapFromSource(index))
 
 
-class StackedResolveWidget(QtWidgets.QStackedWidget):
-    requested = QtCore.Signal(str, list)        # type: _SigIt
-    prefix_changed = QtCore.Signal(str, str)    # type: _SigIt
-    suffix_changed = QtCore.Signal(str, str)    # type: _SigIt
+class NameStackedBase(QtWidgets.QStackedWidget):
+    """Base widget class for stacking named context widgets
+
+    Widgets within this stack will be added/removed/renamed by context
+    operations.
+
+    """
 
     def __init__(self, *args, **kwargs):
-        super(StackedResolveWidget, self).__init__(*args, **kwargs)
-        self._add_panel_0()
+        super(NameStackedBase, self).__init__(*args, **kwargs)
         self._names = []
+        self._callbacks = []  # type: list[dict["op_name", "callback"]]
+        self._add_panel_0()
+
+    def create_panel(self):
+        """Re-implement this method for widget creation
+        :return: A widget to be stacked
+        :rtype: QtWidgets.QWidget
+        """
+        raise NotImplementedError
+
+    def _add_panel_0(self):
+        self.add_panel(enabled=False)
+
+        op_name = ":added:"
+        ctx = ""
+        panel = self.widget(0)
+        callback = getattr(panel, "callbacks", {}).get(op_name)
+        if callable(callback):
+            _self = panel
+            callback(_self, ctx)
+
+    def add_panel(self, enabled=True):
+        """Push a new panel widget into stack
+        """
+        panel = self.create_panel()
+        panel.setEnabled(enabled)
+        self.insertWidget(0, panel)
+
+    def run_panel_callback(self, index, op_name, *args, **kwargs):
+        callback = self._callbacks[index].get(op_name)
+        if callable(callback):
+            _self = self.widget(index)  # get instance from correct thread
+            callback(_self, *args, **kwargs)
 
     @QtCore.Slot()  # noqa
     def on_context_added(self, ctx):
-        name = ctx.name
+        op_name = ":added:"
         is_first = len(self._names) == 0
         if is_first:
-            panel = self.widget(0)
-            panel.set_context(ctx)
-            panel.setEnabled(True)
+            pass
         else:
-            self.add_panel(ctx)
+            self.add_panel()
             self.setCurrentIndex(0)
 
-        self._names.insert(0, name)
+        panel = self.widget(0)
+        panel.setEnabled(True)
+
+        self._names.insert(0, ctx.name)
+        self._callbacks.insert(0, getattr(panel, "callbacks", {}))
+        self.run_panel_callback(0, op_name, ctx)
 
     @QtCore.Slot()  # noqa
     def on_context_resolved(self, name, context):
@@ -719,21 +788,23 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         :type context: ResolvedContext or core.BrokenContext
         :return:
         """
+        op_name = ":resolved:"
         index = self._names.index(name)
-        panel = self.widget(index)
-        panel.set_resolved(context)
+        self.run_panel_callback(index, op_name, context)
 
     @QtCore.Slot()  # noqa
     def on_context_renamed(self, name, new_name):
+        op_name = ":renamed:"
         index = self._names.index(name)
-        panel = self.widget(index)
-        panel.set_context(new_name)
+        self.run_panel_callback(index, op_name, new_name)
+
         self._names.remove(name)
         self._names.insert(index, new_name)
 
     @QtCore.Slot()  # noqa
     def on_context_dropped(self, name):
         index = self._names.index(name)
+        self._callbacks.pop(index)
         self._names.remove(name)
         is_empty = len(self._names) == 0
 
@@ -750,15 +821,27 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
+        self._callbacks.clear()
         for i in range(self.count()):
             self.removeWidget(self.widget(0))
         self._names.clear()
         self._add_panel_0()
 
-    def add_panel(self, ctx, enabled=True):
+
+class StackedResolveWidget(NameStackedBase):
+
+    def create_panel(self):
+        panel = ContextResolveWidget()
+        return panel
+
+
+class StackedRequestWidget(NameStackedBase):
+    requested = QtCore.Signal(str, list)  # type: _SigIt
+    prefix_changed = QtCore.Signal(str, str)  # type: _SigIt
+    suffix_changed = QtCore.Signal(str, str)  # type: _SigIt
+
+    def create_panel(self):
         panel = ContextRequestWidget()
-        panel.set_context(ctx)
-        panel.setEnabled(enabled)
         panel.prefix_changed.connect(
             lambda text: self.prefix_changed.emit(panel.name(), text)
         )
@@ -768,10 +851,7 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         panel.requested.connect(
             lambda requests: self.requested.emit(panel.name(), requests)
         )
-        self.insertWidget(0, panel)
-
-    def _add_panel_0(self):
-        self.add_panel("", enabled=False)
+        return panel
 
 
 class RequestTableItem(QtWidgets.QTableWidgetItem):
@@ -878,6 +958,111 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         self.setRowCount(0)
 
 
+class RequestTextEdit(QtWidgets.QTextEdit):
+
+    def __init__(self, *args, **kwargs):
+        super(RequestTextEdit, self).__init__(*args, **kwargs)
+        self.setObjectName("RequestTextEdit")
+        self.setPlaceholderText("requests..")
+        self.setAcceptRichText(False)
+        self.setTabChangesFocus(True)
+
+        self._completer = None
+        completer = RequestCompleter(self)
+        self.setCompleter(completer)
+
+    def setCompleter(self, c):
+        if self._completer is not None:
+            self._completer.activated.disconnect()
+
+        self._completer = c
+
+        c.setPopup(CompleterPopup())
+        c.setWidget(self)
+        c.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        c.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        c.activated.connect(self.insert_completion)
+
+    def completer(self):
+        return self._completer
+
+    def insert_completion(self, completion):
+        completer = self._completer
+        if completer.widget() is not self:
+            return
+
+        prefix = completer.completionPrefix()
+        prefix = completer.splitPath(prefix)[-1]
+        extra = len(completion) - len(prefix)
+
+        if extra != 0:
+            tc = self.textCursor()
+            tc.movePosition(QtGui.QTextCursor.Left)
+            tc.movePosition(QtGui.QTextCursor.EndOfWord)
+            tc.insertText(completion[-extra:])
+            self.setTextCursor(tc)
+
+    def text_under_cursor(self):
+        tc = self.textCursor()
+        # can't use `QTextCursor.WordUnderCursor`, text like "maya-" that
+        # ends with "-" will not be recognized as a word.
+        tc.select(QtGui.QTextCursor.LineUnderCursor)
+        text = tc.selectedText().rsplit(" ", 1)[-1]
+        return text
+
+    def focusInEvent(self, event):
+        if self._completer is not None:
+            self._completer.setWidget(self)
+
+        super(RequestTextEdit, self).focusInEvent(event)
+
+    def keyPressEvent(self, event):
+        c = self._completer
+        if c is not None and c.popup().isVisible():
+            # The following keys are forwarded by the completer to the widget.
+            if event.key() in (QtCore.Qt.Key_Escape,
+                               QtCore.Qt.Key_Enter,
+                               QtCore.Qt.Key_Return,
+                               QtCore.Qt.Key_Backtab,
+                               QtCore.Qt.Key_Tab):
+                event.ignore()
+                # Let the completer do default behavior.
+                return
+
+        is_shortcut = ((event.modifiers() & QtCore.Qt.ControlModifier) != 0
+                       and event.key() == QtCore.Qt.Key_0)
+        if c is None or not is_shortcut:
+            # Do not process the shortcut when we have a completer.
+            super(RequestTextEdit, self).keyPressEvent(event)
+
+        ctrl_or_shift = event.modifiers() & (QtCore.Qt.ControlModifier
+                                             | QtCore.Qt.ShiftModifier)
+        if c is None or (ctrl_or_shift and len(event.text()) == 0):
+            return
+
+        end_of_word = " "  # "~!@#$%^&*()_+{}|:\"<>?,./;'[]\\-="
+        has_modifier = ((event.modifiers() != QtCore.Qt.NoModifier)
+                        and not ctrl_or_shift)
+        completion_prefix = self.text_under_cursor()
+
+        if (not is_shortcut and (has_modifier
+                                 or len(event.text()) == 0
+                                 or len(completion_prefix) < 2
+                                 or event.text()[-1] in end_of_word)):
+            c.popup().hide()
+            return
+
+        popup = c.popup()
+        if completion_prefix != c.completionPrefix():
+            c.setCompletionPrefix(completion_prefix)
+            popup.setCurrentIndex(c.completionModel().index(0, 0))
+
+        cr = self.cursorRect()
+        cr.setWidth(popup.sizeHintForColumn(0)
+                    + popup.verticalScrollBar().sizeHint().width())
+        c.complete(cr)
+
+
 class RequestEditorWidget(QtWidgets.QTabWidget):
 
     def __init__(self, *args, **kwargs):
@@ -918,72 +1103,36 @@ class RequestEditorWidget(QtWidgets.QTabWidget):
 
 
 class ContextRequestWidget(QtWidgets.QWidget):
-    requested = QtCore.Signal(list)         # type: _SigIt
-    prefix_changed = QtCore.Signal(str)     # type: _SigIt
-    suffix_changed = QtCore.Signal(str)     # type: _SigIt
+    requested = QtCore.Signal(list)  # type: _SigIt
+    prefix_changed = QtCore.Signal(str)  # type: _SigIt
+    suffix_changed = QtCore.Signal(str)  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(ContextRequestWidget, self).__init__(*args, **kwargs)
 
-        label = QtWidgets.QLabel()
-
         naming = QtWidgets.QWidget()
+        prefix_label = QtWidgets.QLabel("prefix:")
         prefix = QtWidgets.QLineEdit()
         prefix.setPlaceholderText("context prefix..")
+        suffix_label = QtWidgets.QLabel("suffix:")
         suffix = QtWidgets.QLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
         request = RequestEditorWidget()
 
-        options = QtWidgets.QWidget()
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
-        tools = ResolvedTools()
-        packages = ResolvedPackages()
-        environ = ResolvedEnvironment()
-        code = ResolvedCode()
-        graph = ResolvedGraph()
-        log = ResolvedLog()
-
-        body = QtWidgets.QWidget()
-        tabs = QtWidgets.QTabWidget()
-        tabs.addTab(tools, "Tools")
-        tabs.addTab(packages, "Packages")
-        tabs.addTab(environ, "Env Vars")
-        tabs.addTab(code, "Code")
-        tabs.addTab(graph, "Graph")
-        tabs.addTab(log, "Log")
-
-        layout = QtWidgets.QHBoxLayout(naming)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(prefix)
-        layout.addWidget(suffix)
-
-        layout = QtWidgets.QHBoxLayout(options)
-        layout.setContentsMargins(0, 2, 0, 2)
-        layout.addWidget(resolve)
-        # advance resolve options..
-        #   e.g. timestamp
-
-        layout = QtWidgets.QVBoxLayout(body)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(options)
-        layout.addWidget(naming)
-        layout.addWidget(tabs)
-
-        splitter = QtWidgets.QSplitter()
-        splitter.addWidget(request)
-        splitter.addWidget(body)
-
-        splitter.setOrientation(QtCore.Qt.Horizontal)
-        splitter.setChildrenCollapsible(False)
-        splitter.setStretchFactor(0, 30)
-        splitter.setStretchFactor(1, 70)
+        layout = QtWidgets.QGridLayout(naming)
+        layout.addWidget(prefix_label, 0, 0)
+        layout.addWidget(prefix, 0, 1)
+        layout.addWidget(suffix_label, 1, 0)
+        layout.addWidget(suffix, 1, 1)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(label)
-        layout.addWidget(splitter, stretch=True)
+        layout.addWidget(naming)
+        layout.addWidget(request)
+        layout.addWidget(resolve)
 
         # signal
         prefix.textChanged.connect(
@@ -997,17 +1146,15 @@ class ContextRequestWidget(QtWidgets.QWidget):
         )
 
         self._name = None
-        self._label = label
         self._prefix = prefix
         self._suffix = suffix
         self._request = request
-        self._tabs = tabs
-        self._tools = tools
-        self._packages = packages
-        self._environ = environ
-        self._code = code
-        self._graph = graph
-        self._log = log
+
+        # will be called by StackedResolveWidget
+        self.callbacks = {
+            ":added:": ContextRequestWidget.set_context,
+            ":renamed:": ContextRequestWidget.set_context,
+        }
 
     def name(self):
         return self._name
@@ -1021,19 +1168,73 @@ class ContextRequestWidget(QtWidgets.QWidget):
         """
         if isinstance(ctx, str):
             self._name = ctx
-            self._label.setText("Context: %s" % ctx)
-            self._tools.set_name(ctx)
         else:
             self.blockSignals(True)
             self._name = ctx.name
             self._prefix.setText(ctx.prefix)
             self._suffix.setText(ctx.suffix)
             self._request.set_requests(ctx.requests)
-            self._tools.set_name(ctx.name)
-            self._label.setText("Context: %s" % ctx.name)
             self.blockSignals(False)
             # todo: context may be a failed one when the suite is loaded with
             #   bad .rxt files. Change label's bg color into red as indication.
+
+
+class ContextResolveWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ContextResolveWidget, self).__init__(*args, **kwargs)
+
+        tools = ResolvedTools()
+        packages = ResolvedPackages()
+        environ = ResolvedEnvironment()
+        code = ResolvedCode()
+        graph = ResolvedGraph()
+        log = ResolvedLog()
+
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(tools, "Tools")
+        tabs.addTab(packages, "Packages")
+        tabs.addTab(environ, "Environ")
+        tabs.addTab(code, "Code")
+        tabs.addTab(graph, "Graph")
+        tabs.addTab(log, "Log")
+
+        tabs.tabBar().setExpanding(True)
+        tabs.setStyleSheet("QTabWidget::tab-bar {width: 999999px;}")
+        # https://stackoverflow.com/a/17376440/14054728
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(tabs)
+
+        self._name = None
+        self._tabs = tabs
+        self._tools = tools
+        self._packages = packages
+        self._environ = environ
+        self._code = code
+        self._graph = graph
+        self._log = log
+
+        # will be called by StackedResolveWidget
+        self.callbacks = {
+            ":added:": ContextResolveWidget.set_context,
+            ":renamed:": ContextResolveWidget.set_context,
+            ":resolved:": ContextResolveWidget.set_resolved,
+        }
+
+    def name(self):
+        return self._name
+
+    def set_context(self, ctx):
+        """
+
+        :param ctx:
+        :type ctx: core.SuiteCtx or str
+        :return:
+        """
+        name = ctx if isinstance(ctx, str) else ctx.name
+        self._name = name
+        self._tools.set_name(name)
 
     def set_resolved(self, context):
         """
@@ -1560,6 +1761,44 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._desc.setPlainText(saved_suite.description)
         with self._model.open_suite(saved_suite) as index:
             self._view.setRootIndex(index)
+
+
+class RequestCompleter(QtWidgets.QCompleter):
+
+    def __init__(self, *args, **kwargs):
+        super(RequestCompleter, self).__init__(*args, **kwargs)
+        self.setModelSorting(self.CaseInsensitivelySortedModel)
+        self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setWrapAround(False)
+
+        model = InstalledPackagesModel()
+        proxy = CompleterProxyModel()
+        proxy.setSourceModel(model)
+        self.setCompletionColumn(0)
+        self.setCompletionRole(model.CompletionRole)
+        self.setModel(proxy)
+
+        self._model = model
+        self._proxy = proxy
+
+    def model(self):
+        return self._model
+
+    def proxy(self):
+        return self._proxy
+
+    def splitPath(self, path):
+        # TODO: "==", "+<", "..", ...
+        return path.split("-", 1)
+
+
+class CompleterPopup(QtWidgets.QListView):
+    def __init__(self, *args, **kwargs):
+        super(CompleterPopup, self).__init__(*args, **kwargs)
+        self.setObjectName("CompleterPopup")
+        # this seems to be the only way to apply stylesheet to completer
+        # popup.
+        self.setStyleSheet(res.load_theme())
 
 
 class HtmlPrinter(colorize.Printer):
