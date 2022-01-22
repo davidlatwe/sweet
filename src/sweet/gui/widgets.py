@@ -687,29 +687,67 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
             self._view.expand(self._proxy.mapFromSource(index))
 
 
-class StackedResolveWidget(QtWidgets.QStackedWidget):
-    requested = QtCore.Signal(str, list)        # type: _SigIt
-    prefix_changed = QtCore.Signal(str, str)    # type: _SigIt
-    suffix_changed = QtCore.Signal(str, str)    # type: _SigIt
+class NameStackedBase(QtWidgets.QStackedWidget):
+    """Base widget class for stacking named context widgets
+
+    Widgets within this stack will be added/removed/renamed by context
+    operations.
+
+    """
 
     def __init__(self, *args, **kwargs):
-        super(StackedResolveWidget, self).__init__(*args, **kwargs)
-        self._add_panel_0()
+        super(NameStackedBase, self).__init__(*args, **kwargs)
         self._names = []
+        self._callbacks = []  # type: list[dict["op_name", "callback"]]
+        self._add_panel_0()
+
+    def create_panel(self):
+        """Re-implement this method for widget creation
+        :return: A widget to be stacked
+        :rtype: QtWidgets.QWidget
+        """
+        raise NotImplementedError
+
+    def _add_panel_0(self):
+        self.add_panel(enabled=False)
+
+        op_name = ":added:"
+        ctx = ""
+        panel = self.widget(0)
+        callback = getattr(panel, "callbacks", {}).get(op_name)
+        if callable(callback):
+            _self = panel
+            callback(_self, ctx)
+
+    def add_panel(self, enabled=True):
+        """Push a new panel widget into stack
+        """
+        panel = self.create_panel()
+        panel.setEnabled(enabled)
+        self.insertWidget(0, panel)
+
+    def run_panel_callback(self, index, op_name, *args, **kwargs):
+        callback = self._callbacks[index].get(op_name)
+        if callable(callback):
+            _self = self.widget(index)  # get instance from correct thread
+            callback(_self, *args, **kwargs)
 
     @QtCore.Slot()  # noqa
     def on_context_added(self, ctx):
-        name = ctx.name
+        op_name = ":added:"
         is_first = len(self._names) == 0
         if is_first:
-            panel = self.widget(0)
-            panel.set_context(ctx)
-            panel.setEnabled(True)
+            pass
         else:
-            self.add_panel(ctx)
+            self.add_panel()
             self.setCurrentIndex(0)
 
-        self._names.insert(0, name)
+        panel = self.widget(0)
+        panel.setEnabled(True)
+
+        self._names.insert(0, ctx.name)
+        self._callbacks.insert(0, getattr(panel, "callbacks", {}))
+        self.run_panel_callback(0, op_name, ctx)
 
     @QtCore.Slot()  # noqa
     def on_context_resolved(self, name, context):
@@ -721,21 +759,23 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         :type context: ResolvedContext or core.BrokenContext
         :return:
         """
+        op_name = ":resolved:"
         index = self._names.index(name)
-        panel = self.widget(index)
-        panel.set_resolved(context)
+        self.run_panel_callback(index, op_name, context)
 
     @QtCore.Slot()  # noqa
     def on_context_renamed(self, name, new_name):
+        op_name = ":renamed:"
         index = self._names.index(name)
-        panel = self.widget(index)
-        panel.set_context(new_name)
+        self.run_panel_callback(index, op_name, new_name)
+
         self._names.remove(name)
         self._names.insert(index, new_name)
 
     @QtCore.Slot()  # noqa
     def on_context_dropped(self, name):
         index = self._names.index(name)
+        self._callbacks.pop(index)
         self._names.remove(name)
         is_empty = len(self._names) == 0
 
@@ -752,15 +792,27 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
+        self._callbacks.clear()
         for i in range(self.count()):
             self.removeWidget(self.widget(0))
         self._names.clear()
         self._add_panel_0()
 
-    def add_panel(self, ctx, enabled=True):
+
+class StackedResolveWidget(NameStackedBase):
+
+    def create_panel(self):
+        panel = ContextResolveWidget()
+        return panel
+
+
+class StackedRequestWidget(NameStackedBase):
+    requested = QtCore.Signal(str, list)  # type: _SigIt
+    prefix_changed = QtCore.Signal(str, str)  # type: _SigIt
+    suffix_changed = QtCore.Signal(str, str)  # type: _SigIt
+
+    def create_panel(self):
         panel = ContextRequestWidget()
-        panel.set_context(ctx)
-        panel.setEnabled(enabled)
         panel.prefix_changed.connect(
             lambda text: self.prefix_changed.emit(panel.name(), text)
         )
@@ -770,10 +822,7 @@ class StackedResolveWidget(QtWidgets.QStackedWidget):
         panel.requested.connect(
             lambda requests: self.requested.emit(panel.name(), requests)
         )
-        self.insertWidget(0, panel)
-
-    def _add_panel_0(self):
-        self.add_panel("", enabled=False)
+        return panel
 
 
 class RequestTableItem(QtWidgets.QTableWidgetItem):
@@ -1025,76 +1074,36 @@ class RequestEditorWidget(QtWidgets.QTabWidget):
 
 
 class ContextRequestWidget(QtWidgets.QWidget):
-    requested = QtCore.Signal(list)         # type: _SigIt
-    prefix_changed = QtCore.Signal(str)     # type: _SigIt
-    suffix_changed = QtCore.Signal(str)     # type: _SigIt
+    requested = QtCore.Signal(list)  # type: _SigIt
+    prefix_changed = QtCore.Signal(str)  # type: _SigIt
+    suffix_changed = QtCore.Signal(str)  # type: _SigIt
 
     def __init__(self, *args, **kwargs):
         super(ContextRequestWidget, self).__init__(*args, **kwargs)
 
-        label = QtWidgets.QLabel()
-
         naming = QtWidgets.QWidget()
+        prefix_label = QtWidgets.QLabel("prefix:")
         prefix = QtWidgets.QLineEdit()
         prefix.setPlaceholderText("context prefix..")
+        suffix_label = QtWidgets.QLabel("suffix:")
         suffix = QtWidgets.QLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
         request = RequestEditorWidget()
 
-        options = QtWidgets.QWidget()
         resolve = QtWidgets.QPushButton("Resolve")
         resolve.setObjectName("ContextResolveOpBtn")
 
-        tools = ResolvedTools()
-        packages = ResolvedPackages()
-        environ = ResolvedEnvironment()
-        code = ResolvedCode()
-        graph = ResolvedGraph()
-        log = ResolvedLog()
-
-        body = QtWidgets.QWidget()
-        tabs = QtWidgets.QTabWidget()
-        tabs.addTab(tools, "Tools")
-        tabs.addTab(packages, "Packages")
-        tabs.addTab(environ, "Environ")
-        tabs.addTab(code, "Code")
-        tabs.addTab(graph, "Graph")
-        tabs.addTab(log, "Log")
-
-        tabs.tabBar().setExpanding(True)
-        tabs.setStyleSheet("QTabWidget::tab-bar {width: 999999px;}")
-        # https://stackoverflow.com/a/17376440/14054728
-
-        layout = QtWidgets.QHBoxLayout(naming)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(prefix)
-        layout.addWidget(suffix)
-
-        layout = QtWidgets.QHBoxLayout(options)
-        layout.setContentsMargins(0, 2, 0, 2)
-        layout.addWidget(resolve)
-        # advance resolve options..
-        #   e.g. timestamp
-
-        layout = QtWidgets.QVBoxLayout(body)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(options)
-        layout.addWidget(naming)
-        layout.addWidget(tabs)
-
-        splitter = QtWidgets.QSplitter()
-        splitter.addWidget(request)
-        splitter.addWidget(body)
-
-        splitter.setOrientation(QtCore.Qt.Horizontal)
-        splitter.setChildrenCollapsible(False)
-        splitter.setStretchFactor(0, 30)
-        splitter.setStretchFactor(1, 70)
+        layout = QtWidgets.QGridLayout(naming)
+        layout.addWidget(prefix_label, 0, 0)
+        layout.addWidget(prefix, 0, 1)
+        layout.addWidget(suffix_label, 1, 0)
+        layout.addWidget(suffix, 1, 1)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(label)
-        layout.addWidget(splitter, stretch=True)
+        layout.addWidget(naming)
+        layout.addWidget(request)
+        layout.addWidget(resolve)
 
         # signal
         prefix.textChanged.connect(
@@ -1108,17 +1117,15 @@ class ContextRequestWidget(QtWidgets.QWidget):
         )
 
         self._name = None
-        self._label = label
         self._prefix = prefix
         self._suffix = suffix
         self._request = request
-        self._tabs = tabs
-        self._tools = tools
-        self._packages = packages
-        self._environ = environ
-        self._code = code
-        self._graph = graph
-        self._log = log
+
+        # will be called by StackedResolveWidget
+        self.callbacks = {
+            ":added:": ContextRequestWidget.set_context,
+            ":renamed:": ContextRequestWidget.set_context,
+        }
 
     def name(self):
         return self._name
@@ -1132,19 +1139,73 @@ class ContextRequestWidget(QtWidgets.QWidget):
         """
         if isinstance(ctx, str):
             self._name = ctx
-            self._label.setText("Context: %s" % ctx)
-            self._tools.set_name(ctx)
         else:
             self.blockSignals(True)
             self._name = ctx.name
             self._prefix.setText(ctx.prefix)
             self._suffix.setText(ctx.suffix)
             self._request.set_requests(ctx.requests)
-            self._tools.set_name(ctx.name)
-            self._label.setText("Context: %s" % ctx.name)
             self.blockSignals(False)
             # todo: context may be a failed one when the suite is loaded with
             #   bad .rxt files. Change label's bg color into red as indication.
+
+
+class ContextResolveWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ContextResolveWidget, self).__init__(*args, **kwargs)
+
+        tools = ResolvedTools()
+        packages = ResolvedPackages()
+        environ = ResolvedEnvironment()
+        code = ResolvedCode()
+        graph = ResolvedGraph()
+        log = ResolvedLog()
+
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(tools, "Tools")
+        tabs.addTab(packages, "Packages")
+        tabs.addTab(environ, "Environ")
+        tabs.addTab(code, "Code")
+        tabs.addTab(graph, "Graph")
+        tabs.addTab(log, "Log")
+
+        tabs.tabBar().setExpanding(True)
+        tabs.setStyleSheet("QTabWidget::tab-bar {width: 999999px;}")
+        # https://stackoverflow.com/a/17376440/14054728
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(tabs)
+
+        self._name = None
+        self._tabs = tabs
+        self._tools = tools
+        self._packages = packages
+        self._environ = environ
+        self._code = code
+        self._graph = graph
+        self._log = log
+
+        # will be called by StackedResolveWidget
+        self.callbacks = {
+            ":added:": ContextResolveWidget.set_context,
+            ":renamed:": ContextResolveWidget.set_context,
+            ":resolved:": ContextResolveWidget.set_resolved,
+        }
+
+    def name(self):
+        return self._name
+
+    def set_context(self, ctx):
+        """
+
+        :param ctx:
+        :type ctx: core.SuiteCtx or str
+        :return:
+        """
+        name = ctx if isinstance(ctx, str) else ctx.name
+        self._name = name
+        self._tools.set_name(name)
 
     def set_resolved(self, context):
         """

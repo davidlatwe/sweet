@@ -59,6 +59,7 @@ class Session(object):
 
         suite_head = view_.find(widgets.SuiteHeadWidget)
         context_list = view_.find(widgets.ContextListWidget)
+        stacked_request = view_.find(widgets.StackedRequestWidget)
         stacked_resolve = view_.find(widgets.StackedResolveWidget)
         tool_stack = view_.find(widgets.ContextToolTreeWidget)
         tool_stack_model = tool_stack.model()
@@ -85,9 +86,9 @@ class Session(object):
         context_list.dropped.connect(ctrl.on_drop_context_clicked)
         context_list.reordered.connect(ctrl.on_context_item_moved)
         context_list.renamed.connect(ctrl.on_rename_context_clicked)
-        stacked_resolve.requested.connect(ctrl.on_resolve_context_clicked)
-        stacked_resolve.prefix_changed.connect(ctrl.on_context_prefix_changed)
-        stacked_resolve.suffix_changed.connect(ctrl.on_context_suffix_changed)
+        stacked_request.requested.connect(ctrl.on_resolve_context_clicked)
+        stacked_request.prefix_changed.connect(ctrl.on_context_prefix_changed)
+        stacked_request.suffix_changed.connect(ctrl.on_context_suffix_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
         suite_head.new_clicked.connect(ctrl.on_suite_new_clicked)
         suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)
@@ -116,16 +117,21 @@ class Session(object):
         ctrl.suite_loaded.connect(suite_head.on_suite_loaded)
         ctrl.suite_loaded.connect(lambda *_: view_.switch_tab(1))  # editor
         ctrl.context_added.connect(context_list.on_context_added)
+        ctrl.context_added.connect(stacked_request.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
         ctrl.context_renamed.connect(context_list.on_context_renamed)
+        ctrl.context_renamed.connect(stacked_request.on_context_renamed)
         ctrl.context_renamed.connect(stacked_resolve.on_context_renamed)
         ctrl.context_dropped.connect(context_list.on_context_dropped)
+        ctrl.context_dropped.connect(stacked_request.on_context_dropped)
         ctrl.context_dropped.connect(stacked_resolve.on_context_dropped)
         ctrl.context_reordered.connect(context_list.on_context_reordered)
+        ctrl.context_resolved.connect(stacked_request.on_context_resolved)
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
 
         # view -> view
         storage_view.suite_selected.connect(storage_suite.on_suite_selected)
+        context_list.selected.connect(stacked_request.on_context_selected)
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
 

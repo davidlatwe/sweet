@@ -13,6 +13,7 @@ from .widgets import (
     SuiteHeadWidget,
     SuiteDetailsWidget,
     ContextListWidget,
+    StackedRequestWidget,
     StackedResolveWidget,
     ContextToolTreeWidget,
 
@@ -48,13 +49,18 @@ class SuitePage(BusyWidget):
         suite_head = SuiteHeadWidget(suite_details)
 
         context_list = ContextListWidget()
+        stacked_request = StackedRequestWidget()
         stacked_resolve = StackedResolveWidget()
         tool_stack = ContextToolTreeWidget()
 
+        views = QtWidgets.QTabWidget()
+        views.addTab(stacked_resolve, "Resolved Details")
+        views.addTab(tool_stack, "Tool Stack")
+
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
-        body_split.addWidget(stacked_resolve)
-        body_split.addWidget(tool_stack)
+        body_split.addWidget(stacked_request)
+        body_split.addWidget(views)
 
         body_split.setOrientation(QtCore.Qt.Horizontal)
         body_split.setChildrenCollapsible(False)
