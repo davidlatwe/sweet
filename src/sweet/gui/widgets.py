@@ -125,10 +125,10 @@ class DragDropListWidget(QtWidgets.QListWidget):
         self.setDefaultDropAction(QtCore.Qt.MoveAction)
 
     def dropEvent(self, event):
-        rte = super(DragDropListWidget, self).dropEvent(event)
+        # type: (QtGui.QDropEvent) -> None
+        super(DragDropListWidget, self).dropEvent(event)
         if event.isAccepted():
             self.dropped.emit()
-        return rte
 
 
 class TreeView(qoverview.VerticalExtendedTreeView):
@@ -448,27 +448,38 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def on_context_dropped(self, name):
         item = self._find_item(name)
+        assert item is not None, f"{name!r} not exists, this is a bug."
         self._view.takeItem(self._view.row(item))
         self._view.removeItemWidget(item)
 
     def on_context_reordered(self, new_order):
+        dragged = self._view.currentItem().text()
+        dropped_in = new_order.index(dragged)
+
         items = []
         for name in new_order:
             item = self._find_item(name)
+            if item is None:  # may happen when the item being dragged is the
+                continue      # only item in list.
             self._view.takeItem(self._view.row(item))
             items.append(item)
+
         for item in items:
             self._view.addItem(item)
 
+        self._view.setCurrentRow(dropped_in)
+
     def on_context_renamed(self, name, new_name):
         item = self._find_item(name)
+        assert item is not None, f"{name!r} not exists, this is a bug."
         item.setText(new_name)
 
     def on_suite_newed(self):
         self._view.clear()
 
     def _find_item(self, name):
-        return next(iter(self._view.findItems(name, QtCore.Qt.MatchExactly)))
+        match_flags = QtCore.Qt.MatchExactly
+        return next(iter(self._view.findItems(name, match_flags)), None)
 
     def add_context(self):
         existing = self.context_names()
