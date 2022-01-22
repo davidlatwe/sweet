@@ -63,7 +63,7 @@ class BaseLightTheme(object):
         secondary_dimmed=HSL(16.00, 15.79, 81.37),  # Brown 100
 
         surface=HSL(0.00, 0.00, 74.12),             # Grey 400
-        background=HSL(0.00, 0.00, 87.84),          # Grey 300
+        background=HSL(0.00, 0.00, 98.04),          # Grey 50
 
         error=HSL(11.95, 100.00, 43.33),            # Deep Orange A700
         warning=HSL(40.24, 100.00, 50.00),          # Amber A700
@@ -121,20 +121,24 @@ class BaseLightTheme(object):
 
     def _q_button(self):
         self.qss.QPushButton.setValues(
-            backgroundColor=self.palette.secondary,
-            border="none",
+            backgroundColor=self.palette.background,
+            border=f"1px solid {self.palette.on_background}",
             borderRadius="0px",
             minHeight="24px",
             padding="8px",
         )
         self.qss.QPushButton["hover"].setValues(
-            backgroundColor=self.palette.primary,
+            backgroundColor=self.palette.background,
+            border=f"1px solid {self.palette.primary}",
         )
         self.qss.QPushButton["pressed"].setValues(
-            backgroundColor=self.palette.primary_bright,
+            backgroundColor=self.palette.surface,
+            border=f"1px dashed {self.palette.on_background}",
         )
-        self.qss.QPushButton["focus"].setValues(
-            border="none",
+        self.qss.QPushButton["focus"]["!hover"].setValues(
+            backgroundColor=self.palette.background,
+            border=f"1px solid {self.palette.on_background}",
+            fontWeight="bold",
         )
 
     def _q_check_box(self):
