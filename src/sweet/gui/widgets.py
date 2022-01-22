@@ -376,6 +376,30 @@ class SuiteDetailsWidget(QtWidgets.QWidget):
         self.load_path = load_path
 
 
+class ContextDragDropList(DragDropListWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ContextDragDropList, self).__init__(*args, **kwargs)
+        self.setSortingEnabled(False)  # do not sort this !
+        self.setSelectionMode(self.SingleSelection)
+        self.setStyleSheet("""
+            QListWidget::item{
+                padding: 5px 1px;
+                border: 0px;
+            }
+        """)
+
+    def mouseReleaseEvent(self, event):
+        # type: (QtGui.QMouseEvent) -> None
+        super(ContextDragDropList, self).mouseReleaseEvent(event)
+        # disable item deselecting
+        #   we need the selection as on indicator for knowing which context
+        #   other widgets are representing.
+        item = self.itemAt(event.pos())
+        if item and item == self.currentItem():
+            item.setSelected(True)
+
+
 class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)          # type: _SigIt
     renamed = QtCore.Signal(str, str)   # type: _SigIt
@@ -389,14 +413,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         label = QtWidgets.QLabel("Context Stack")
 
-        view = DragDropListWidget()
-        view.setSortingEnabled(False)  # do not sort this !
-        view.setStyleSheet("""
-            QListWidget::item{
-                padding: 5px 1px;
-                border: 0px;
-            }
-        """)
+        view = ContextDragDropList()
 
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
