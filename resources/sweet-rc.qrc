@@ -1,12 +1,12 @@
 
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>icons/branch_closed-on-dim.png</file>
-    <file>icons/branch_closed-on.png</file>
-    <file>icons/branch_closed.png</file>
-    <file>icons/branch_open-on-dim.png</file>
-    <file>icons/branch_open-on.png</file>
-    <file>icons/branch_open.png</file>
+    <file>icons/caret-down-fill-dim.svg</file>
+    <file>icons/caret-down-fill-on.svg</file>
+    <file>icons/caret-down-fill.svg</file>
+    <file>icons/caret-right-fill-dim.svg</file>
+    <file>icons/caret-right-fill-on.svg</file>
+    <file>icons/caret-right-fill.svg</file>
     <file>icons/check-ok.svg</file>
     <file>icons/checkbox_checked.png</file>
     <file>icons/checkbox_checked_bright.png</file>

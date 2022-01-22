@@ -448,31 +448,31 @@ class BaseLightTheme(object):
         )
 
         self.qss.QTreeView["branch"]["has-children"]["!has-siblings"]["closed"].setValues(
-            image="url(:/icons/branch_closed)",
+            image="url(:/icons/caret-right-fill)",
         )
         self.qss.QTreeView["branch"]["closed"]["has-children"]["has-siblings"].setValues(
-            image="url(:/icons/branch_closed)",
+            image="url(:/icons/caret-right-fill)",
         )
 
         self.qss.QTreeView["branch"]["open"]["has-children"]["!has-siblings"].setValues(
-            image="url(:/icons/branch_open)",
+            image="url(:/icons/caret-down-fill)",
         )
         self.qss.QTreeView["branch"]["open"]["has-children"]["has-siblings"].setValues(
-            image="url(:/icons/branch_open)",
+            image="url(:/icons/caret-down-fill)",
         )
 
         self.qss.QTreeView["branch"]["has-children"]["!has-siblings"]["closed"]["hover"].setValues(
-            image="url(:/icons/branch_closed-on)",
+            image="url(:/icons/caret-right-fill-on)",
         )
         self.qss.QTreeView["branch"]["closed"]["has-children"]["has-siblings"]["hover"].setValues(
-            image="url(:/icons/branch_closed-on)",
+            image="url(:/icons/caret-right-fill-on)",
         )
 
         self.qss.QTreeView["branch"]["open"]["has-children"]["!has-siblings"]["hover"].setValues(
-            image="url(:/icons/branch_open-on)",
+            image="url(:/icons/caret-down-fill-on)",
         )
         self.qss.QTreeView["branch"]["open"]["has-children"]["has-siblings"]["hover"].setValues(
-            image="url(:/icons/branch_open-on)",
+            image="url(:/icons/caret-down-fill-on)",
         )
 
         self.qss.QTreeView["branch"]["selected"].setValues(
