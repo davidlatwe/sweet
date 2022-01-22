@@ -1199,9 +1199,8 @@ class ContextResolveWidget(QtWidgets.QWidget):
         tabs.addTab(graph, "Graph")
         tabs.addTab(log, "Log")
 
+        tabs.setDocumentMode(True)
         tabs.tabBar().setExpanding(True)
-        tabs.setStyleSheet("QTabWidget::tab-bar {width: 999999px;}")
-        # https://stackoverflow.com/a/17376440/14054728
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(tabs)
