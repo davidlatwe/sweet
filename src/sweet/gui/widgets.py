@@ -136,6 +136,7 @@ class TreeView(qoverview.VerticalExtendedTreeView):
     def __init__(self, *args, **kwargs):
         super(TreeView, self).__init__(*args, **kwargs)
         self.setAllColumnsShowFocus(True)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setStyleSheet("""
             QTreeView::item{
