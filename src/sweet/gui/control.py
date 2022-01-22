@@ -146,7 +146,7 @@ class Controller(QtCore.QObject):
 
         _defer(on_time=500)(Controller.scan_suite_storage)(self)
         _defer(on_time=500)(Controller.scan_installed_packages)(self)
-        _defer(on_time=600)(Controller.add_context)(self, "new")
+        _defer(on_time=600)(Controller.new_suite)(self)
 
     def sender(self):
         """Internal use. To preserve real signal sender for decorated method."""
@@ -281,6 +281,9 @@ class Controller(QtCore.QObject):
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def new_suite(self):
         self._reset_suite()
+        # add a default context 'new'
+        ctx = self._sop.add_context("new", self._sop.resolve_context([]))
+        self.context_added.emit(ctx)
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def save_suite(self, branch, name, description):
