@@ -1057,7 +1057,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(tools, "Tools")
         tabs.addTab(packages, "Packages")
-        tabs.addTab(environ, "Env Vars")
+        tabs.addTab(environ, "Environ")
         tabs.addTab(code, "Code")
         tabs.addTab(graph, "Graph")
         tabs.addTab(log, "Log")
