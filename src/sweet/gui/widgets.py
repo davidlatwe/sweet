@@ -747,6 +747,10 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         if callable(callback):
             _self = panel
             callback(_self, ctx)
+        # todo: adding default context is for the convenience of working with
+        #   GUI, so the widget should be the one to issue a new context to
+        #   the controller. (the trigger should be here, not in both place,
+        #   see Controller.new_suite)
 
     def add_panel(self, enabled=True):
         """Push a new panel widget into stack

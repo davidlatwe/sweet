@@ -284,6 +284,9 @@ class Controller(QtCore.QObject):
         # add a default context 'new'
         ctx = self._sop.add_context("new", self._sop.resolve_context([]))
         self.context_added.emit(ctx)
+        # todo: the behavior of adding default context 'new' is not synced
+        #   with widget side implementation. this caused a bug when doing
+        #   suite-load. (the 'new' didn't get removed when suite loaded.)
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def save_suite(self, branch, name, description):
