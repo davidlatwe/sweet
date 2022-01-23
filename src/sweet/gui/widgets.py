@@ -1409,6 +1409,7 @@ class ResolvedLog(QtWidgets.QWidget):
         clear = QtWidgets.QPushButton("clear")
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 0)
         layout.addWidget(text)
         layout.addWidget(clear)
 

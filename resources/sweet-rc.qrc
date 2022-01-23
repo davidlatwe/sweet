@@ -9,20 +9,15 @@
     <file>icons/caret-right-fill.svg</file>
     <file>icons/check-ok.svg</file>
     <file>icons/checkbox_checked.png</file>
-    <file>icons/checkbox_checked_bright.png</file>
     <file>icons/checkbox_checked_dim.png</file>
     <file>icons/checkbox_indeterminate.png</file>
-    <file>icons/checkbox_indeterminate_bright.png</file>
     <file>icons/checkbox_indeterminate_dim.png</file>
     <file>icons/checkbox_unchecked.png</file>
-    <file>icons/checkbox_unchecked_bright.png</file>
     <file>icons/checkbox_unchecked_dim.png</file>
     <file>icons/chevron_down.svg</file>
     <file>icons/chevron_left.svg</file>
     <file>icons/chevron_right.svg</file>
     <file>icons/chevron_up.svg</file>
-    <file>icons/down_arrow.png</file>
-    <file>icons/down_arrow_dim.png</file>
     <file>icons/egg-fill-dim.svg</file>
     <file>icons/egg-fill.svg</file>
     <file>icons/egg-fried-dim.svg</file>
@@ -48,8 +43,6 @@
     <file>icons/toggle-on.svg</file>
     <file>icons/trash-fill-dim.svg</file>
     <file>icons/trash-fill.svg</file>
-    <file>icons/up_arrow.png</file>
-    <file>icons/up_arrow_dim.png</file>
     <file>icons/x.svg</file>
     <file>fonts/opensans/OpenSans-Bold.ttf</file>
     <file>fonts/opensans/OpenSans-Italic.ttf</file>
