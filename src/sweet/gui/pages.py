@@ -52,10 +52,12 @@ class SuitePage(BusyWidget):
         stacked_request = StackedRequestWidget()
         stacked_resolve = StackedResolveWidget()
         tool_stack = ContextToolTreeWidget()
+        installed = InstalledPackagesWidget()
 
         views = QtWidgets.QTabWidget()
         views.addTab(stacked_resolve, "Resolved Details")
         views.addTab(tool_stack, "Tool Stack")
+        views.addTab(installed, "Installed Packages")
         views.setTabPosition(views.East)
         views.setDocumentMode(True)
 
@@ -123,17 +125,6 @@ class StoragePage(BusyWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(body_split)
-
-
-class PackagesPage(QtWidgets.QWidget):
-
-    def __init__(self, *args, **kwargs):
-        super(PackagesPage, self).__init__(*args, **kwargs)
-
-        installed = InstalledPackagesWidget()
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(installed)
 
 
 class PreferencePage(QtWidgets.QWidget):
