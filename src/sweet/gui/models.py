@@ -32,9 +32,9 @@ class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
     def __init__(self, *args, **kwargs):
         super(_LocationIndicator, self).__init__(*args, **kwargs)
         self._location_icon = [
-            QtGui.QIcon(":/icons/person-circle"),  # local
-            QtGui.QIcon(":/icons/people-fill"),  # non-local
-            QtGui.QIcon(":/icons/people-fill-ok"),  # released
+            QtGui.QIcon(":/icons/person-circle.svg"),  # local
+            QtGui.QIcon(":/icons/people-fill.svg"),  # non-local
+            QtGui.QIcon(":/icons/people-fill-ok.svg"),  # released
         ]
         self._location_text = [
             "local", "non-local", "released"
@@ -129,10 +129,10 @@ class ToolTreeModel(BaseItemModel):
     def __init__(self, editable=True, *args, **kwargs):
         super(ToolTreeModel, self).__init__(*args, **kwargs)
         self._status_icon = {
-            Constants.TOOL_VALID: QtGui.QIcon(":/icons/check-ok"),
-            Constants.TOOL_HIDDEN: QtGui.QIcon(":/icons/slash-lg"),
-            Constants.TOOL_SHADOWED: QtGui.QIcon(":/icons/exclamation-warn"),
-            Constants.TOOL_MISSING: QtGui.QIcon(":/icons/x"),
+            Constants.TOOL_VALID: QtGui.QIcon(":/icons/check-ok.svg"),
+            Constants.TOOL_HIDDEN: QtGui.QIcon(":/icons/slash-lg.svg"),
+            Constants.TOOL_SHADOWED: QtGui.QIcon(":/icons/exclamation-warn.svg"),
+            Constants.TOOL_MISSING: QtGui.QIcon(":/icons/x.svg"),
         }
         self._status_tip = {
             Constants.TOOL_VALID: "Can be accessed.",

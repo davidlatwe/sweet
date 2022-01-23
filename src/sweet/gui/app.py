@@ -39,6 +39,14 @@ class Session(object):
 
             py_signal.signal(py_signal.SIGINT, sigint_handler)
 
+        # sharpen icons/images
+        # * the .svg file ext is needed in file path for Qt to auto scale it.
+        # * without file ext given for svg file, may need to hard-coding attr
+        #   like width/height/viewBox attr in that svg file.
+        # * without the Qt attr below, .svg may being rendered as they were
+        #   low-res.
+        app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+
         # init
 
         storage = QtCore.QSettings(QtCore.QSettings.IniFormat,

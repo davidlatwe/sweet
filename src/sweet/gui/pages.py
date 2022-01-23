@@ -56,6 +56,8 @@ class SuitePage(BusyWidget):
         views = QtWidgets.QTabWidget()
         views.addTab(stacked_resolve, "Resolved Details")
         views.addTab(tool_stack, "Tool Stack")
+        views.setTabPosition(views.East)
+        views.setDocumentMode(True)
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
@@ -64,6 +66,7 @@ class SuitePage(BusyWidget):
 
         body_split.setOrientation(QtCore.Qt.Horizontal)
         body_split.setChildrenCollapsible(False)
+        body_split.setContentsMargins(0, 0, 0, 0)
         body_split.setStretchFactor(0, 20)
         body_split.setStretchFactor(1, 40)
         body_split.setStretchFactor(2, 40)

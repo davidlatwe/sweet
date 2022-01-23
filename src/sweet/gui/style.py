@@ -82,8 +82,9 @@ class BaseLightTheme(object):
 
     def style_sheet(self, refresh=False):
         if self._composed is None or refresh:
+            self._composed = ""
             self.compose_styles()
-            self._composed = self.qss.toString()
+            self._composed += self.qss.toString()
             self._composed += """
         QTabBar {qproperty-drawBase: 0;}
         QSplitterHandle:hover {} /*https://bugreports.qt.io/browse/QTBUG-13768*/
@@ -125,7 +126,7 @@ class BaseLightTheme(object):
             border=f"1px solid {self.palette.on_background}",
             borderRadius="0px",
             minHeight="24px",
-            padding="8px",
+            padding="4px",
         )
         self.qss.QPushButton["hover"].setValues(
             backgroundColor=self.palette.background,
@@ -155,22 +156,22 @@ class BaseLightTheme(object):
             backgroundColor=self.palette.background,
         )
         self.qss.QCheckBox["indicator"]["unchecked"].setValues(
-            image="url(:/icons/checkbox_unchecked)",
+            image="url(:/icons/checkbox_unchecked.png)",
         )
         self.qss.QCheckBox["indicator"]["unchecked"]["disabled"].setValues(
-            image="url(:/icons/checkbox_unchecked_dim)",
+            image="url(:/icons/checkbox_unchecked_dim.png)",
         )
         self.qss.QCheckBox["indicator"]["checked"].setValues(
-            image="url(:/icons/checkbox_checked)",
+            image="url(:/icons/checkbox_checked.png)",
         )
         self.qss.QCheckBox["indicator"]["checked"]["disabled"].setValues(
-            image="url(:/icons/checkbox_checked_dim)",
+            image="url(:/icons/checkbox_checked_dim.png)",
         )
         self.qss.QCheckBox["indicator"]["indeterminate"].setValues(
-            image="url(:/icons/checkbox_indeterminate)",
+            image="url(:/icons/checkbox_indeterminate.png)",
         )
         self.qss.QCheckBox["indicator"]["indeterminate"]["disabled"].setValues(
-            image="url(:/icons/checkbox_indeterminate_dim)",
+            image="url(:/icons/checkbox_indeterminate_dim.png)",
         )
 
     def _q_menu(self):
@@ -200,16 +201,16 @@ class BaseLightTheme(object):
             marginLeft="4px",
         )
         self.qss.QMenu["indicator"]["non-exclusive"]["checked"].setValues(
-            image="url(:/icons/checkbox_checked)",
+            image="url(:/icons/checkbox_checked.png)",
         )
         self.qss.QMenu["indicator"]["non-exclusive"]["unchecked"].setValues(
-            image="url(:/icons/checkbox_unchecked)",
+            image="url(:/icons/checkbox_unchecked.png)",
         )
         self.qss.QMenu["indicator"]["exclusive"]["checked"].setValues(
-            image="url(:/icons/checkbox_checked)",
+            image="url(:/icons/checkbox_checked.png)",
         )
         self.qss.QMenu["indicator"]["exclusive"]["unchecked"].setValues(
-            image="url(:/icons/checkbox_unchecked)",
+            image="url(:/icons/checkbox_unchecked.png)",
         )
 
     def _q_frame(self):
@@ -405,14 +406,14 @@ class BaseLightTheme(object):
         )
 
         self.qss.QHeaderView["down-arrow"].setValues(
-            image="url(:/icons/chevron_down)",
+            image="url(:/icons/chevron_down.svg)",
             subcontrolPosition="top center",
             height="8px",
             width="8px",
         )
 
         self.qss.QHeaderView["up-arrow"].setValues(
-            image="url(:/icons/chevron_up)",
+            image="url(:/icons/chevron_up.svg)",
             subcontrolPosition="top center",
             height="8px",
             width="8px",
@@ -448,31 +449,31 @@ class BaseLightTheme(object):
         )
 
         self.qss.QTreeView["branch"]["has-children"]["!has-siblings"]["closed"].setValues(
-            image="url(:/icons/caret-right-fill)",
+            image="url(:/icons/caret-right-fill.svg)",
         )
         self.qss.QTreeView["branch"]["closed"]["has-children"]["has-siblings"].setValues(
-            image="url(:/icons/caret-right-fill)",
+            image="url(:/icons/caret-right-fill.svg)",
         )
 
         self.qss.QTreeView["branch"]["open"]["has-children"]["!has-siblings"].setValues(
-            image="url(:/icons/caret-down-fill)",
+            image="url(:/icons/caret-down-fill.svg)",
         )
         self.qss.QTreeView["branch"]["open"]["has-children"]["has-siblings"].setValues(
-            image="url(:/icons/caret-down-fill)",
+            image="url(:/icons/caret-down-fill.svg)",
         )
 
         self.qss.QTreeView["branch"]["has-children"]["!has-siblings"]["closed"]["hover"].setValues(
-            image="url(:/icons/caret-right-fill-on)",
+            image="url(:/icons/caret-right-fill-on.svg)",
         )
         self.qss.QTreeView["branch"]["closed"]["has-children"]["has-siblings"]["hover"].setValues(
-            image="url(:/icons/caret-right-fill-on)",
+            image="url(:/icons/caret-right-fill-on.svg)",
         )
 
         self.qss.QTreeView["branch"]["open"]["has-children"]["!has-siblings"]["hover"].setValues(
-            image="url(:/icons/caret-down-fill-on)",
+            image="url(:/icons/caret-down-fill-on.svg)",
         )
         self.qss.QTreeView["branch"]["open"]["has-children"]["has-siblings"]["hover"].setValues(
-            image="url(:/icons/caret-down-fill-on)",
+            image="url(:/icons/caret-down-fill-on.svg)",
         )
 
         self.qss.QTreeView["branch"]["selected"].setValues(
@@ -482,6 +483,114 @@ class BaseLightTheme(object):
         self.qss.QTreeView["branch"]["hover"].setValues(
             backgroundColor=self.palette.primary
         )
+
+    def _q_dialog(self):
+        self.qss["#AcceptButton"].setValues(
+            icon="url(:/icons/check-ok.svg)",
+        )
+        self.qss["#CancelButton"].setValues(
+            icon="url(:/icons/x.svg)",
+        )
+
+    def _q_installed_packages(self):
+        self.qss["#PackageView"].setValues(
+            backgroundColor=self.palette.background,
+        )
+        self.qss["#PackagePage"].setValues(
+            backgroundColor=self.palette.background,
+            border=f"1px solid {self.palette.on_surface}",
+            borderLeft="none",
+        )
+        self.qss["#PackageSide"].setValues(
+            backgroundColor="transparent",
+            border="none",
+            borderRight=f"1px solid {self.palette.on_surface}",
+        )
+
+    def _q_context_buttons(self):
+        # qstylilzer bug:
+        #   AttributeError: 'PseudoStateRule' object has no attribute 'icon'
+        #
+        # also:
+        #   property `icon` is available since 5.15. (only for QPushButton)
+        #   https://doc.qt.io/qt-5/stylesheet-reference.html#icon
+        #
+        self._composed += """
+        #ContextResolveOpBtn {
+            icon: url(:/icons/lightning-fill-dim.svg);
+        }
+        #ContextResolveOpBtn:hover {
+            icon: url(:/icons/lightning-fill.svg);
+        }
+        #ContextAddOpBtn {
+            icon: url(:/icons/plus.svg);
+        }
+        #ContextAddOpBtn:hover {
+            icon: url(:/icons/plus.svg);
+        }
+        #ContextRemoveOpBtn {
+            icon: url(:/icons/trash-fill-dim.svg);
+        }
+        #ContextRemoveOpBtn:hover {
+            icon: url(:/icons/trash-fill.svg);
+        }
+        """
+
+    def _q_suite_bar(self):
+        self._composed += """
+        #SuiteNameEdit {
+            font-size: 24px;
+        }
+        #SuiteSaveButton {
+            min-height:24px;
+            min-width: 80px;
+            icon: url(:/icons/egg-fried-dim.svg);
+        }
+        #SuiteSaveButton:hover {
+            icon: url(:/icons/egg-fried.svg);
+        }
+        #SuiteNewButton {
+            min-height:24px;
+            min-width: 80px;
+            icon: url(:/icons/egg-fill-dim.svg);
+        }
+        #SuiteNewButton:hover {
+            icon: url(:/icons/egg-fill.svg);
+        }
+        """
+
+    def _q_requests(self):
+        self._composed += """
+        #RequestTextEdit,
+        #RequestTableEdit {
+            font-family: "JetBrains Mono";
+        }
+        """
+
+    def _q_tool_view(self):
+        self._composed += """
+        #ToolsView::item {
+            padding-left: 4px;
+        }
+        #ToolsView::indicator:unchecked {
+            image: url(:icons/toggle-off.svg);
+        }
+        #ToolsView::indicator:unchecked:hover {
+            image: url(:icons/toggle-off-bright.svg);
+        }
+        #ToolsView::indicator:unchecked:disabled {
+            image: url(:icons/toggle-off-dim.svg);
+        }
+        #ToolsView::indicator:checked {
+            image: url(:icons/toggle-on.svg);
+        }
+        #ToolsView::indicator:checked:hover {
+            image: url(:icons/toggle-on-bright.svg);
+        }
+        #ToolsView::indicator:checked:disabled {
+            image: url(:icons/toggle-on-dim.svg);
+        }
+        """
 
 
 class BaseDarkTheme(BaseLightTheme):
@@ -508,3 +617,261 @@ class BaseDarkTheme(BaseLightTheme):
         on_error=HSL(0.00, 0.00, 12.94),  # Grey 900
         on_warning=HSL(0.00, 0.00, 12.94),  # Grey 900
     )
+
+
+# todo:
+"""
+#Preference QScrollArea {
+    border: 1px solid %(border.bright)s;
+}
+
+#ContextOperationBar QPushButton {
+    max-width: 18px;
+    max-height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    padding: 2px;
+    border: none;
+    background-color: transparent;
+}
+
+#ContextView QLineEdit {
+    background-color: %(background.bright)s;
+}
+
+#DocStrings {
+    color: %(on.dim.surface)s;
+}
+
+"""
+
+
+"""
+QAbstractScrollArea {
+    background-color: %(background.bright)s;
+}
+
+QScrollBar:horizontal {
+    background-color: %(background.bright)s;
+    height: 10px;
+    border: none;
+    margin: 0px 10px 0px 10px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: %(primary.bright)s;
+    min-width: 20px;
+    margin: 1px 1px 0px 1px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    background-color: %(background.bright)s;
+    border-top: 1px solid %(background.bright)s;
+    margin: 1px 0px 0px 0px;
+    height: 10px;
+    width: 10px;
+}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+QScrollBar::sub-line:horizontal {
+    image: url(%(res)s/chevron_left.svg);
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::add-line:horizontal {
+    image: url(%(res)s/chevron_right.svg);
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+}
+
+
+QScrollBar:vertical {
+    background-color: %(background.bright)s;
+    width: 10px;
+    border: none;
+    margin: 10px 0px 10px 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: %(primary.bright)s;
+    min-height: 20px;
+    margin: 1px 0px 1px 1px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background-color: %(background.bright)s;
+    border-left: 1px solid %(background.bright)s;
+    margin: 0px 0px 0px 1px;
+    height: 10px;
+    width: 10px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QScrollBar::sub-line:vertical {
+    image: url(%(res)s/chevron_up.svg);
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::add-line:vertical {
+    image: url(%(res)s/chevron_down.svg);
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+}
+"""
+
+
+"""
+QToolTip, QTextEdit, QLineEdit {
+    border: 1px solid %(border.bright)s;
+    background-color: %(background.bright)s;
+}
+
+QComboBox {
+    border: 1px solid %(border.bright)s;
+    padding: 2px;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url(%(res)s/down_arrow_dim.png);
+}
+
+QComboBox::down-arrow:on,
+QComboBox::down-arrow:hover,
+QComboBox::down-arrow:focus {
+    image: url(%(res)s/down_arrow.png);
+}
+
+QAbstractSpinBox {
+    border: 1px solid %(border.bright)s;
+}
+
+QAbstractSpinBox:up-button
+{
+    background-color: transparent;
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+}
+
+QAbstractSpinBox:down-button
+{
+    background-color: transparent;
+    subcontrol-origin: border;
+    subcontrol-position: center left;
+}
+
+QAbstractSpinBox::up-arrow,
+QAbstractSpinBox::up-arrow:disabled,
+QAbstractSpinBox::up-arrow:off {
+    image: url(%(res)s/up_arrow_dim.png);
+}
+
+QAbstractSpinBox::up-arrow:hover
+{
+    image: url(%(res)s/up_arrow.png);
+}
+
+QAbstractSpinBox::down-arrow,
+QAbstractSpinBox::down-arrow:disabled,
+QAbstractSpinBox::down-arrow:off
+{
+    image: url(%(res)s/down_arrow_dim.png);
+}
+
+QAbstractSpinBox::down-arrow:hover
+{
+    image: url(%(res)s/down_arrow.png);
+}
+
+"""
+
+
+"""
+QSlider::groove:horizontal {
+    background: %(background.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    height: 2px;
+    margin: 2px 0;
+}
+
+QSlider::handle:horizontal {
+    background: %(primary.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 6px;
+    height: 14px;
+    margin: -8px 0;
+}
+
+QSlider::groove:vertical {
+    background: %(background.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 2px;
+    margin: 0 0px;
+}
+
+QSlider::handle:vertical {
+    background: %(primary.bright)s;
+    border: 1px solid %(border.bright)s;
+    border-radius: 2px;
+    width: 14px;
+    height: 6px;
+    margin: 0 -8px;
+}
+
+QSlider:focus {
+    border: none;
+}
+
+"""
+
+
+"""
+#PackageTreeView::item{
+    padding: 5px 1px;
+    border: 0px;
+}
+
+#PackageTreeView::item:selected{
+    padding: 5px 1px;
+    border: 0px;
+}
+
+#PackageTreeView::indicator:unchecked {
+    image: url(%(res)s/checkbox_unchecked.png);
+}
+
+#PackageTreeView::indicator:unchecked:disabled {
+    image: url(%(res)s/checkbox_unchecked_dim.png);
+}
+
+#PackageTreeView::indicator:checked {
+    image: url(%(res)s/checkbox_checked.png);
+}
+
+#PackageTreeView::indicator:checked:disabled {
+    image: url(%(res)s/checkbox_checked_dim.png);
+}
+
+#PackageTreeView::indicator:indeterminate {
+    image: url(%(res)s/checkbox_indeterminate.png);
+}
+
+#PackageTreeView::indicator:indeterminate:disabled {
+    image: url(%(res)s/checkbox_indeterminate_dim.png);
+}
+
+"""

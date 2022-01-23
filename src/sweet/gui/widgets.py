@@ -240,11 +240,11 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
 
-        new_btn.setIcon(QtGui.QIcon(":/icons/egg-fill"))
-        save_btn.setIcon(QtGui.QIcon(":/icons/egg-fried"))
-        save_btn.setEnabled(False)
+        name.setObjectName("SuiteNameEdit")
+        new_btn.setObjectName("SuiteNewButton")
+        save_btn.setObjectName("SuiteSaveButton")
 
-        name.setFont(QtGui.QFont("OpenSans", 14))
+        save_btn.setEnabled(False)
         name.setPlaceholderText("Suite name..")
 
         layout = QtWidgets.QHBoxLayout(self)
@@ -671,7 +671,7 @@ class ToolsView(TreeView):
 
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
-        self.setObjectName("ToolView")
+        self.setObjectName("ToolsView")
 
 
 class ContextToolTreeWidget(QtWidgets.QWidget):
@@ -854,12 +854,6 @@ class StackedRequestWidget(NameStackedBase):
         return panel
 
 
-class RequestTableItem(QtWidgets.QTableWidgetItem):
-    def __init__(self, *args, **kwargs):
-        super(RequestTableItem, self).__init__(*args, **kwargs)
-        self.setFont(QtGui.QFont("JetBrains Mono"))
-
-
 class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
 
     def createEditor(self, parent, option, index):
@@ -882,6 +876,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
 
     def __init__(self, *args, **kwargs):
         super(RequestTableEdit, self).__init__(*args, **kwargs)
+        self.setObjectName("RequestTableEdit")
 
         delegate = RequestTableItemDelegate(self)
 
@@ -892,7 +887,6 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         self.verticalHeader().setVisible(False)
         self.setShowGrid(True)
         self.setEditTriggers(self.AllEditTriggers)
-        self.setItemPrototype(RequestTableItem())
         self.setItemDelegate(delegate)
 
         self.itemChanged.connect(self.on_item_changed)
@@ -935,7 +929,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
 
         for row, text in enumerate(requests):
             self.insertRow(row)
-            self.setItem(row, 0, RequestTableItem(text))
+            self.setItem(row, 0, QtWidgets.QTableWidgetItem(text))
 
         row = self.rowCount()
         self.insertRow(row)
