@@ -1,6 +1,45 @@
 
-from dataclasses import dataclass
+import math
 import qstylizer.style
+from dataclasses import dataclass
+from ._vendor.Qt5 import QtGui, QtWidgets
+
+
+_app = QtWidgets.QApplication.instance() or QtWidgets.QApplication()
+_screen = _app.screenAt(QtGui.QCursor.pos())
+_density = _screen.devicePixelRatio()
+_hdpi_scale = (_screen.physicalDotsPerInch() / 96.0) if _density > 1 else 1
+
+
+def px(value):
+    """Return a scaled value, for HDPI resolutions
+
+    https://doc.qt.io/qt-5/highdpi.html
+    Although Qt provides some env vars and q-attributes for supporting
+    cross-platform high-DPI scaling, I find scaling px with these factors
+    has the best result.
+
+    """
+    return math.floor(value / _density * _hdpi_scale)
+
+
+def _scaled_stylesheet(_stylesheet):
+    """Replace any mention of <num>px with scaled version
+
+    This way, you can still use px without worrying about what
+    it will look like at HDPI resolution.
+
+    """
+
+    output = []
+    for line in _stylesheet.splitlines():
+        line = line.rstrip()
+        if line.endswith("px;"):
+            key, value = line.rsplit(" ", 1)
+            value = px(int(value[:-3]))
+            line = "%s %dpx;" % (key, value)
+        output += [line]
+    return "\n".join(output)
 
 
 @dataclass
@@ -89,7 +128,8 @@ class BaseLightTheme(object):
         QTabBar {qproperty-drawBase: 0;}
         QSplitterHandle:hover {} /*https://bugreports.qt.io/browse/QTBUG-13768*/
         """
-        return self._composed
+        # todo: drop qstylizer, and use f-string + px() instead of line parsing.
+        return _scaled_stylesheet(self._composed)
 
     def compose_styles(self):
         for name in self.__dir__():
@@ -126,7 +166,7 @@ class BaseLightTheme(object):
             border=f"1px solid {self.palette.on_background}",
             borderRadius="0px",
             minHeight="24px",
-            padding="4px",
+            padding="8px",
         )
         self.qss.QPushButton["hover"].setValues(
             backgroundColor=self.palette.background,
@@ -539,19 +579,19 @@ class BaseLightTheme(object):
     def _q_suite_bar(self):
         self._composed += """
         #SuiteNameEdit {
-            font-size: 24px;
+            font-size: 30px;
         }
         #SuiteSaveButton {
-            min-height:24px;
-            min-width: 80px;
+            min-height: 24px;
+            min-width: 160px;
             icon: url(:/icons/egg-fried-dim.svg);
         }
         #SuiteSaveButton:hover {
             icon: url(:/icons/egg-fried.svg);
         }
         #SuiteNewButton {
-            min-height:24px;
-            min-width: 80px;
+            min-height: 24px;
+            min-width: 160px;
             icon: url(:/icons/egg-fill-dim.svg);
         }
         #SuiteNewButton:hover {
