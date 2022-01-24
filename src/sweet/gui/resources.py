@@ -774,24 +774,24 @@ class BaseLightTheme(object):
 class BaseDarkTheme(BaseLightTheme):
     name = "sweet-dark"
     palette = Palette(
-        primary=HSL(35.67, 100.00, 57.45),  # Orange 400
+        primary=HSL(33.65, 100.00, 50.00),  # Amber 800
         primary_bright=HSL(53.88, 100.00, 61.57),  # Yellow 500
         primary_dimmed=HSL(35.91, 100.00, 75.10),  # Orange 200
 
-        secondary=HSL(15.88, 15.32, 56.47),  # Brown 300
+        secondary=HSL(14.21, 25.68, 29.02),  # Brown 700
         secondary_bright=HSL(15.71, 17.50, 47.06),  # Brown 400
         secondary_dimmed=HSL(16.00, 15.79, 81.37),  # Brown 100
 
-        surface=HSL(0.00, 0.00, 74.12),  # Grey 400
-        background=HSL(0.00, 0.00, 87.84),  # Grey 300
+        surface=HSL(200.00, 17.91, 26.27),  # Blue Grey 800
+        background=HSL(0.00, 0.00, 12.94),  # Grey 900
 
         error=HSL(11.95, 100.00, 43.33),  # Deep Orange A700
         warning=HSL(40.24, 100.00, 50.00),  # Amber A700
 
-        on_primary=HSL(0.00, 0.00, 25.88),  # Grey 800
-        on_secondary=HSL(0.00, 0.00, 25.88),  # Grey 800
-        on_surface=HSL(200.00, 15.63, 62.35),  # Blue Grey 300
-        on_background=HSL(200.00, 15.63, 62.35),  # Blue Grey 300
+        on_primary=HSL(0.00, 0.00, 61.96),  # Grey 500
+        on_secondary=HSL(0.00, 0.00, 87.85),  # Grey 300.01
+        on_surface=HSL(0.00, 0.00, 18.88),  # Grey 850
+        on_background=HSL(0.00, 0.00, 25.89),  # Grey 800.01
         on_error=HSL(0.00, 0.00, 12.94),  # Grey 900
         on_warning=HSL(0.00, 0.00, 12.94),  # Grey 900
     )
