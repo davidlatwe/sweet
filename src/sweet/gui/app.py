@@ -5,7 +5,7 @@ import signal as py_signal
 from importlib import reload
 from contextlib import contextmanager
 from ._vendor.Qt5 import QtCore, QtWidgets
-from . import control, window, pages, widgets, resources, style
+from . import control, window, pages, widgets, resources
 
 
 if sys.platform == "darwin":
@@ -207,7 +207,6 @@ class Session(object):
 
     def reload_theme(self):
         """For look-dev"""
-        reload(style)
         reload(resources)
         resources.load_themes()
         qss = resources.load_theme(name=self.state.retrieve("theme"))
