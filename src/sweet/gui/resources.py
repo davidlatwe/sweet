@@ -298,6 +298,26 @@ class BaseLightTheme(object):
 
         """
 
+    def _q_combo_box(self):
+        return f"""
+        QComboBox {{
+            border: 1px solid {self.palette.border};
+            padding: {px(2)};
+        }}
+        QComboBox::drop-down {{
+            border: none;
+            min-width: {px(36)};
+        }}
+        QComboBox::down-arrow,
+        QComboBox::down-arrow:focus {{
+            image: url(:/icons/chevron_left.svg);
+        }}
+        QComboBox::down-arrow:on,
+        QComboBox::down-arrow:hover {{
+            image: url(:/icons/chevron_down.svg);
+        }}
+        """
+
     def _q_check_box(self):
         return f"""
 
@@ -788,6 +808,111 @@ class BaseLightTheme(object):
 
         """
 
+    def _q_scroll_bar(self):
+        return f"""
+        
+        QAbstractScrollArea {{
+            background-color: {self.palette.background};
+        }}
+        
+        QScrollBar:horizontal {{
+            background-color: {self.palette.background};
+            height: {px(16)};
+            border: none;
+            border-top: 1px solid {self.palette.border};
+            margin: 0px {px(16)} 0px {px(16)};
+        }}
+        
+        QScrollBar::handle:horizontal {{
+            background-color: {self.palette.surface};
+            min-width: {px(20)};
+            margin: 1px 1px 0px 1px;
+        }}
+        
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+            /*background-color: {self.palette.surface};*/
+            border-top: 1px solid {self.palette.border};
+            margin: 1px 0px 0px 0px;
+            height: {px(16)};
+            width: {px(16)};
+        }}
+        
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+            background: none;
+        }}
+        
+        QScrollBar::sub-line:horizontal {{
+            image: url(:/icons/chevron_left.svg);
+            subcontrol-position: left;
+            subcontrol-origin: margin;
+        }}
+        
+        QScrollBar::add-line:horizontal {{
+            image: url(:/icons/chevron_right.svg);
+            subcontrol-position: right;
+            subcontrol-origin: margin;
+        }}
+        
+        
+        QScrollBar:vertical {{
+            background-color: {self.palette.background};
+            width: {px(16)};
+            border: none;
+            border-left: 1px solid {self.palette.border};
+            margin: {px(16)} 0px {px(16)} 0px;
+        }}
+        
+        QScrollBar::handle:vertical {{
+            background-color: {self.palette.surface};
+            min-height: {px(20)};
+            margin: 1px 0px 1px 1px;
+        }}
+        
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            /*background-color: {self.palette.surface};*/
+            border-left: 1px solid {self.palette.border};
+            margin: 0px 0px 0px 1px;
+            height: {px(16)};
+            width: {px(16)};
+        }}
+        
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+            background: none;
+        }}
+        
+        QScrollBar::sub-line:vertical {{
+            image: url(:/icons/chevron_up.svg);
+            subcontrol-position: top;
+            subcontrol-origin: margin;
+        }}
+        
+        QScrollBar::add-line:vertical {{
+            image: url(:/icons/chevron_down.svg);
+            subcontrol-position: bottom;
+            subcontrol-origin: margin;
+        }}
+
+        """
+
+    def _q_others(self):
+        return f"""
+        
+        #ButtonBelt QPushButton {{
+            max-width: {px(18)};
+            max-height: {px(18)};
+            min-width: {px(18)};
+            min-height: {px(18)};
+            padding: {px(2)};
+            border: none;
+            background-color: transparent;
+        }}
+        
+        #DocStrings {{
+            color: {self.palette.on_background.fade};
+        }}
+
+        """
+
 
 class BaseDarkTheme(BaseLightTheme):
     name = "sweet-dark"
@@ -809,226 +934,6 @@ class BaseDarkTheme(BaseLightTheme):
         on_error=HSL(0.00, 0.00, 12.95),            # Grey 900.01
         on_warning=HSL(0.00, 0.00, 12.96),          # Grey 900.02
     )
-
-
-# todo:
-"""
-#Preference QScrollArea {
-    border: 1px solid %(border.bright)s;
-}
-
-#ContextOperationBar QPushButton {
-    max-width: 18px;
-    max-height: 18px;
-    min-width: 18px;
-    min-height: 18px;
-    padding: 2px;
-    border: none;
-    background-color: transparent;
-}
-
-#ContextView QLineEdit {
-    background-color: %(background.bright)s;
-}
-
-#DocStrings {
-    color: %(on.dim.surface)s;
-}
-
-"""
-
-
-"""
-QAbstractScrollArea {
-    background-color: %(background.bright)s;
-}
-
-QScrollBar:horizontal {
-    background-color: %(background.bright)s;
-    height: 10px;
-    border: none;
-    margin: 0px 10px 0px 10px;
-}
-
-QScrollBar::handle:horizontal {
-    background-color: %(primary.bright)s;
-    min-width: 20px;
-    margin: 1px 1px 0px 1px;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    background-color: %(background.bright)s;
-    border-top: 1px solid %(background.bright)s;
-    margin: 1px 0px 0px 0px;
-    height: 10px;
-    width: 10px;
-}
-
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: none;
-}
-
-QScrollBar::sub-line:horizontal {
-    image: url(%(res)s/chevron_left.svg);
-    subcontrol-position: left;
-    subcontrol-origin: margin;
-}
-
-QScrollBar::add-line:horizontal {
-    image: url(%(res)s/chevron_right.svg);
-    subcontrol-position: right;
-    subcontrol-origin: margin;
-}
-
-
-QScrollBar:vertical {
-    background-color: %(background.bright)s;
-    width: 10px;
-    border: none;
-    margin: 10px 0px 10px 0px;
-}
-
-QScrollBar::handle:vertical {
-    background-color: %(primary.bright)s;
-    min-height: 20px;
-    margin: 1px 0px 1px 1px;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background-color: %(background.bright)s;
-    border-left: 1px solid %(background.bright)s;
-    margin: 0px 0px 0px 1px;
-    height: 10px;
-    width: 10px;
-}
-
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: none;
-}
-
-QScrollBar::sub-line:vertical {
-    image: url(%(res)s/chevron_up.svg);
-    subcontrol-position: top;
-    subcontrol-origin: margin;
-}
-
-QScrollBar::add-line:vertical {
-    image: url(%(res)s/chevron_down.svg);
-    subcontrol-position: bottom;
-    subcontrol-origin: margin;
-}
-"""
-
-
-"""
-QToolTip, QTextEdit, QLineEdit {
-    border: 1px solid %(border.bright)s;
-    background-color: %(background.bright)s;
-}
-
-QComboBox {
-    border: 1px solid %(border.bright)s;
-    padding: 2px;
-}
-
-QComboBox::drop-down {
-    border: none;
-}
-
-QComboBox::down-arrow {
-    image: url(%(res)s/down_arrow_dim.png);
-}
-
-QComboBox::down-arrow:on,
-QComboBox::down-arrow:hover,
-QComboBox::down-arrow:focus {
-    image: url(%(res)s/down_arrow.png);
-}
-
-QAbstractSpinBox {
-    border: 1px solid %(border.bright)s;
-}
-
-QAbstractSpinBox:up-button
-{
-    background-color: transparent;
-    subcontrol-origin: border;
-    subcontrol-position: center right;
-}
-
-QAbstractSpinBox:down-button
-{
-    background-color: transparent;
-    subcontrol-origin: border;
-    subcontrol-position: center left;
-}
-
-QAbstractSpinBox::up-arrow,
-QAbstractSpinBox::up-arrow:disabled,
-QAbstractSpinBox::up-arrow:off {
-    image: url(%(res)s/up_arrow_dim.png);
-}
-
-QAbstractSpinBox::up-arrow:hover
-{
-    image: url(%(res)s/up_arrow.png);
-}
-
-QAbstractSpinBox::down-arrow,
-QAbstractSpinBox::down-arrow:disabled,
-QAbstractSpinBox::down-arrow:off
-{
-    image: url(%(res)s/down_arrow_dim.png);
-}
-
-QAbstractSpinBox::down-arrow:hover
-{
-    image: url(%(res)s/down_arrow.png);
-}
-
-"""
-
-
-"""
-QSlider::groove:horizontal {
-    background: %(background.bright)s;
-    border: 1px solid %(border.bright)s;
-    border-radius: 2px;
-    height: 2px;
-    margin: 2px 0;
-}
-
-QSlider::handle:horizontal {
-    background: %(primary.bright)s;
-    border: 1px solid %(border.bright)s;
-    border-radius: 2px;
-    width: 6px;
-    height: 14px;
-    margin: -8px 0;
-}
-
-QSlider::groove:vertical {
-    background: %(background.bright)s;
-    border: 1px solid %(border.bright)s;
-    border-radius: 2px;
-    width: 2px;
-    margin: 0 0px;
-}
-
-QSlider::handle:vertical {
-    background: %(primary.bright)s;
-    border: 1px solid %(border.bright)s;
-    border-radius: 2px;
-    width: 14px;
-    height: 6px;
-    margin: 0 -8px;
-}
-
-QSlider:focus {
-    border: none;
-}
-
-"""
 
 
 def qss_to_f_string(qss_str, theme_cls):
