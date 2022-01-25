@@ -1493,7 +1493,8 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         side = QtWidgets.QWidget()
         side.setObjectName("PackageSide")
 
-        refresh = QtWidgets.QPushButton("R")  # todo: need a refresh icon
+        refresh = QtWidgets.QPushButton()
+        refresh.setObjectName("RefreshButton")
         search = QtWidgets.QLineEdit()
         view = InstalledPackagesView()
         model = InstalledPackagesModel()

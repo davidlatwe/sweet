@@ -1,6 +1,8 @@
 
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>icons/arrow-clockwise-on.svg</file>
+    <file>icons/arrow-clockwise.svg</file>
     <file>icons/caret-down-fill-dim.svg</file>
     <file>icons/caret-down-fill-on.svg</file>
     <file>icons/caret-down-fill.svg</file>

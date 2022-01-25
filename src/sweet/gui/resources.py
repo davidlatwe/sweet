@@ -354,6 +354,31 @@ class BaseLightTheme(object):
 
         """
 
+    def _q_line_edit(self):
+        return f"""
+        
+        QLineEdit {{
+            color: {self.palette.on_background};
+            background-color: {self.palette.background};
+            border: none;
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        
+        QLineEdit[text=""] {{
+            color: {self.palette.on_background.fade};
+            border: none;
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        
+        QLineEdit:focus {{
+            color: {self.palette.on_background};
+            background-color: {self.palette.background};
+            border: none;
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        
+        """
+
     def _q_menu(self):
         return f"""
 
@@ -904,6 +929,20 @@ class BaseLightTheme(object):
 
     def _q_others(self):
         return f"""
+        
+        #RefreshButton {{
+            icon: url(:/icons/arrow-clockwise.svg);
+            border: none;
+            width: {px(18)};
+            height: {px(18)};
+        }}
+        
+        #RefreshButton:hover {{
+            icon: url(:/icons/arrow-clockwise-on.svg);
+            border: none;
+            width: {px(18)};
+            height: {px(18)};
+        }}
         
         #ButtonBelt QPushButton {{
             max-width: {px(18)};
