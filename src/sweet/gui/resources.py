@@ -522,24 +522,28 @@ class BaseLightTheme(object):
         QSplitter::handle:vertical {{
             height: 0px;
             margin: {px(4)};
-            padding: -{px(3)};
+            padding: 1px;
             background-color: transparent;
-            border: 1px dotted {self.palette.on_primary};
+            border: none;
+            border-top: 2px dotted {self.palette.on_background};
         }}
         QSplitter::handle:vertical:hover {{
             background-color: transparent;
-            border: 1px dotted {self.palette.on_surface};
+            border: none;
+            border-top: 2px solid {self.palette.on_background};
         }}
         QSplitter::handle:horizontal {{
             width: 0px;
             margin: {px(4)};
-            padding: -{px(3)};
+            padding: 1px;
             background-color: transparent;
-            border: 1px dotted {self.palette.on_primary};
+            border: none;
+            border-left: 2px dotted {self.palette.on_background};
         }}
         QSplitter::handle:horizontal:hover {{
             background-color: transparent;
-            border: 1px dotted {self.palette.on_surface};
+            border: none;
+            border-left: 2px solid {self.palette.on_background};
         }}
         
         QSplitterHandle:hover {{}} /*https://bugreports.qt.io/browse/QTBUG-13768*/
