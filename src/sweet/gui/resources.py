@@ -147,32 +147,45 @@ class HSL:
     h: float
     s: float
     l: float
+    a: float = 100
 
     def __str__(self):
-        return f"hsl({self.h}, {self.s}%, {self.l}%)"
+        return f"hsla({self.h}, {self.s}%, {self.l}%, {self.a}%)"
 
     def __mul__(self, other: float):
         self.l *= other
+        self.l = 100 if self.l > 100 else self.l
+        self.l = 0 if self.l < 0 else self.l
         return self
 
     def __add__(self, other: float):
         self.l += other
+        self.l = 100 if self.l > 100 else self.l
+        self.l = 0 if self.l < 0 else self.l
         return self
+
+    @property
+    def bright(self):
+        return HSL(self.h, self.s, self.l) * 1.2
+
+    @property
+    def dimmed(self):
+        return HSL(self.h, self.s, self.l) * 0.7
+
+    @property
+    def fade(self):
+        return HSL(self.h, self.s, self.l, self.a * 0.4)
 
 
 @dataclass
 class Palette:
-    # primary color platte
+    # highlight colors
     primary: HSL
-    primary_bright: HSL
-    primary_dimmed: HSL
-    # secondary color platte
     secondary: HSL
-    secondary_bright: HSL
-    secondary_dimmed: HSL
     # base colors
     surface: HSL
     background: HSL
+    border: HSL
     # additional colors
     error: HSL
     warning: HSL
@@ -189,23 +202,19 @@ class BaseLightTheme(object):
     name = "sweet-light"
     palette = Palette(
         primary=HSL(35.67, 100.00, 57.45),          # Orange 400
-        primary_bright=HSL(53.88, 100.00, 61.57),   # Yellow 500
-        primary_dimmed=HSL(35.91, 100.00, 75.10),   # Orange 200
-
         secondary=HSL(15.88, 15.32, 56.47),         # Brown 300
-        secondary_bright=HSL(15.71, 17.50, 47.06),  # Brown 400
-        secondary_dimmed=HSL(16.00, 15.79, 81.37),  # Brown 100
 
-        surface=HSL(0.00, 0.00, 74.12),             # Grey 400
+        surface=HSL(0.00, 0.00, 96.08),             # Grey 100
         background=HSL(0.00, 0.00, 98.04),          # Grey 50
+        border=HSL(0.00, 0.00, 74.12),              # Grey 400
 
         error=HSL(11.95, 100.00, 43.33),            # Deep Orange A700
         warning=HSL(40.24, 100.00, 50.00),          # Amber A700
 
         on_primary=HSL(0.00, 0.00, 25.88),          # Grey 800
         on_secondary=HSL(0.00, 0.00, 25.89),        # Grey 800.01
-        on_surface=HSL(200.00, 15.63, 62.35),       # Blue Grey 300
-        on_background=HSL(200.00, 15.63, 62.36),    # Blue Grey 300.01
+        on_surface=HSL(0.00, 0.00, 25.90),          # Grey 800.02
+        on_background=HSL(0.00, 0.00, 25.91),       # Grey 800.03
         on_error=HSL(0.00, 0.00, 12.94),            # Grey 900
         on_warning=HSL(0.00, 0.00, 12.95),          # Grey 900.01
     )
@@ -230,8 +239,8 @@ class BaseLightTheme(object):
             border: none;
             outline: none;
             font-family: "Open Sans";
-            color: {self.palette.on_primary};  /* text color */
-            border-color: {self.palette.background};
+            color: {self.palette.on_background};  /* text color */
+            border-color: {self.palette.border};
             background-color: {self.palette.background};
         }}
         """
@@ -240,10 +249,10 @@ class BaseLightTheme(object):
         return f"""
 
         QWidget:focus {{
-            border: 1px solid {self.palette.on_surface * 1.5};
+            border: 1px solid {self.palette.border.bright};
         }}
         QWidget:disabled {{
-            color: {self.palette.on_background};
+            color: {self.palette.on_background.fade};
         }}
 
         """
@@ -263,7 +272,7 @@ class BaseLightTheme(object):
 
         QPushButton {{
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.on_background};
+            border: 1px solid {self.palette.border};
             border-radius: 0px;
             min-height: {px(24).ceil};
             padding: {px(8).ceil};
@@ -274,12 +283,17 @@ class BaseLightTheme(object):
         }}
         QPushButton:pressed {{
             background-color: {self.palette.surface};
-            border: 1px dashed {self.palette.on_background};
+            border: 1px dashed {self.palette.border.bright};
         }}
         QPushButton:focus:!hover {{
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.on_background};
+            border: 1px solid {self.palette.border};
             font-weight: bold;
+        }}
+        QPushButton:disabled {{
+            background-color: {self.palette.background};
+            border: 2px dashed {self.palette.border.fade};
+            color: {self.palette.on_background.fade};
         }}
 
         """
@@ -337,11 +351,11 @@ class BaseLightTheme(object):
             color: {self.palette.on_surface};
         }}
         QMenu::item:selected {{
-            color: {self.palette.on_secondary};
-            background-color: {self.palette.secondary};
+            color: {self.palette.on_primary};
+            background-color: {self.palette.primary};
         }}
         QMenu::item:disabled {{
-            color: {self.palette.surface};
+            color: {self.palette.on_surface.fade};
         }}
         QMenu::indicator {{
             width: {px(12)};
@@ -384,7 +398,7 @@ class BaseLightTheme(object):
             border: none;
         }}
         QTabWidget::pane {{
-            border: 1px solid {self.palette.on_surface};
+            border: 1px solid {self.palette.border};
             border-radius: 0px;
             padding: {px(3)};
         }}
@@ -394,15 +408,15 @@ class BaseLightTheme(object):
         }}
 
         QTabBar::tab {{
-            background-color: {self.palette.surface};
-            border: 1px solid {self.palette.on_surface};
+            background-color: {self.palette.secondary.fade};
+            border: 1px solid {self.palette.border};
             padding: {px(5)};
         }}
         QTabBar::tab:!selected {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
         }}
-        QTabBar::tab:!selected:hover {{
+        QTabBar::tab:hover {{
             color: {self.palette.on_primary};
             background-color: {self.palette.primary};
         }}
@@ -414,10 +428,10 @@ class BaseLightTheme(object):
             border-bottom: none;
         }}
         QTabBar::tab::top:only-one {{
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
         }}
         QTabBar::tab::top:last {{
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
         }}
         
         /* bottom */
@@ -427,28 +441,28 @@ class BaseLightTheme(object):
             border-top: none;
         }}
         QTabBar::tab::bottom:only-one {{
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
         }}
         QTabBar::tab::bottom:last {{
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
         }}
         
         /* left */
 
         QTabBar::tab::left {{
             color: {self.palette.on_background};
-            background-color: {self.palette.on_background};
-            border: 1px solid {self.palette.on_surface};
+            background-color: {self.palette.background};
+            border: 1px solid {self.palette.border};
             border-bottom: 1px solid transparent;
             padding: {px(8)};
         }}
         QTabBar::tab::left:next-selected {{
-            border-top: 1px solid {self.palette.on_surface};
+            border-top: 1px solid {self.palette.border};
         }}
         QTabBar::tab::left:selected {{
-            color: {self.palette.on_surface};
-            background-color: {self.palette.surface};
-            border: 1px solid {self.palette.on_surface};
+            color: {self.palette.on_primary};
+            background-color: {self.palette.primary};
+            border: 1px solid {self.palette.border};
             border-right: 1px solid transparent;
         }}
         QTabBar::tab::left:previous-selected {{
@@ -457,43 +471,43 @@ class BaseLightTheme(object):
         QTabBar::tab::left:!selected {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
             margin-left: {px(3)};
             padding-left: {px(5)};
         }}
         QTabBar::tab::left:last:!selected {{
-            border-bottom: 1px solid {self.palette.on_surface};
+            border-bottom: 1px solid {self.palette.border};
         }}
         QTabBar::tab::left:last:selected {{
-            border-bottom: 1px solid {self.palette.on_surface};
+            border-bottom: 1px solid {self.palette.border};
         }}
         QTabBar::tab::left:!selected:hover {{
             color: {self.palette.on_primary};
             background-color: {self.palette.primary};
         }}
         QTabBar::tab::left:disabled {{
-            color: {self.palette.on_background};
+            color: {self.palette.on_background.fade};
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.background};
-            border-right: 1px solid {self.palette.on_surface};
+            border: 1px solid {self.palette.border.fade};
+            border-right: 1px solid {self.palette.border.fade};
             border-bottom: 1px solid transparent;
             margin-left: {px(3)};
             padding-left: {px(5)};
         }}
         QTabBar::tab::left:disabled:selected {{
-            color: {self.palette.on_background};
+            color: {self.palette.on_background.fade};
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.background};
-            border-right: 1px solid {self.palette.on_surface};
+            border: 1px solid {self.palette.border.fade};
+            border-right: 1px solid {self.palette.border.fade};
             border-bottom: 1px solid transparent;
             margin-left: {px(3)};
             padding-left: {px(5)};
         }}
         QTabBar::tab::left:disabled:previous-selected {{
-            border-top: 1px solid {self.palette.on_surface};
+            border-top: 1px solid {self.palette.border.fade};
         }}
         QTabBar::tab::left:disabled:last {{
-            border-bottom: 1px solid {self.palette.background};
+            border-bottom: 1px solid {self.palette.border.fade};
         }}
         
         /* right (not defined) */
@@ -506,12 +520,12 @@ class BaseLightTheme(object):
         QTabBar QToolButton {{
             color: {self.palette.on_surface};
             background-color: {self.palette.surface};
-            border: 1px solid {self.palette.on_surface};
+            border: 1px solid {self.palette.border};
         }}
         QTabBar QToolButton:disabled {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.on_background};
+            border: 1px solid {self.palette.border};
         }}
         
         """
@@ -525,12 +539,12 @@ class BaseLightTheme(object):
             padding: 1px;
             background-color: transparent;
             border: none;
-            border-top: 2px dotted {self.palette.on_background};
+            border-top: 2px dotted {self.palette.border};
         }}
         QSplitter::handle:vertical:hover {{
             background-color: transparent;
             border: none;
-            border-top: 2px solid {self.palette.on_background};
+            border-top: 2px solid {self.palette.border};
         }}
         QSplitter::handle:horizontal {{
             width: 0px;
@@ -538,12 +552,12 @@ class BaseLightTheme(object):
             padding: 1px;
             background-color: transparent;
             border: none;
-            border-left: 2px dotted {self.palette.on_background};
+            border-left: 2px dotted {self.palette.border};
         }}
         QSplitter::handle:horizontal:hover {{
             background-color: transparent;
             border: none;
-            border-left: 2px solid {self.palette.on_background};
+            border-left: 2px solid {self.palette.border};
         }}
         
         QSplitterHandle:hover {{}} /*https://bugreports.qt.io/browse/QTBUG-13768*/
@@ -564,7 +578,7 @@ class BaseLightTheme(object):
             padding-top: {px(5).ceil};
             background: {self.palette.background};
             border-top: none;
-            border-bottom: 1px solid {self.palette.on_secondary};
+            border-bottom: 1px solid {self.palette.on_background};
             border-left: none;
             border-right: none;
         }}
@@ -595,7 +609,7 @@ class BaseLightTheme(object):
         QAbstractItemView {{
             show-decoration-selected: 1;  /* highlight decoration (branch) */
             background-color: {self.palette.background};
-            alternate-background-color: {self.palette.background};
+            alternate-background-color: {self.palette.background.bright};
             border: none;
             selection-color: {self.palette.on_primary};
             selection-background-color: {self.palette.primary};
@@ -670,13 +684,13 @@ class BaseLightTheme(object):
         }}
         #PackagePage {{
             background-color: {self.palette.background};
-            border: 1px solid {self.palette.on_surface};
+            border: 1px solid {self.palette.border};
             border-left: none;
         }}
         #PackageSide {{
             background-color: transparent;
             border: none;
-            border-right: 1px solid {self.palette.on_surface};
+            border-right: 1px solid {self.palette.border};
         }}
 
         """
@@ -778,26 +792,22 @@ class BaseLightTheme(object):
 class BaseDarkTheme(BaseLightTheme):
     name = "sweet-dark"
     palette = Palette(
-        primary=HSL(33.65, 100.00, 50.00),  # Amber 800
-        primary_bright=HSL(53.88, 100.00, 61.57),  # Yellow 500
-        primary_dimmed=HSL(35.91, 100.00, 75.10),  # Orange 200
+        primary=HSL(150.78, 100.00, 45.10),         # Green A400
+        secondary=HSL(122.58, 15.97, 35.51),        # Green 600 (dimmed)
 
-        secondary=HSL(14.21, 25.68, 29.02),  # Brown 700
-        secondary_bright=HSL(15.71, 17.50, 47.06),  # Brown 400
-        secondary_dimmed=HSL(16.00, 15.79, 81.37),  # Brown 100
+        surface=HSL(0.00, 0.00, 38.04),             # Grey 700
+        background=HSL(0.00, 0.00, 12.94),          # Grey 900
+        border=HSL(0.00, 0.00, 25.88),              # Grey 800
 
-        surface=HSL(200.00, 17.91, 26.27),  # Blue Grey 800
-        background=HSL(0.00, 0.00, 12.94),  # Grey 900
+        error=HSL(11.95, 100.00, 43.33),            # Deep Orange A700
+        warning=HSL(40.24, 100.00, 50.00),          # Amber A700
 
-        error=HSL(11.95, 100.00, 43.33),  # Deep Orange A700
-        warning=HSL(40.24, 100.00, 50.00),  # Amber A700
-
-        on_primary=HSL(0.00, 0.00, 61.96),  # Grey 500
-        on_secondary=HSL(0.00, 0.00, 87.85),  # Grey 300.01
-        on_surface=HSL(0.00, 0.00, 18.88),  # Grey 850
-        on_background=HSL(0.00, 0.00, 25.89),  # Grey 800.01
-        on_error=HSL(0.00, 0.00, 12.94),  # Grey 900
-        on_warning=HSL(0.00, 0.00, 12.94),  # Grey 900
+        on_primary=HSL(0.00, 0.00, 12.94),          # Grey 900
+        on_secondary=HSL(0.00, 0.00, 25.90),        # Grey 800.02
+        on_surface=HSL(0.00, 0.00, 38.05),          # Grey 700.01
+        on_background=HSL(0.00, 0.00, 61.97),       # Grey 500.01
+        on_error=HSL(0.00, 0.00, 12.95),            # Grey 900.01
+        on_warning=HSL(0.00, 0.00, 12.96),          # Grey 900.02
     )
 
 
