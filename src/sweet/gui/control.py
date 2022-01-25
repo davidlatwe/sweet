@@ -313,6 +313,7 @@ class Controller(QtCore.QObject):
 
         for ctx in self._sop.iter_contexts(ascending=True):
             self.context_added.emit(ctx)
+            self.context_resolved.emit(ctx.name, ctx.context)
 
         self._tools_updated()
         self._dirty = False
