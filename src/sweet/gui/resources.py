@@ -426,6 +426,13 @@ class BaseLightTheme(object):
         QTabBar:focus {{
             border: 0px transparent;
         }}
+        
+        QTabBar::tab::top:disabled,
+        QTabBar::tab::bottom:disabled,
+        QTabBar::tab::left:disabled,
+        QTabBar::tab::right:disabled {{
+            color: {self.palette.on_background.fade};
+        }}
 
         QTabBar::tab {{
             background-color: {self.palette.secondary.fade};
@@ -506,7 +513,6 @@ class BaseLightTheme(object):
             background-color: {self.palette.primary};
         }}
         QTabBar::tab::left:disabled {{
-            color: {self.palette.on_background.fade};
             background-color: {self.palette.background};
             border: 1px solid {self.palette.border.fade};
             border-right: 1px solid {self.palette.border.fade};
@@ -515,7 +521,6 @@ class BaseLightTheme(object):
             padding-left: {px(5)};
         }}
         QTabBar::tab::left:disabled:selected {{
-            color: {self.palette.on_background.fade};
             background-color: {self.palette.background};
             border: 1px solid {self.palette.border.fade};
             border-right: 1px solid {self.palette.border.fade};
@@ -601,6 +606,9 @@ class BaseLightTheme(object):
             border-bottom: 1px solid {self.palette.on_background};
             border-left: none;
             border-right: none;
+        }}
+        QHeaderView::section {{
+            border-bottom: 1px solid {self.palette.on_background.fade};
         }}
         QHeaderView::section:first {{
             border-left: none;
