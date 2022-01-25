@@ -1,0 +1,52 @@
+
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>icons/caret-down-fill-dim.svg</file>
+    <file>icons/caret-down-fill-on.svg</file>
+    <file>icons/caret-down-fill.svg</file>
+    <file>icons/caret-right-fill-dim.svg</file>
+    <file>icons/caret-right-fill-on.svg</file>
+    <file>icons/caret-right-fill.svg</file>
+    <file>icons/check-ok.svg</file>
+    <file>icons/checkbox_checked.png</file>
+    <file>icons/checkbox_checked_dim.png</file>
+    <file>icons/checkbox_indeterminate.png</file>
+    <file>icons/checkbox_indeterminate_dim.png</file>
+    <file>icons/checkbox_unchecked.png</file>
+    <file>icons/checkbox_unchecked_dim.png</file>
+    <file>icons/chevron_down.svg</file>
+    <file>icons/chevron_left.svg</file>
+    <file>icons/chevron_right.svg</file>
+    <file>icons/chevron_up.svg</file>
+    <file>icons/egg-fill-dim.svg</file>
+    <file>icons/egg-fill.svg</file>
+    <file>icons/egg-fried-dim.svg</file>
+    <file>icons/egg-fried.svg</file>
+    <file>icons/exclamation-triangle-fill.svg</file>
+    <file>icons/exclamation-warn.svg</file>
+    <file>icons/funnel-fill-dim.svg</file>
+    <file>icons/funnel-fill.svg</file>
+    <file>icons/gear-fill-dim.svg</file>
+    <file>icons/gear-fill.svg</file>
+    <file>icons/lightning-fill-dim.svg</file>
+    <file>icons/lightning-fill.svg</file>
+    <file>icons/people-fill-ok.svg</file>
+    <file>icons/people-fill.svg</file>
+    <file>icons/person-circle.svg</file>
+    <file>icons/plus.svg</file>
+    <file>icons/slash-lg.svg</file>
+    <file>icons/toggle-off-bright.svg</file>
+    <file>icons/toggle-off-dim.svg</file>
+    <file>icons/toggle-off.svg</file>
+    <file>icons/toggle-on-bright.svg</file>
+    <file>icons/toggle-on-dim.svg</file>
+    <file>icons/toggle-on.svg</file>
+    <file>icons/trash-fill-dim.svg</file>
+    <file>icons/trash-fill.svg</file>
+    <file>icons/x.svg</file>
+    <file>fonts/opensans/OpenSans-Bold.ttf</file>
+    <file>fonts/opensans/OpenSans-Italic.ttf</file>
+    <file>fonts/opensans/OpenSans-Regular.ttf</file>
+    <file>fonts/jetbrainsmono/JetBrainsMono-Regular.ttf</file>
+</qresource>
+</RCC>

@@ -17,10 +17,10 @@ class MainWindow(QtWidgets.QMainWindow):
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(pages.StoragePage(), "Saved Suites")
         tabs.addTab(pages.SuitePage(), "Suite Editor")
-        tabs.addTab(pages.PackagesPage(), "Packages")
         tabs.addTab(pages.PreferencePage(state), "Preferences")
 
         layout = QtWidgets.QHBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(tabs)
 
         tabs.setCurrentIndex(1)  # editor
