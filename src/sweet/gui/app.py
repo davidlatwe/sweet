@@ -117,6 +117,7 @@ class Session(object):
         ctrl.suite_saved.connect(storage_model.add_new_saved_suite)
 
         # control -> view
+        ctrl.suite_newed.connect(stacked_request.on_suite_newed)
         ctrl.suite_newed.connect(stacked_resolve.on_suite_newed)
         ctrl.suite_newed.connect(context_list.on_suite_newed)
         ctrl.suite_newed.connect(suite_head.on_suite_newed)
