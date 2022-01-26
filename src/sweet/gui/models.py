@@ -488,26 +488,26 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
 
         _versions = dict()  # type: dict[str, QtGui.QStandardItem]
         _times = set()
-        for version in sorted(versions, key=lambda v: v.version):
-            qualified = version.qualified
+        for pkg in sorted(versions, key=lambda v: v.version):
+            qualified = pkg.qualified
 
             if qualified in _versions:
                 name_item = _versions[qualified]
-                name_item.data(self.PackageObjectRole).append(version)
+                name_item.data(self.PackageObjectRole).append(pkg)
 
             else:
-                keys = "%s,%s" % (qualified, ",".join(version.tools))
-                _times.add(version.timestamp or -1)
+                keys = "%s,%s" % (qualified, ",".join(pkg.tools))
+                _times.add(pkg.timestamp or -1)
 
                 name_item = QtGui.QStandardItem(qualified)
                 _versions[qualified] = name_item
 
-                name_item.setData([version], self.PackageObjectRole)
+                name_item.setData([pkg], self.PackageObjectRole)
                 name_item.setData(keys, self.FilterRole)
-                name_item.setData(str(version.version), self.CompletionRole)
+                name_item.setData(str(pkg.version), self.CompletionRole)
 
                 date_item = QtGui.QStandardItem()
-                date_item.setData(version.timestamp, QtCore.Qt.DisplayRole)
+                date_item.setData(pkg.timestamp, QtCore.Qt.DisplayRole)
 
                 family.appendRow([name_item, date_item])
 
