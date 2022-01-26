@@ -961,11 +961,18 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         self.setAcceptRichText(False)
         self.setTabChangesFocus(True)
 
+        # Reference for custom completer in TextEdit:
+        #   https://doc.qt.io/qt-5/qtwidgets-tools-customcompleter-example.html
         self._completer = None
         completer = RequestCompleter(self)
         self.setCompleter(completer)
 
     def setCompleter(self, c):
+        """
+        :param c: The completer
+        :type c: QtWidgets.QCompleter
+        :return:
+        """
         if self._completer is not None:
             self._completer.activated.disconnect()
 
