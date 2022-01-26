@@ -973,7 +973,7 @@ class RequestTextEdit(QtWidgets.QTextEdit):
 
         c.setPopup(CompleterPopup())
         c.setWidget(self)
-        c.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        c.setCompletionMode(c.PopupCompletion)
         c.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         c.activated.connect(self.insert_completion)
 
@@ -1049,7 +1049,9 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         popup = c.popup()
         if completion_prefix != c.completionPrefix():
             c.setCompletionPrefix(completion_prefix)
-            popup.setCurrentIndex(c.completionModel().index(0, 0))
+            # popup.setCurrentIndex(c.completionModel().index(0, 0))
+            # note: commenting this out as we don't want any selected by
+            #   default until we actually picked one from the list.
 
         cr = self.cursorRect()
         cr.setWidth(popup.sizeHintForColumn(0)
