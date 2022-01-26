@@ -1716,7 +1716,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(SuiteInsightWidget, self).__init__(*args, **kwargs)
 
-        name = QtWidgets.QLabel()
+        name = QtWidgets.QLineEdit()
         desc = QtWidgets.QTextEdit()
         view = ToolsView()
         model = SuiteToolTreeModel(editable=False)
@@ -1727,7 +1727,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         view.setModel(model)
         header.setSectionResizeMode(0, header.ResizeToContents)
         desc.setReadOnly(True)
-        name.setFont(QtGui.QFont("OpenSans", 14))
+        name.setReadOnly(True)
+        name.setObjectName("SuiteNameView")
 
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)

@@ -356,20 +356,13 @@ class BaseLightTheme(object):
 
     def _q_line_edit(self):
         return f"""
-        
+
         QLineEdit {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
             border: none;
             border-bottom: 1px solid {self.palette.border};
         }}
-        
-        QLineEdit[text=""] {{
-            color: {self.palette.on_background.fade};
-            border: none;
-            border-bottom: 1px solid {self.palette.border};
-        }}
-        
         QLineEdit:focus {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
@@ -782,7 +775,8 @@ class BaseLightTheme(object):
     def _q_suite_bar(self):
         return f"""
 
-        #SuiteNameEdit {{
+        #SuiteNameEdit,
+        #SuiteNameView {{
             font-size: {px(30).ceil};
         }}
         #SuiteSaveButton {{
