@@ -56,9 +56,11 @@ def command(opts, parser=None, extra_arg_groups=None):
 
 class CommandSweet(Command):
     schema_dict = {
+        "suite_roots": dict,
         "default_root": str,
-        "suite_roots": types.FunctionType,
+        "release_root": str,
         "on_suite_saved_callback": types.FunctionType,
+        "omit_internal_version": str,
     }
 
     @classmethod

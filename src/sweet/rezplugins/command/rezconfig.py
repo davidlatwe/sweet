@@ -27,11 +27,14 @@ def on_suite_saved_callback(suite, suite_dir):
 
 
 sweet = {
+    # suite saving root paths
+    "suite_roots": suite_roots(),
+
     # default suite saving root
     "default_root": "local",
 
-    # suite saving root paths
-    "suite_roots": suite_roots,
+    # the suite saving root that can only use non-local packages
+    "release_root": "release",
 
     # callback
     "on_suite_saved_callback": on_suite_saved_callback,

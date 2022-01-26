@@ -7,6 +7,7 @@ import time
 import warnings
 from typing import List
 from dataclasses import dataclass
+from collections import MutableMapping
 
 from rez.vendor import yaml
 from rez.suite import Suite
@@ -219,12 +220,20 @@ class SuiteOp(object):
         suite.load_path = None if as_import else os.path.realpath(path)
 
     def save(self, path):
-        # type: (str) -> None
+        """
 
-        self.sanity_check()
+        :param str path:
+        :return:
+        """
+        release_root = sweetconfig.suite_roots.get(sweetconfig.release_root)
+        non_local_required = \
+            util.normpath(release_root) == os.path.dirname(util.normpath(path))
+
+        self.sanity_check(non_local=non_local_required)
         # note: cannot save over if load_path is None
         self._suite.save(path)
-        # todo: hookup callback
+        # run callback
+        sweetconfig.on_suite_saved_callback(self._suite, path)
 
     def loaded_from(self):
         """Returns location where suite previously saved at
@@ -242,11 +251,11 @@ class SuiteOp(object):
         self._suite.flush_tools()
         self._suite.update_tools()
 
-    def sanity_check(self, as_released=False):
+    def sanity_check(self, non_local=False):
         """Ensure suite is valid.
 
-        :param as_released: Make sure all packages are released
-        :type as_released: bool
+        :param non_local: Make sure all packages are non-local
+        :type non_local: bool
         :return: None
         :raise SuiteOpError: If suite validation failed.
         """
@@ -255,8 +264,17 @@ class SuiteOp(object):
         except SuiteError as e:
             raise SuiteOpError(e)
 
-        if as_released:
-            pass  # todo: ensure all packages are from released path
+        if non_local:
+            non_local_paths = util.normpaths(*rezconfig.nonlocal_packages_path)
+            for ctx in self.iter_contexts():
+                for variant in ctx.resolves:
+                    norm_location = util.normpath(variant.resource.location)
+                    if norm_location not in non_local_paths:
+                        raise SuiteOpError(
+                            "Non-local packages check has enabled, and found "
+                            f"local package {variant.qualified_name!r} in "
+                            f"context {ctx.name!r}."
+                        )
 
     def get_description(self):
         """Get suite description
@@ -682,8 +700,11 @@ class Storage(object):
         :param roots: Storage roots, branch name as key and path as value.
         :type roots: dict
         """
-        roots = roots or sweetconfig.suite_roots()  # type: dict
-        assert isinstance(roots, dict)
+        roots = roots or sweetconfig.suite_roots  # type: dict
+        assert isinstance(roots, MutableMapping), (
+            f"Expect dict-like object, got {type(roots)}"
+        )  # note: this is for the arg `roots`, there's type check in rezconfig
+
         self._roots = roots
 
     def __repr__(self):
