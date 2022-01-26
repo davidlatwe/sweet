@@ -869,6 +869,15 @@ class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
             editor = QtWidgets.QLineEdit(parent)
             editor.setPlaceholderText("add request...")
             editor.setObjectName("RequestTextEdit")
+
+            completer = RequestCompleter(editor)
+            completer.setPopup(CompleterPopup())
+            # The completion role leave it as default (Qt.EditRole), because
+            # unlike the completer in the RequestTextEdit widget, QLineEdit
+            # works better with full completion replacement.
+
+            editor.setCompleter(completer)
+
             return editor
 
 
@@ -978,10 +987,12 @@ class RequestTextEdit(QtWidgets.QTextEdit):
 
         self._completer = c
 
-        c.setPopup(CompleterPopup())
         c.setWidget(self)
-        c.setCompletionMode(c.PopupCompletion)
-        c.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        c.setPopup(CompleterPopup())
+        c.setCompletionRole(InstalledPackagesModel.CompletionRole)
+        # note: this completion role *appends* the completion to the end
+        #   of text (see insert_completion()), and is a better suit for
+        #   QTextEdit based widget.
         c.activated.connect(self.insert_completion)
 
     def completer(self):
@@ -1772,16 +1783,17 @@ class RequestCompleter(QtWidgets.QCompleter):
 
     def __init__(self, *args, **kwargs):
         super(RequestCompleter, self).__init__(*args, **kwargs)
-        self.setModelSorting(self.CaseInsensitivelySortedModel)
-        self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.setWrapAround(False)
 
         model = InstalledPackagesModel()
         proxy = CompleterProxyModel()
         proxy.setSourceModel(model)
-        self.setCompletionColumn(0)
-        self.setCompletionRole(model.CompletionRole)
         self.setModel(proxy)
+
+        self.setCompletionColumn(0)
+        self.setCompletionMode(self.PopupCompletion)
+        self.setModelSorting(self.CaseInsensitivelySortedModel)
+        self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setWrapAround(False)
 
         self._model = model
         self._proxy = proxy
