@@ -164,13 +164,6 @@ class PreferencePage(QtWidgets.QWidget):
 
             qargparse.Separator("Settings"),
 
-            qargparse.Enum(
-                "suiteOpenAs",
-                items=["Ask", "Loaded", "Import"],
-                default=0,
-                initial=state.retrieve("suiteOpenAs")
-            ),
-
         ])
 
         scroll = QtWidgets.QScrollArea()
