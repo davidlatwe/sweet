@@ -1697,25 +1697,26 @@ class SuiteBranchWidget(QtWidgets.QWidget):
             # Clicked outside any item
             return
 
+        saved_suite = index.data(role=self._model.SavedSuiteRole)
+        if saved_suite is None:
+            return  # right-clicking on the branch
+
         menu = QtWidgets.QMenu(self._view)
         open_ = QtWidgets.QAction("Open suite (loaded)", menu)
         import_ = QtWidgets.QAction("Open suite (import)", menu)
         explore = QtWidgets.QAction("Show in Explorer", menu)
 
         def on_open():
-            saved_suite = index.data(role=self._model.SavedSuiteRole)
             name = saved_suite.name
             branch = saved_suite.branch
             self.suite_load_clicked.emit(name, branch, False)
 
         def on_import():
-            saved_suite = index.data(role=self._model.SavedSuiteRole)
             name = saved_suite.name
             branch = saved_suite.branch
             self.suite_load_clicked.emit(name, branch, True)
 
         def on_explore():
-            saved_suite = index.data(role=self._model.SavedSuiteRole)
             lib.open_file_location(saved_suite.path)
 
         open_.triggered.connect(on_open)
