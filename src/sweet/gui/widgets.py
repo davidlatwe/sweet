@@ -689,7 +689,6 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         view.setSortingEnabled(True)
-        view.setIndentation(10)
 
         header = view.header()
         header.setSortIndicatorShown(False)
