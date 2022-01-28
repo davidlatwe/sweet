@@ -961,7 +961,7 @@ class BaseDarkTheme(BaseLightTheme):
         primary=HSL(150.78, 100.00, 45.10),         # Green A400
         secondary=HSL(122.58, 15.97, 35.51),        # Green 600 (dimmed)
 
-        surface=HSL(0.00, 0.00, 38.04),             # Grey 700
+        surface=HSL(0.00, 0.00, 19.02),             # Grey 850
         background=HSL(0.00, 0.00, 12.94),          # Grey 900
         border=HSL(0.00, 0.00, 25.88),              # Grey 800
 
@@ -970,7 +970,7 @@ class BaseDarkTheme(BaseLightTheme):
 
         on_primary=HSL(0.00, 0.00, 12.94),          # Grey 900
         on_secondary=HSL(0.00, 0.00, 25.90),        # Grey 800.02
-        on_surface=HSL(0.00, 0.00, 38.05),          # Grey 700.01
+        on_surface=HSL(0.00, 0.00, 61.96),          # Grey 500
         on_background=HSL(0.00, 0.00, 61.97),       # Grey 500.01
         on_error=HSL(0.00, 0.00, 12.95),            # Grey 900.01
         on_warning=HSL(0.00, 0.00, 12.96),          # Grey 900.02
