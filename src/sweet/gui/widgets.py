@@ -248,7 +248,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         name.setPlaceholderText("Suite name..")
 
         layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(16, 0, 16, 0)
+        layout.setContentsMargins(16, 8, 16, 0)
         layout.addWidget(name)
         layout.addWidget(save_btn)
         layout.addWidget(new_btn)
