@@ -64,7 +64,7 @@ class BusyWidget(QtWidgets.QWidget):
     def instances(cls):
         return cls._instances[:]
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(bool)  # noqa
     def set_overwhelmed(self, busy):
         if self._is_busy == busy:
             return
@@ -269,15 +269,15 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         self._path.setText("")
         self._loaded_branch = None
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(core.SavedSuite)  # noqa
     def on_suite_saved(self, saved_suite):
         self._path.setText(saved_suite.path)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_suite_save_failed(self, err_message):
         print(err_message)  # todo: a modal dialog
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str, str, str)  # noqa
     def on_suite_loaded(self, name, description, load_path, branch):
         is_import = load_path == ""
         self._name.setText(name)
@@ -757,7 +757,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
             _self = self.widget(index)  # get instance from correct thread
             callback(_self, *args, **kwargs)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(core.SuiteCtx)  # noqa
     def on_context_added(self, ctx):
         op_name = ":added:"
         is_first = len(self._names) == 0
@@ -774,7 +774,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self._callbacks.insert(0, getattr(panel, "callbacks", {}))
         self.run_panel_callback(0, op_name, ctx)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, ResolvedContext)  # noqa
     def on_context_resolved(self, name, context):
         """
 
@@ -788,7 +788,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         index = self._names.index(name)
         self.run_panel_callback(index, op_name, context)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str)  # noqa
     def on_context_renamed(self, name, new_name):
         op_name = ":renamed:"
         index = self._names.index(name)
@@ -797,7 +797,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self._names.remove(name)
         self._names.insert(index, new_name)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_context_dropped(self, name):
         index = self._names.index(name)
         self._callbacks.pop(index)
@@ -809,7 +809,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         if is_empty:
             self._add_panel_0()
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_context_selected(self, name):
         # name may not exists yet while the context is just being added.
         if name in self._names:
@@ -1576,13 +1576,13 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
     def proxy(self):
         return self._proxy
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_searched(self, text):
         self._proxy.setFilterRegExp(text)
         self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(int)  # noqa
     def on_tab_clicked(self, index):
         group = self._tabs.tabText(index)
         item = self._model.first_item_in_initial(group)
@@ -1591,7 +1591,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             index = self._proxy.mapFromSource(index)
             self._view.scroll_at_top(index)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(int)  # noqa
     def on_scrolled(self, value):
         if not self._tabs.isEnabled():
             return
@@ -1606,7 +1606,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
             self._tabs.setCurrentIndex(index)
             self._tabs.blockSignals(False)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(int, QtCore.Qt.SortOrder)  # noqa
     def on_sort_changed(self, index, order):
         is_sort_name = index == 0
 

@@ -161,51 +161,51 @@ class Controller(QtCore.QObject):
     def on_suite_new_clicked(self):
         self.new_suite()
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str, bool)  # noqa
     def on_suite_load_clicked(self, name, branch, as_import):
         self.load_suite(name, branch, as_import)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str, str)  # noqa
     def on_suite_save_clicked(self, branch, name, description):
         self.save_suite(branch, name, description)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_add_context_clicked(self, name):
         self.add_context(name)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str)  # noqa
     def on_rename_context_clicked(self, name, new_name):
         self.rename_context(name, new_name)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str)  # noqa
     def on_drop_context_clicked(self, name):
         self.drop_context(name)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(list)  # noqa
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str)  # noqa
     @_defer(on_time=400)
     def on_context_prefix_changed(self, name, prefix):
         self.set_context_prefix(name, prefix)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str)  # noqa
     @_defer(on_time=400)
     def on_context_suffix_changed(self, name, suffix):
         self.set_context_suffix(name, suffix)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str, str)  # noqa
     @_defer(on_time=400)
     def on_tool_alias_changed(self, name, tool, alias):
         self.set_tool_alias(name, tool, alias)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, str, bool)  # noqa
     @_defer(on_time=50)
     def on_tool_hidden_changed(self, name, tool, hidden):
         self.set_tool_hidden(name, tool, hidden)
 
-    @QtCore.Slot()  # noqa
+    @QtCore.Slot(str, list)  # noqa
     def on_resolve_context_clicked(self, name, requests):
         self.resolve_context(name, requests=requests)
 
