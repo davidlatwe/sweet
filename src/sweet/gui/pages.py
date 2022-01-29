@@ -22,9 +22,6 @@ from .widgets import (
 
 )
 
-# for type hint
-_SigIt = QtCore.SignalInstance
-
 
 class SuitePage(BusyWidget):
     """
@@ -131,7 +128,7 @@ class PreferencePage(QtWidgets.QWidget):
     """Sweet settings
     Changes will be saved and effected immediately.
     """
-    changed = QtCore.Signal(str, object)  # type: _SigIt
+    changed = QtCore.Signal(str, object)
 
     def __init__(self, state, *args, **kwargs):
         super(PreferencePage, self).__init__(*args, **kwargs)
