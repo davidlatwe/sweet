@@ -734,14 +734,12 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         raise NotImplementedError
 
     def _add_panel_0(self):
-        self.add_panel(enabled=False)
-
         op_name = ":added:"
-        ctx = ""
-        panel = self.widget(0)
+        panel = self.add_panel(enabled=False)
         callback = getattr(panel, "callbacks", {}).get(op_name)
         if callable(callback):
             _self = panel
+            ctx = ""
             callback(_self, ctx)
 
     def add_panel(self, enabled=True):
@@ -750,6 +748,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         panel = self.create_panel()
         panel.setEnabled(enabled)
         self.insertWidget(0, panel)
+        return panel
 
     def run_panel_callback(self, index, op_name, *args, **kwargs):
         callback = self._callbacks[index].get(op_name)
@@ -762,13 +761,18 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         op_name = ":added:"
         is_first = len(self._names) == 0
         if is_first:
-            pass
+            panel = self.widget(0)
+            panel.setEnabled(True)
+            panel.setStyleSheet(panel.styleSheet())
+            # note:
+            #   Re-applying stylesheet for correcting the color of placeholder
+            #   text in QLineEdit. Somehow the placeholder text gets brighter
+            #   color when the widget is re-enabled, but this only happens on
+            #   MacOS, and only the QLineEdit in the first panel and, when the
+            #   stylesheet is applied. This also happens with PyQt5.
         else:
-            self.add_panel()
+            panel = self.add_panel()
             self.setCurrentIndex(0)
-
-        panel = self.widget(0)
-        panel.setEnabled(True)
 
         self._names.insert(0, ctx.name)
         self._callbacks.insert(0, getattr(panel, "callbacks", {}))
