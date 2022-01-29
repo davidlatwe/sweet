@@ -6,12 +6,21 @@ from collections import OrderedDict as odict
 from ._vendor.Qt5 import QtCore, QtGui, QtWidgets
 
 _themes = odict()
+_current = {"name": None, "dark": False}
 
 
 def load_themes():
+    Resources.load()
+    default_themes = [
+        BaseTheme(),
+        BaseDarkTheme(),
+    ]
+
     _themes.clear()
-    for theme in default_themes():
-        _themes[theme.name] = theme
+    for theme in default_themes:
+        if theme.name not in _themes:
+            _themes[theme.name] = dict()
+        _themes[theme.name][theme.dark] = theme
 
 
 def theme_names():
@@ -19,24 +28,25 @@ def theme_names():
         yield name
 
 
-def load_theme(name=None):
-    if name:
-        theme = _themes.get(name)
-        if theme is None:
-            print("No theme named: %s" % name)
-            return
-    else:
-        theme = next(iter(_themes.values()))
-
-    return theme.style_sheet()
+def current_theme():
+    return _current["name"]
 
 
-def default_themes():
-    Resources.load()
-    return [
-        BaseLightTheme(),
-        BaseDarkTheme(),
-    ]
+def get_style_sheet(name=None, dark=None):
+    _fallback = next(iter(_themes.keys()))
+    name = name or _current["name"] or _fallback
+    dark = _current["dark"] if dark is None else bool(dark)
+
+    theme = _themes.get(name)
+    if theme is None:
+        print("No theme named: %s" % name)
+        name = _fallback
+        theme = _themes[name]
+
+    _current["name"] = name
+    _current["dark"] = dark
+
+    return theme[dark].style_sheet()
 
 
 class Resources:
@@ -198,8 +208,9 @@ class Palette:
     on_warning: HSL
 
 
-class BaseLightTheme(object):
-    name = "sweet-light"
+class BaseTheme(object):
+    name = "sweet"
+    dark = False
     palette = Palette(
         primary=HSL(35.67, 100.00, 57.45),          # Orange 400
         secondary=HSL(15.88, 15.32, 56.47),         # Brown 300
@@ -939,24 +950,41 @@ class BaseLightTheme(object):
         }}
         
         #ButtonBelt QPushButton {{
-            max-width: {px(18)};
-            max-height: {px(18)};
-            min-width: {px(18)};
-            min-height: {px(18)};
-            padding: {px(2)};
+            max-width: {px(20)};
+            max-height: {px(20)};
+            min-width: {px(20)};
+            min-height: {px(20)};
+            padding: {px(8)};
+            margin: {px(4)};
             border: none;
+            border-radius: {px(4)};
             background-color: transparent;
+        }}
+        #ButtonBelt QPushButton:hover {{
+            background-color: {self.palette.secondary.fade};
+        }}
+        
+        #DarkSwitch:checked {{
+            icon: url(:/icons/brightness-high-fill.svg);
+        }}
+        #DarkSwitch:!checked {{
+            icon: url(:/icons/brightness-low-fill.svg);
         }}
         
         #DocStrings {{
             color: {self.palette.on_background.fade};
         }}
+        
+        #MainStack {{
+            border: 1px solid {self.palette.border};
+        }}
 
         """
 
 
-class BaseDarkTheme(BaseLightTheme):
-    name = "sweet-dark"
+class BaseDarkTheme(BaseTheme):
+    name = "sweet"
+    dark = True
     palette = Palette(
         primary=HSL(150.78, 100.00, 45.10),         # Green A400
         secondary=HSL(122.58, 15.97, 35.51),        # Green 600 (dimmed)

@@ -4,6 +4,7 @@ from . import app, pages
 
 
 class MainWindow(QtWidgets.QMainWindow):
+    dark_toggled = QtCore.Signal(bool)
 
     def __init__(self, state):
         """
@@ -14,16 +15,38 @@ class MainWindow(QtWidgets.QMainWindow):
 
         body = QtWidgets.QWidget()
 
-        tabs = QtWidgets.QTabWidget()
-        tabs.addTab(pages.StoragePage(), "Saved Suites")
-        tabs.addTab(pages.SuitePage(), "Suite Editor")
-        tabs.addTab(pages.PreferencePage(state), "Preferences")
+        tabs = QtWidgets.QTabBar()
+        stack = QtWidgets.QStackedWidget()
+        tabs.setObjectName("MainTabs")
+        stack.setObjectName("MainStack")
 
-        layout = QtWidgets.QHBoxLayout(body)
+        tabs.addTab("Saved Suites")
+        stack.addWidget(pages.StoragePage())
+        tabs.addTab("Suite Editor")
+        stack.addWidget(pages.SuitePage())
+        tabs.addTab("Preferences")
+        stack.addWidget(pages.PreferencePage(state))
+
+        buttons = QtWidgets.QWidget()
+        buttons.setObjectName("ButtonBelt")
+        dark_btn = QtWidgets.QPushButton()
+        dark_btn.setObjectName("DarkSwitch")
+        dark_btn.setCheckable(True)
+
+        layout = QtWidgets.QHBoxLayout(buttons)
+        layout.setContentsMargins(4, 0, 4, 0)
+        layout.addWidget(dark_btn)
+
+        layout = QtWidgets.QGridLayout(body)
+        layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(tabs)
+        layout.addWidget(tabs, 0, 0, 1, 1,
+                         QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+        layout.addWidget(buttons, 0, 1, 1, 1, QtCore.Qt.AlignRight)
+        layout.addWidget(stack, 1, 0, 1, 2)
 
-        tabs.setCurrentIndex(1)  # editor
+        tabs.currentChanged.connect(stack.setCurrentIndex)
+        dark_btn.toggled.connect(self.dark_toggled.emit)
 
         self._body = body
         self._tabs = tabs
@@ -33,8 +56,12 @@ class MainWindow(QtWidgets.QMainWindow):
             for s in body.findChildren(QtWidgets.QSplitter) if s.objectName()
         }
 
-        self.setCentralWidget(body)
         self.statusBar().show()
+        self.setCentralWidget(body)
+        self.setContentsMargins(6, 6, 6, 6)
+
+        dark_btn.setChecked(state.retrieve_dark_mode())
+        tabs.setCurrentIndex(1)  # editor
 
     @QtCore.Slot()  # noqa
     def spoken(self, message):

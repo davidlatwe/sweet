@@ -55,13 +55,9 @@ class Session(object):
         print("Preference file: %s" % storage.fileName())
 
         state = State(storage=storage)
-
         resources.load_themes()
-        qss = resources.load_theme(name=state.retrieve("theme"))
-
         ctrl = control.Controller()
         view_ = window.MainWindow(state=state)
-        view_.setStyleSheet(qss)
 
         # signals
 
@@ -143,6 +139,7 @@ class Session(object):
         context_list.selected.connect(stacked_request.on_context_selected)
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
+        view_.dark_toggled.connect(self.on_dark_toggled)
 
         # status bar messages
         ctrl.status_message.connect(view_.spoken)
@@ -152,6 +149,8 @@ class Session(object):
         self._ctrl = ctrl
         self._view = view_
         self._state = state
+
+        self.apply_theme()
 
     @property
     def app(self):
@@ -169,11 +168,13 @@ class Session(object):
     def state(self):
         return self._state
 
+    def on_dark_toggled(self, value):
+        self._state.store_dark_mode(value)
+        self.apply_theme(dark=value)
+
     def on_preference_changed(self, key, value):
         if key == "theme":
             self.apply_theme(value)
-        elif key == "suiteOpenAs":
-            pass  # self._ctrl.state["suiteOpenAs"] = value
         elif key == "resetLayout":
             self._view.reset_layout()
         elif key == "reloadTheme":
@@ -181,12 +182,21 @@ class Session(object):
         else:
             print("Unknown preference setting: %s" % key)
 
-    def apply_theme(self, name):
+    def apply_theme(self, name=None, dark=None):
         view = self._view
-        qss = resources.load_theme(name)
+        name = name or self.state.retrieve("theme")
+        dark = self.state.retrieve_dark_mode() if dark is None else dark
+        qss = resources.get_style_sheet(name, dark)
         view.setStyleSheet(qss)
         view.style().unpolish(view)
         view.style().polish(view)
+        self.state.store("theme", resources.current_theme())
+
+    def reload_theme(self):
+        """For look-dev"""
+        reload(resources)
+        resources.load_themes()
+        self.apply_theme()
 
     def show(self):
         view = self._view
@@ -205,13 +215,6 @@ class Session(object):
     def close(self):
         self._app.closeAllWindows()
         self._app.quit()
-
-    def reload_theme(self):
-        """For look-dev"""
-        reload(resources)
-        resources.load_themes()
-        qss = resources.load_theme(name=self.state.retrieve("theme"))
-        self.view.setStyleSheet(qss)
 
 
 class State(object):
@@ -260,6 +263,12 @@ class State(object):
         if value is None:
             value = default
         return self._f(value)
+
+    def retrieve_dark_mode(self):
+        return bool(self.retrieve("theme.on_dark"))
+
+    def store_dark_mode(self, value):
+        self.store("theme.on_dark", bool(value))
 
     def preserve_layout(self, widget, group):
         # type: (QtWidgets.QWidget, str) -> None

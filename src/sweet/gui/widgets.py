@@ -1813,9 +1813,12 @@ class CompleterPopup(QtWidgets.QListView):
     def __init__(self, *args, **kwargs):
         super(CompleterPopup, self).__init__(*args, **kwargs)
         self.setObjectName("CompleterPopup")
+
+    def showEvent(self, event):
+        self.setStyleSheet(res.get_style_sheet())
         # this seems to be the only way to apply stylesheet to completer
         # popup.
-        self.setStyleSheet(res.load_theme())
+        super(CompleterPopup, self).showEvent(event)
 
 
 class HtmlPrinter(colorize.Printer):
