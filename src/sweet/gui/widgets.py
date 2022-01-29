@@ -908,7 +908,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
     def open_editor(self, row):
         if row < 0:
             return
-        self.openPersistentEditor(self.model().index(row, 0))
+        self.openPersistentEditor(self.item(row, 0))
         editor = self.cellWidget(row, 0)  # type: QtWidgets.QLineEdit
 
         def on_editing_finished():
@@ -917,7 +917,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
             if text:
                 editor.editingFinished.disconnect(on_editing_finished)
                 self.process_row_edited(text, _row)
-                self.closePersistentEditor(self.model().index(_row, 0))
+                self.closePersistentEditor(self.item(_row, 0))
 
         editor.editingFinished.connect(on_editing_finished)
         self.setCurrentCell(row, 0)
@@ -927,6 +927,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
             if text:
                 row += 1
                 self.insertRow(row)
+                self.setItem(row, 0, QtWidgets.QTableWidgetItem())
                 self.open_editor(row)
                 self.cellWidget(row - 1, 0).setFocus()  # grab focus on Tab key
         else:
@@ -942,6 +943,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
 
         row = self.rowCount()
         self.insertRow(row)
+        self.setItem(row, 0, QtWidgets.QTableWidgetItem())
         self.open_editor(row)
 
     def fetch_requests(self):
