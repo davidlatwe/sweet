@@ -3,6 +3,8 @@
 <qresource>
     <file>icons/arrow-clockwise-on.svg</file>
     <file>icons/arrow-clockwise.svg</file>
+    <file>icons/brightness-high-fill.svg</file>
+    <file>icons/brightness-low-fill.svg</file>
     <file>icons/caret-down-fill-dim.svg</file>
     <file>icons/caret-down-fill-on.svg</file>
     <file>icons/caret-down-fill.svg</file>
