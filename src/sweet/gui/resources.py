@@ -29,10 +29,18 @@ def theme_names():
 
 
 def current_theme():
-    return _current["name"]
+    """Returns currently applied theme object
+
+    :return:
+    :rtype: BaseTheme or None
+    """
+    try:
+        return _themes[_current["name"]][_current["dark"]]
+    except KeyError:
+        return None
 
 
-def get_style_sheet(name=None, dark=None):
+def get_theme(name=None, dark=None):
     _fallback = next(iter(_themes.keys()))
     name = name or _current["name"] or _fallback
     dark = _current["dark"] if dark is None else bool(dark)
@@ -46,7 +54,12 @@ def get_style_sheet(name=None, dark=None):
     _current["name"] = name
     _current["dark"] = dark
 
-    return theme[dark].style_sheet()
+    return theme[dark]
+
+
+def get_style_sheet(name=None, dark=None):
+    theme = get_theme(name=name, dark=dark)
+    return theme.style_sheet()
 
 
 class Resources:
@@ -154,10 +167,10 @@ class HSL:
     all be in the range 0-255 or with percentages, the value of h must
     be in the range 0-359.
     """
-    h: float
-    s: float
-    l: float
-    a: float = 100
+    h: float            # 0-359
+    s: float            # 0.0-100.0 (%)
+    l: float            # 0.0-100.0 (%)
+    a: float = 100      # 0.0-100.0 (%)
 
     def __str__(self):
         return f"hsla({self.h}, {self.s}%, {self.l}%, {self.a}%)"
@@ -185,6 +198,14 @@ class HSL:
     @property
     def fade(self):
         return HSL(self.h, self.s, self.l, self.a * 0.4)
+
+    def q_color(self):
+        return QtGui.QColor.fromHslF(
+            self.h / 359,
+            self.s / 100,
+            self.l / 100,
+            self.a / 100,
+        )
 
 
 @dataclass
@@ -219,7 +240,7 @@ class BaseTheme(object):
         background=HSL(0.00, 0.00, 98.04),          # Grey 50
         border=HSL(0.00, 0.00, 74.12),              # Grey 400
 
-        error=HSL(11.95, 100.00, 43.33),            # Deep Orange A700
+        error=HSL(348.36, 100.00, 54.51),           # Red A400
         warning=HSL(40.24, 100.00, 50.00),          # Amber A700
 
         on_primary=HSL(0.00, 0.00, 25.88),          # Grey 800

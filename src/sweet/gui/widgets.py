@@ -543,10 +543,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
 
     def __init__(self, blacklist=None, default="", *args, **kwargs):
         super(ValidNameLineEdit, self).__init__(*args, **kwargs)
-        colors = {
-            "ready": QtGui.QColor("#191919"),
-            "invalid": QtGui.QColor("#C84747"),
-        }
+
         interval = 1000
         blacklist = blacklist or []
 
@@ -563,8 +560,6 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         anim = QtCore.QPropertyAnimation()
         anim.setEasingCurve(QtCore.QEasingCurve.InCubic)
         anim.setDuration(interval)
-        anim.setStartValue(colors["invalid"])
-        anim.setEndValue(colors["ready"])
 
         anim.finished.connect(self._on_anim_finished)
         timer.timeout.connect(lambda: self.prompted.emit(""))
@@ -573,9 +568,10 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
 
         self._anim = anim
         self._timer = timer
-        self._color = colors["ready"]
+        self._color = None
         self._interval = interval
         self._blacklist = blacklist
+        self.__block = False
 
         anim.setTargetObject(self)
         anim.setPropertyName(QtCore.QByteArray(b"_qproperty_color"))
@@ -586,6 +582,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         if state == QtGui.QValidator.Invalid:
             self.prompted.emit("Invalid char.")
             self._anim.stop()
+            self._setup_anim_colors()
             self._anim.start()
             self._timer.start()
 
@@ -598,6 +595,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         self.validated.emit(not is_blacked and bool(value))
 
     def _blacked_hint(self, show):
+        self._setup_anim_colors()
         self._anim.start()
         self._anim.pause()
         if show:
@@ -609,14 +607,30 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
             # finished signal emitted when the current time equals to
             # totalDuration (interval).
 
+    def _setup_anim_colors(self):
+        theme = res.current_theme()
+        color_invalid = theme.palette.error.q_color()
+        color_ready = theme.palette.border.q_color()
+        self._anim.setStartValue(color_invalid)
+        self._anim.setEndValue(color_ready)
+        self._color = color_ready
+
     def _get_color(self):
-        return self._color
+        return self._color or QtGui.QColor()
 
     def _set_color(self, color):
         self._color = color
         self.setStyleSheet("border-color: %s;" % color.name())
 
     _qproperty_color = QtCore.Property(QtGui.QColor, _get_color, _set_color)
+
+    def changeEvent(self, event):
+        super(ValidNameLineEdit, self).changeEvent(event)
+        if not self.__block and event.type() == QtCore.QEvent.StyleChange:
+            # update color when theme changed (blockSignals not working here)
+            self.__block = True
+            self._setup_anim_colors()
+            self.__block = False
 
 
 class ContextNameEditWidget(QtWidgets.QWidget):

@@ -190,7 +190,7 @@ class Session(object):
         view.setStyleSheet(qss)
         view.style().unpolish(view)
         view.style().polish(view)
-        self.state.store("theme", resources.current_theme())
+        self.state.store("theme", resources.current_theme().name)
 
     def reload_theme(self):
         """For look-dev"""
