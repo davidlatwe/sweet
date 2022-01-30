@@ -278,6 +278,10 @@ class ContextToolTreeModel(ToolTreeModel):
     require_expanded = QtCore.Signal(list)
     ContextSortRole = QtCore.Qt.UserRole + 20
 
+    def __init__(self, editable=True, *args, **kwargs):
+        super(ContextToolTreeModel, self).__init__(editable, *args, **kwargs)
+        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+
     def on_context_added(self, ctx):
         """
 
@@ -288,6 +292,7 @@ class ContextToolTreeModel(ToolTreeModel):
         # todo: context may be a failed one when the suite is loaded with
         #   bad .rxt files. Add icon to indicate this unfortunate.
         c = QtGui.QStandardItem(ctx.name)
+        c.setIcon(self._icon_ctx)
         c.setData(ctx.priority, self.ContextSortRole)
         self.appendRow(c)
         self._root_items[ctx.name] = c
@@ -549,12 +554,20 @@ class SuiteStorageModel(BaseItemModel):
         "Name",
     ]
 
+    def __init__(self, *args, **kwargs):
+        super(SuiteStorageModel, self).__init__(*args, **kwargs)
+        self._icons = {
+            "branch": QtGui.QIcon(":/icons/server.svg"),
+            "suite": QtGui.QIcon(":/icons/stack.svg"),
+        }
+
     def ensure_branch_item(self, branch):
         branch_item = next(iter(self.findItems(branch)),
                            None)  # type: QtGui.QStandardItem
 
         if branch_item is None:
             branch_item = QtGui.QStandardItem(branch)
+            branch_item.setIcon(self._icons["branch"])
             self.appendRow(branch_item)
 
         return branch_item
@@ -572,6 +585,7 @@ class SuiteStorageModel(BaseItemModel):
                 branches[suite.branch] = self.ensure_branch_item(suite.branch)
 
             suite_item = QtGui.QStandardItem(suite.name)
+            suite_item.setIcon(self._icons["suite"])
             suite_item.setData(suite, self.SavedSuiteRole)
             branches[suite.branch].appendRow(suite_item)
 

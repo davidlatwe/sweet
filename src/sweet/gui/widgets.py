@@ -436,11 +436,13 @@ class ContextListWidget(QtWidgets.QWidget):
         view.itemDoubleClicked.connect(self.rename_context)
 
         self._view = view
+        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
 
     def on_context_added(self, ctx):
         # todo: context may be a failed one when the suite is loaded with
         #   bad .rxt files. Add icon to indicate this unfortunate.
         item = QtWidgets.QListWidgetItem(ctx.name)
+        item.setIcon(self._icon_ctx)
         self._view.insertItem(0, item)
         self._view.setCurrentRow(0)
 
