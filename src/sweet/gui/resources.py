@@ -176,24 +176,26 @@ class HSL:
         return f"hsla({self.h}, {self.s}%, {self.l}%, {self.a}%)"
 
     def __mul__(self, other: float):
-        self.l *= other
-        self.l = 100 if self.l > 100 else self.l
-        self.l = 0 if self.l < 0 else self.l
-        return self
+        l = self.l
+        l *= other
+        l = 100 if l > 100 else l
+        l = 0 if l < 0 else l
+        return HSL(self.h, self.s, l, self.a)
 
     def __add__(self, other: float):
-        self.l += other
-        self.l = 100 if self.l > 100 else self.l
-        self.l = 0 if self.l < 0 else self.l
-        return self
+        l = self.l
+        l += other
+        l = 100 if l > 100 else l
+        l = 0 if l < 0 else l
+        return HSL(self.h, self.s, l, self.a)
 
     @property
     def bright(self):
-        return HSL(self.h, self.s, self.l) * 1.2
+        return self * 1.2
 
     @property
     def dimmed(self):
-        return HSL(self.h, self.s, self.l) * 0.7
+        return self * 0.7
 
     @property
     def fade(self):
