@@ -467,6 +467,7 @@ class BaseTheme(object):
         QTabWidget {{
             border: none;
         }}
+        #TabStackWidget,
         QTabWidget::pane {{
             border: 1px solid {self.palette.border};
             border-radius: 0px;
@@ -525,67 +526,30 @@ class BaseTheme(object):
         }}
         
         /* left */
-
-        QTabBar::tab::left {{
-            color: {self.palette.on_background};
-            background-color: {self.palette.background};
-            border: 1px solid {self.palette.border};
-            border-bottom: 1px solid transparent;
-            padding: {px(8)};
-        }}
-        QTabBar::tab::left:next-selected {{
-            border-top: 1px solid {self.palette.border};
-        }}
-        QTabBar::tab::left:selected {{
-            color: {self.palette.on_primary};
-            background-color: {self.palette.primary};
-            border: 1px solid {self.palette.border};
-            border-right: 1px solid transparent;
-        }}
-        QTabBar::tab::left:previous-selected {{
-            border-top: 1px solid transparent;
-        }}
-        QTabBar::tab::left:!selected {{
-            color: {self.palette.on_background};
-            background-color: {self.palette.background};
-            border-right: 1px solid {self.palette.border};
-            margin-left: {px(3)};
-            padding-left: {px(5)};
-        }}
-        QTabBar::tab::left:last:!selected {{
-            border-bottom: 1px solid {self.palette.border};
-        }}
-        QTabBar::tab::left:last:selected {{
-            border-bottom: 1px solid {self.palette.border};
-        }}
-        QTabBar::tab::left:!selected:hover {{
-            color: {self.palette.on_primary};
-            background-color: {self.palette.primary};
-        }}
-        QTabBar::tab::left:disabled {{
-            background-color: {self.palette.background};
-            border: 1px solid {self.palette.border.fade};
-            border-right: 1px solid {self.palette.border.fade};
-            border-bottom: 1px solid transparent;
-            margin-left: {px(3)};
-            padding-left: {px(5)};
-        }}
-        QTabBar::tab::left:disabled:selected {{
-            background-color: {self.palette.background};
-            border: 1px solid {self.palette.border.fade};
-            border-right: 1px solid {self.palette.border.fade};
-            border-bottom: 1px solid transparent;
-            margin-left: {px(3)};
-            padding-left: {px(5)};
-        }}
-        QTabBar::tab::left:disabled:previous-selected {{
-            border-top: 1px solid {self.palette.border.fade};
-        }}
-        QTabBar::tab::left:disabled:last {{
-            border-bottom: 1px solid {self.palette.border.fade};
-        }}
         
-        /* right (not defined) */
+        QTabBar::tab::left {{
+            border-right: none;
+            border-bottom: none;
+        }}
+        QTabBar::tab::left:only-one {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        QTabBar::tab::left:last {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
+
+        /* right */
+        
+        QTabBar::tab::right {{
+            border-left: none;
+            border-bottom: none;
+        }}
+        QTabBar::tab::right:only-one {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        QTabBar::tab::right:last {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
 
         /* others */
 
@@ -603,6 +567,70 @@ class BaseTheme(object):
             border: 1px solid {self.palette.border};
         }}
         
+        """
+
+    def _q_book_tabs(self):
+        return f"""
+        
+        #PackageTabBar::tab::left {{
+            color: {self.palette.on_background};
+            background-color: {self.palette.background};
+            border: 1px solid {self.palette.border};
+            border-bottom: 1px solid transparent;
+            padding: {px(8)};
+        }}
+        #PackageTabBar::tab::left:next-selected {{
+            border-top: 1px solid {self.palette.border};
+        }}
+        #PackageTabBar::tab::left:selected {{
+            color: {self.palette.on_primary};
+            background-color: {self.palette.primary};
+            border: 1px solid {self.palette.border};
+            border-right: 1px solid transparent;
+        }}
+        #PackageTabBar::tab::left:previous-selected {{
+            border-top: 1px solid transparent;
+        }}
+        #PackageTabBar::tab::left:!selected {{
+            color: {self.palette.on_background};
+            background-color: {self.palette.background};
+            border-right: 1px solid {self.palette.border};
+            margin-left: {px(3)};
+            padding-left: {px(5)};
+        }}
+        #PackageTabBar::tab::left:last:!selected {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        #PackageTabBar::tab::left:last:selected {{
+            border-bottom: 1px solid {self.palette.border};
+        }}
+        #PackageTabBar::tab::left:!selected:hover {{
+            color: {self.palette.on_primary};
+            background-color: {self.palette.primary};
+        }}
+        #PackageTabBar::tab::left:disabled {{
+            background-color: {self.palette.background};
+            border: 1px solid {self.palette.border.fade};
+            border-right: 1px solid {self.palette.border.fade};
+            border-bottom: 1px solid transparent;
+            margin-left: {px(3)};
+            padding-left: {px(5)};
+        }}
+        #PackageTabBar::tab::left:disabled:selected {{
+            background-color: {self.palette.background};
+            border: 1px solid {self.palette.border.fade};
+            border-right: 1px solid {self.palette.border.fade};
+            border-bottom: 1px solid transparent;
+            margin-left: {px(3)};
+            padding-left: {px(5)};
+        }}
+        #PackageTabBar::tab::left:disabled:previous-selected {{
+            border-top: 1px solid {self.palette.border.fade};
+        }}
+        #PackageTabBar::tab::left:disabled:last {{
+            border-bottom: 1px solid {self.palette.border.fade};
+        }}
+
         """
 
     def _q_splitter(self):
@@ -994,10 +1022,6 @@ class BaseTheme(object):
         
         #DocStrings {{
             color: {self.palette.on_background.fade};
-        }}
-        
-        #MainStack {{
-            border: 1px solid {self.palette.border};
         }}
 
         """

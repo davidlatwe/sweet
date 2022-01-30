@@ -17,8 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         tabs = QtWidgets.QTabBar()
         stack = QtWidgets.QStackedWidget()
-        tabs.setObjectName("MainTabs")
-        stack.setObjectName("MainStack")
+        stack.setObjectName("TabStackWidget")
 
         tabs.addTab("Saved Suites")
         stack.addWidget(pages.StoragePage())
