@@ -777,6 +777,92 @@ class BaseTheme(object):
         
         """
 
+    def _q_scroll_bar(self):
+        return f"""
+
+        QAbstractScrollArea {{
+            background-color: {self.palette.background};
+        }}
+
+        QScrollBar:horizontal {{
+            background-color: {self.palette.background};
+            height: {px(16)};
+            border: none;
+            border-top: 1px solid {self.palette.border};
+            margin: 0px {px(16)} 0px {px(16)};
+        }}
+
+        QScrollBar::handle:horizontal {{
+            background-color: {self.palette.surface};
+            min-width: {px(20)};
+            margin: 1px 1px 0px 1px;
+        }}
+
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+            /*background-color: {self.palette.surface};*/
+            border-top: 1px solid {self.palette.border};
+            margin: 1px 0px 0px 0px;
+            height: {px(16)};
+            width: {px(16)};
+        }}
+
+        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+            background: none;
+        }}
+
+        QScrollBar::sub-line:horizontal {{
+            image: url(:/icons/chevron_left.svg);
+            subcontrol-position: left;
+            subcontrol-origin: margin;
+        }}
+
+        QScrollBar::add-line:horizontal {{
+            image: url(:/icons/chevron_right.svg);
+            subcontrol-position: right;
+            subcontrol-origin: margin;
+        }}
+
+
+        QScrollBar:vertical {{
+            background-color: {self.palette.background};
+            width: {px(16)};
+            border: none;
+            border-left: 1px solid {self.palette.border};
+            margin: {px(16)} 0px {px(16)} 0px;
+        }}
+
+        QScrollBar::handle:vertical {{
+            background-color: {self.palette.surface};
+            min-height: {px(20)};
+            margin: 1px 0px 1px 1px;
+        }}
+
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            /*background-color: {self.palette.surface};*/
+            border-left: 1px solid {self.palette.border};
+            margin: 0px 0px 0px 1px;
+            height: {px(16)};
+            width: {px(16)};
+        }}
+
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+            background: none;
+        }}
+
+        QScrollBar::sub-line:vertical {{
+            image: url(:/icons/chevron_up.svg);
+            subcontrol-position: top;
+            subcontrol-origin: margin;
+        }}
+
+        QScrollBar::add-line:vertical {{
+            image: url(:/icons/chevron_down.svg);
+            subcontrol-position: bottom;
+            subcontrol-origin: margin;
+        }}
+
+        """
+
     def _q_dialog(self):
         return f"""
 
@@ -898,92 +984,6 @@ class BaseTheme(object):
         }}
         #ToolsView::indicator:checked:disabled {{
             image: url(:icons/toggle-on-dim.svg);
-        }}
-
-        """
-
-    def _q_scroll_bar(self):
-        return f"""
-        
-        QAbstractScrollArea {{
-            background-color: {self.palette.background};
-        }}
-        
-        QScrollBar:horizontal {{
-            background-color: {self.palette.background};
-            height: {px(16)};
-            border: none;
-            border-top: 1px solid {self.palette.border};
-            margin: 0px {px(16)} 0px {px(16)};
-        }}
-        
-        QScrollBar::handle:horizontal {{
-            background-color: {self.palette.surface};
-            min-width: {px(20)};
-            margin: 1px 1px 0px 1px;
-        }}
-        
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-            /*background-color: {self.palette.surface};*/
-            border-top: 1px solid {self.palette.border};
-            margin: 1px 0px 0px 0px;
-            height: {px(16)};
-            width: {px(16)};
-        }}
-        
-        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
-            background: none;
-        }}
-        
-        QScrollBar::sub-line:horizontal {{
-            image: url(:/icons/chevron_left.svg);
-            subcontrol-position: left;
-            subcontrol-origin: margin;
-        }}
-        
-        QScrollBar::add-line:horizontal {{
-            image: url(:/icons/chevron_right.svg);
-            subcontrol-position: right;
-            subcontrol-origin: margin;
-        }}
-        
-        
-        QScrollBar:vertical {{
-            background-color: {self.palette.background};
-            width: {px(16)};
-            border: none;
-            border-left: 1px solid {self.palette.border};
-            margin: {px(16)} 0px {px(16)} 0px;
-        }}
-        
-        QScrollBar::handle:vertical {{
-            background-color: {self.palette.surface};
-            min-height: {px(20)};
-            margin: 1px 0px 1px 1px;
-        }}
-        
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-            /*background-color: {self.palette.surface};*/
-            border-left: 1px solid {self.palette.border};
-            margin: 0px 0px 0px 1px;
-            height: {px(16)};
-            width: {px(16)};
-        }}
-        
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-            background: none;
-        }}
-        
-        QScrollBar::sub-line:vertical {{
-            image: url(:/icons/chevron_up.svg);
-            subcontrol-position: top;
-            subcontrol-origin: margin;
-        }}
-        
-        QScrollBar::add-line:vertical {{
-            image: url(:/icons/chevron_down.svg);
-            subcontrol-position: bottom;
-            subcontrol-origin: margin;
         }}
 
         """
