@@ -1037,8 +1037,8 @@ class BaseDarkTheme(BaseTheme):
     name = "sweet"
     dark = True
     palette = Palette(
-        primary=HSL(150.78, 100.00, 45.10),         # Green A400
-        secondary=HSL(122.58, 15.97, 35.51),        # Green 600 (dimmed)
+        primary=HSL(230.85, 48.36, 47.84),          # Indigo 500
+        secondary=HSL(258.75, 100.00, 56.08),       # Deep Purple A400
 
         surface=HSL(0.00, 0.00, 19.02),             # Grey 850
         background=HSL(0.00, 0.00, 12.94),          # Grey 900
