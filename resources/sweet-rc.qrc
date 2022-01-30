@@ -12,12 +12,6 @@
     <file>icons/caret-right-fill-on.svg</file>
     <file>icons/caret-right-fill.svg</file>
     <file>icons/check-ok.svg</file>
-    <file>icons/checkbox_checked.png</file>
-    <file>icons/checkbox_checked_dim.png</file>
-    <file>icons/checkbox_indeterminate.png</file>
-    <file>icons/checkbox_indeterminate_dim.png</file>
-    <file>icons/checkbox_unchecked.png</file>
-    <file>icons/checkbox_unchecked_dim.png</file>
     <file>icons/chevron_down.svg</file>
     <file>icons/chevron_left.svg</file>
     <file>icons/chevron_right.svg</file>
@@ -42,6 +36,12 @@
     <file>icons/plus-lg.svg</file>
     <file>icons/server.svg</file>
     <file>icons/slash-lg.svg</file>
+    <file>icons/square-check-dim.svg</file>
+    <file>icons/square-check.svg</file>
+    <file>icons/square-dim.svg</file>
+    <file>icons/square-slash-dim.svg</file>
+    <file>icons/square-slash.svg</file>
+    <file>icons/square.svg</file>
     <file>icons/stack.svg</file>
     <file>icons/toggle-off-bright.svg</file>
     <file>icons/toggle-off-dim.svg</file>

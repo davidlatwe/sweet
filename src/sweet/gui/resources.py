@@ -368,22 +368,22 @@ class BaseTheme(object):
             background-color: {self.palette.background};
         }}
         QCheckBox::indicator:unchecked {{
-            image: url(:/icons/checkbox_unchecked.png);
+            image: url(:/icons/square.svg);
         }}
         QCheckBox::indicator:unchecked:disabled {{
-            image: url(:/icons/checkbox_unchecked_dim.png);
+            image: url(:/icons/square-dim.svg);
         }}
         QCheckBox::indicator:checked {{
-            image: url(:/icons/checkbox_checked.png);
+            image: url(:/icons/square-check.svg);
         }}
         QCheckBox::indicator:checked:disabled {{
-            image: url(:/icons/checkbox_checked_dim.png);
+            image: url(:/icons/square-check-dim.svg);
         }}
         QCheckBox::indicator:indeterminate {{
-            image: url(:/icons/checkbox_indeterminate.png);
+            image: url(:/icons/square-slash.svg);
         }}
         QCheckBox::indicator:indeterminate:disabled {{
-            image: url(:/icons/checkbox_indeterminate_dim.png);
+            image: url(:/icons/square-slash-dim.svg);
         }}
 
         """
