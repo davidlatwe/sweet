@@ -114,7 +114,7 @@ class Controller(QtCore.QObject):
     suite_save_failed = QtCore.Signal(str)
     suite_loaded = QtCore.Signal(str, str, str, str)
     context_added = QtCore.Signal(SuiteCtx)
-    context_resolved = QtCore.Signal(str, ResolvedContext)
+    context_resolved = QtCore.Signal(str, object)
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)

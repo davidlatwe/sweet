@@ -792,7 +792,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self._callbacks.insert(0, getattr(panel, "callbacks", {}))
         self.run_panel_callback(0, op_name, ctx)
 
-    @QtCore.Slot(str, ResolvedContext)  # noqa
+    @QtCore.Slot(str, object)  # noqa
     def on_context_resolved(self, name, context):
         """
 
