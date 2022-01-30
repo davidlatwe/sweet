@@ -236,7 +236,7 @@ class BaseTheme(object):
     dark = False
     palette = Palette(
         primary=HSL(35.67, 100.00, 57.45),          # Orange 400
-        secondary=HSL(15.88, 15.32, 56.47),         # Brown 300
+        secondary=HSL(45.68, 100.00, 65.49),        # Amber 300
 
         surface=HSL(0.00, 0.00, 96.08),             # Grey 100
         background=HSL(0.00, 0.00, 98.04),          # Grey 50
@@ -723,6 +723,7 @@ class BaseTheme(object):
 
         QAbstractItemView {{
             show-decoration-selected: 1;  /* highlight decoration (branch) */
+            color: {self.palette.on_background};
             background-color: {self.palette.background};
             alternate-background-color: {self.palette.background.bright};
             border: none;
@@ -732,20 +733,22 @@ class BaseTheme(object):
         QAbstractItemView:focus {{
             border: none;
         }}
-        QAbstractItemView::item:selected:active {{
-            background-color: {self.palette.secondary};
-        }}
+
+        /* note: transparent background color is really hard to look good */
+
+        QTreeView::branch:selected,
+        QAbstractItemView::item:selected:active,
         QAbstractItemView::item:selected:!focus {{
             background-color: {self.palette.secondary};
         }}
-        QAbstractItemView::item:hover {{
-            color: {self.palette.on_primary};
-            background-color: {self.palette.primary};
-        }}
+
+        QTreeView::branch:hover,
+        QAbstractItemView::item:hover,
         QAbstractItemView::item:hover:selected {{
             color: {self.palette.on_primary};
             background-color: {self.palette.primary};
         }}
+
         QTreeView::branch::has-children::!has-siblings:closed {{
             image: url(:/icons/caret-right-fill.svg);
         }}
@@ -769,12 +772,6 @@ class BaseTheme(object):
         }}
         QTreeView::branch:open::has-children::has-siblings:hover {{
             image: url(:/icons/caret-down-fill-on.svg);
-        }}
-        QTreeView::branch:selected {{
-            background-color: {self.palette.secondary};
-        }}
-        QTreeView::branch:hover {{
-            background-color: {self.palette.primary};
         }}
         
         """
