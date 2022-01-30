@@ -51,12 +51,26 @@ class SuitePage(BusyWidget):
         tool_stack = ContextToolTreeWidget()
         installed = InstalledPackagesWidget()
 
-        views = QtWidgets.QTabWidget()
-        views.addTab(stacked_resolve, "Resolved Details")
-        views.addTab(tool_stack, "Tool Stack")
-        views.addTab(installed, "Installed Packages")
-        views.setTabPosition(views.East)
-        views.setDocumentMode(True)
+        views = QtWidgets.QWidget()
+        tabs = QtWidgets.QTabBar()
+        stack = QtWidgets.QStackedWidget()
+        stack.setObjectName("TabStackWidgetLeft")
+        tabs.setShape(tabs.RoundedWest)
+        tabs.setDocumentMode(True)
+        # QTabWidget's frame (pane border) will not be rendered if documentMode
+        # is enabled, so we make our own with bar + stack with border.
+        tabs.addTab("Resolved Details")
+        stack.addWidget(stacked_resolve)
+        tabs.addTab("Tool Stack")
+        stack.addWidget(tool_stack)
+        tabs.addTab("Installed Packages")
+        stack.addWidget(installed)
+
+        layout = QtWidgets.QHBoxLayout(views)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(tabs, alignment=QtCore.Qt.AlignTop)
+        layout.addWidget(stack, stretch=True)
 
         body_split = QtWidgets.QSplitter()
         body_split.addWidget(context_list)
@@ -87,6 +101,8 @@ class SuitePage(BusyWidget):
 
         head_split.setObjectName("suitePageHeadSplit")
         body_split.setObjectName("suitePageBodySplit")
+
+        tabs.currentChanged.connect(stack.setCurrentIndex)
 
 
 class StoragePage(BusyWidget):

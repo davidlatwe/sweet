@@ -473,6 +473,13 @@ class BaseTheme(object):
             border-radius: 0px;
             padding: {px(3)};
         }}
+        
+        #TabStackWidgetLeft {{
+            border: none;
+            border-left: 1px solid {self.palette.border};
+            border-radius: 0px;
+            padding: {px(3)};
+        }}
 
         QTabBar:focus {{
             border: 0px transparent;

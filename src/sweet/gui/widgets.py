@@ -1236,19 +1236,35 @@ class ContextResolveWidget(QtWidgets.QWidget):
         graph = ResolvedGraph()
         log = ResolvedLog()
 
-        tabs = QtWidgets.QTabWidget()
-        tabs.addTab(tools, "Tools")
-        tabs.addTab(packages, "Packages")
-        tabs.addTab(environ, "Environ")
-        tabs.addTab(code, "Code")
-        tabs.addTab(graph, "Graph")
-        tabs.addTab(log, "Log")
-
+        tabs = QtWidgets.QTabBar()
+        stack = QtWidgets.QStackedWidget()
+        stack.setObjectName("TabStackWidget")
+        tabs.setExpanding(True)
         tabs.setDocumentMode(True)
-        tabs.tabBar().setExpanding(True)
+        # QTabWidget's frame (pane border) will not be rendered if documentMode
+        # is enabled, so we make our own with bar + stack with border.
+        tabs.addTab("Tools")
+        stack.addWidget(tools)
+        tabs.addTab("Packages")
+        stack.addWidget(packages)
+        tabs.addTab("Environ")
+        stack.addWidget(environ)
+        tabs.addTab("Code")
+        stack.addWidget(code)
+        tabs.addTab("Graph")
+        stack.addWidget(graph)
+        tabs.addTab("Log")
+        stack.addWidget(log)
+
+        _layout = QtWidgets.QVBoxLayout()
+        _layout.setSpacing(0)
+        _layout.addWidget(tabs)
+        _layout.addWidget(stack)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(tabs)
+        layout.addLayout(_layout)
+
+        tabs.currentChanged.connect(stack.setCurrentIndex)
 
         self._name = None
         self._tabs = tabs
