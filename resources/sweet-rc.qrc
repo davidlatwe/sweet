@@ -32,13 +32,17 @@
     <file>icons/funnel-fill.svg</file>
     <file>icons/gear-fill-dim.svg</file>
     <file>icons/gear-fill.svg</file>
+    <file>icons/layers-half.svg</file>
     <file>icons/lightning-fill-dim.svg</file>
     <file>icons/lightning-fill.svg</file>
     <file>icons/people-fill-ok.svg</file>
     <file>icons/people-fill.svg</file>
     <file>icons/person-circle.svg</file>
+    <file>icons/plus-dim.svg</file>
     <file>icons/plus.svg</file>
+    <file>icons/server.svg</file>
     <file>icons/slash-lg.svg</file>
+    <file>icons/stack.svg</file>
     <file>icons/toggle-off-bright.svg</file>
     <file>icons/toggle-off-dim.svg</file>
     <file>icons/toggle-off.svg</file>
