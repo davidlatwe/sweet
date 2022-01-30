@@ -913,7 +913,7 @@ class BaseTheme(object):
             icon: url(:/icons/lightning-fill.svg);
         }}
         #ContextAddOpBtn {{
-            icon: url(:/icons/plus.svg);
+            icon: url(:/icons/plus-dim.svg);
         }}
         #ContextAddOpBtn:hover {{
             icon: url(:/icons/plus.svg);
