@@ -910,10 +910,10 @@ class BaseTheme(object):
             icon: url(:/icons/lightning-fill.svg);
         }}
         #ContextAddOpBtn {{
-            icon: url(:/icons/plus-dim.svg);
+            icon: url(:/icons/plus-lg-dim.svg);
         }}
         #ContextAddOpBtn:hover {{
-            icon: url(:/icons/plus.svg);
+            icon: url(:/icons/plus-lg.svg);
         }}
         #ContextRemoveOpBtn {{
             icon: url(:/icons/trash-fill-dim.svg);
