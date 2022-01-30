@@ -961,13 +961,28 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         self.open_editor(row)
 
     def fetch_requests(self):
+        """Get requests from table
+
+        This also collects inputs from active cell widget (inputs that are not
+        yet committed into table).
+
+        :return: list of package request string
+        :rtype: list[str]
+        """
         requests = []
         for row in range(self.rowCount()):
+            editor = self.cellWidget(row, 0)
             item = self.item(row, 0)
-            if item is not None:
+            if editor is not None:
+                text = editor.text()
+            elif item is not None:
                 text = item.text()
-                if text:
-                    requests.append(text)
+            else:
+                text = None
+
+            if text:
+                requests.append(text)
+
         return requests
 
     def remove_all_rows(self):
