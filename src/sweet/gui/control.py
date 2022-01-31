@@ -1,6 +1,7 @@
 
 import logging
 import inspect
+import traceback
 import functools
 from itertools import groupby
 from rez.resolved_context import ResolvedContext
@@ -292,7 +293,9 @@ class Controller(QtCore.QObject):
         try:
             self._sop.save(path)
         except Exception as e:
-            self.suite_save_failed.emit(str(e))
+            message = f"\n{traceback.format_exc()}\n{str(e)}"
+            log.error(message)
+            self.suite_save_failed.emit(message)
         else:
             saved_suite = SavedSuite(
                 name=name,

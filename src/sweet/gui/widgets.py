@@ -331,7 +331,11 @@ class SuiteHeadWidget(QtWidgets.QWidget):
 
     @QtCore.Slot(str)  # noqa
     def on_suite_save_failed(self, err_message):
-        print(err_message)  # todo: a modal dialog
+        dialog = MessageDialog(err_message,
+                               title="Failed Saving Suite",
+                               level=logging.CRITICAL,
+                               parent=self)
+        dialog.open()
 
     @QtCore.Slot(str, str, str, str)  # noqa
     def on_suite_loaded(self, name, description, load_path, branch):
