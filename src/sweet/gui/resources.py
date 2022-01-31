@@ -927,6 +927,12 @@ class BaseTheme(object):
     def _q_suite_bar(self):
         return f"""
 
+        #SuiteNameEditIcon {{
+            image: url(:/icons/stack.svg);
+            min-width: {px(30).floor};
+            min-width: {px(30).ceil};
+        }}
+
         #SuiteNameEdit,
         #SuiteNameView {{
             font-size: {px(30).ceil};

@@ -233,6 +233,9 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         super(SuiteHeadWidget, self).__init__(*args, **kwargs)
         self.setObjectName("SuiteHeadWidget")
 
+        label = QtWidgets.QLabel()
+        label.setObjectName("SuiteNameEditIcon")
+
         name = ValidNameLineEdit()
         new_btn = QtWidgets.QPushButton(" New")
         save_btn = QtWidgets.QPushButton(" Save")
@@ -246,6 +249,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.setContentsMargins(16, 8, 16, 0)
+        layout.addWidget(label)
         layout.addWidget(name)
         layout.addWidget(save_btn)
         layout.addWidget(new_btn)
