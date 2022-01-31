@@ -238,7 +238,7 @@ class BaseTheme(object):
         primary=HSL(35.67, 100.00, 57.45),          # Orange 400
         secondary=HSL(45.68, 100.00, 65.49),        # Amber 300
 
-        surface=HSL(0.00, 0.00, 96.08),             # Grey 100
+        surface=HSL(0.00, 0.00, 87.84),             # Grey 300
         background=HSL(0.00, 0.00, 98.04),          # Grey 50
         border=HSL(0.00, 0.00, 74.12),              # Grey 400
 
@@ -566,14 +566,15 @@ class BaseTheme(object):
             width: {px(24).floor};
         }}
         QTabBar QToolButton {{
-            color: {self.palette.on_surface};
-            background-color: {self.palette.surface};
-            border: 1px solid {self.palette.border};
-        }}
-        QTabBar QToolButton:disabled {{
             color: {self.palette.on_background};
             background-color: {self.palette.background};
             border: 1px solid {self.palette.border};
+        }}
+        QTabBar QToolButton:hover {{
+            background-color: {self.palette.primary};
+        }}
+        QTabBar QToolButton:disabled {{
+            background-color: {self.palette.background.dimmed};
         }}
         
         """
@@ -798,7 +799,6 @@ class BaseTheme(object):
         }}
 
         QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-            /*background-color: {self.palette.surface};*/
             border-top: 1px solid {self.palette.border};
             margin: 1px 0px 0px 0px;
             height: {px(16)};
@@ -837,7 +837,6 @@ class BaseTheme(object):
         }}
 
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-            /*background-color: {self.palette.surface};*/
             border-left: 1px solid {self.palette.border};
             margin: 0px 0px 0px 1px;
             height: {px(16)};
