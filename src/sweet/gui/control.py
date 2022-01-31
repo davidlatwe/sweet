@@ -1,4 +1,5 @@
 
+import logging
 import inspect
 import functools
 from itertools import groupby
@@ -14,6 +15,9 @@ from ..core import (
 )
 from ._vendor.Qt5 import QtCore
 from .widgets import BusyWidget
+
+
+log = logging.getLogger("sweet")
 
 
 def _defer(on_time=500):
@@ -79,7 +83,7 @@ def _thread(name, blocks=None):
             thread = self._thread[name]
 
             if thread.isRunning():
-                print(f"Thread {name!r} is busy, cannot process {fn_name!r}.")
+                log.info(f"Thread {name!r} is busy, can't process {fn_name!r}.")
                 return
 
             blocks_ = blocks or []
@@ -94,11 +98,11 @@ def _thread(name, blocks=None):
                 for w in busy_widgets:
                     w.set_overwhelmed(False)
                 thread.finished.disconnect(on_finished)
-                print(f"Thread {name!r} finished {fn_name!r}.")
+                log.info(f"Thread {name!r} finished {fn_name!r}.")
 
             thread.finished.connect(on_finished)
 
-            print(f"Thread {name!r} is about to run {fn_name!r}.")
+            log.info(f"Thread {name!r} is about to run {fn_name!r}.")
             thread.set_job(func, *args, **kwargs)
             thread.start()
 
