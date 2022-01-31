@@ -1,6 +1,7 @@
 
 import re
 import json
+import logging
 from io import StringIO
 from contextlib import contextmanager
 
@@ -190,6 +191,57 @@ class JsonView(TreeView):
 
         menu.move(QtGui.QCursor.pos())
         menu.show()
+
+
+class MessageDialog(QtWidgets.QDialog):
+
+    def __init__(self, message, title=None, level=None, *args, **kwargs):
+        super(MessageDialog, self).__init__(*args, **kwargs)
+
+        level = logging.INFO if level is None else level
+
+        title = title or {
+            logging.INFO: "Info",
+            logging.WARNING: "Warning",
+            logging.ERROR: "Error",
+            logging.CRITICAL: "Critical Error",
+        }.get(level, "Oops ?")
+
+        icon_name = {
+            logging.INFO: "LogInfoIcon",
+            logging.WARNING: "LogWarningIcon",
+            logging.ERROR: "LogErrorIcon",
+            logging.CRITICAL: "LogCriticalIcon",
+        }.get(level, "LogUndefinedIcon")
+
+        self.setWindowTitle(title)
+
+        icon = QtWidgets.QLabel()
+        icon.setObjectName(icon_name)
+
+        label = QtWidgets.QLabel()
+        label.setObjectName("LogLevelText")
+        label.setText(title)
+
+        text = QtWidgets.QPlainTextEdit()
+        text.setObjectName("LogMessageText")
+        text.setPlainText(message)
+        text.setLineWrapMode(text.NoWrap)
+        text.setReadOnly(True)
+
+        btn_dismiss = QtWidgets.QPushButton("Dismiss")
+        btn_dismiss.setDefault(True)
+
+        _layout = QtWidgets.QHBoxLayout()
+        _layout.addWidget(icon)
+        _layout.addWidget(label, stretch=True)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addLayout(_layout)
+        layout.addWidget(text)
+        layout.addWidget(btn_dismiss)
+
+        btn_dismiss.clicked.connect(lambda: self.done(self.Accepted))
 
 
 class YesNoDialog(QtWidgets.QDialog):

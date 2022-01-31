@@ -1035,6 +1035,39 @@ class BaseTheme(object):
         #DocStrings {{
             color: {self.palette.on_background.fade};
         }}
+        
+        #LogMessageText {{
+            font-family: "JetBrains Mono";
+        }}
+
+        #LogLevelText {{
+            font-size: {px(26).ceil};
+        }}
+        
+        #LogInfoIcon {{
+            image: url(:/icons/log-info.svg);
+            min-width: {px(26).ceil};
+        }}
+        
+        #LogWarningIcon {{
+            image: url(:/icons/log-warning.svg);
+            min-width: {px(26).ceil};
+        }}
+        
+        #LogErrorIcon {{
+            image: url(:/icons/log-error.svg);
+            min-width: {px(26).ceil};
+        }}
+        
+        #LogCriticalIcon {{
+            image: url(:/icons/log-critical.svg);
+            min-width: {px(26).ceil};
+        }}
+        
+        #LogUndefinedIcon {{
+            image: url(:/icons/log-undefined.svg);
+            min-width: {px(26).ceil};
+        }}
 
         """
 
