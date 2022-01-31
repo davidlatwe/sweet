@@ -943,7 +943,7 @@ class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
             return
         if index.column() == 0:
             editor = QtWidgets.QLineEdit(parent)
-            editor.setPlaceholderText("add request...")
+            editor.setPlaceholderText("add one request..")
             editor.setObjectName("RequestTextEdit")
 
             completer = RequestCompleter(editor)
@@ -1059,7 +1059,7 @@ class RequestTextEdit(QtWidgets.QTextEdit):
     def __init__(self, *args, **kwargs):
         super(RequestTextEdit, self).__init__(*args, **kwargs)
         self.setObjectName("RequestTextEdit")
-        self.setPlaceholderText("requests..")
+        self.setPlaceholderText("multi-line requests, e.g.\nfoo\nbar-2.1\n..")
         self.setAcceptRichText(False)
         self.setTabChangesFocus(True)
 
@@ -1170,16 +1170,52 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         c.complete(cr)
 
 
-class RequestEditorWidget(QtWidgets.QTabWidget):
+class RequestEditorWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(RequestEditorWidget, self).__init__(*args, **kwargs)
 
-        text_editor = RequestTextEdit()
+        buttons = QtWidgets.QWidget()
+        buttons.setObjectName("ButtonBelt")
+
+        table_btn = QtWidgets.QPushButton()
+        table_btn.setObjectName("RequestTableBtn")
+        table_btn.setCheckable(True)
+        table_btn.setChecked(True)  # the default
+        text_btn = QtWidgets.QPushButton()
+        text_btn.setObjectName("RequestTextBtn")
+        text_btn.setCheckable(True)
+
+        stack = QtWidgets.QStackedWidget()
         table_editor = RequestTableEdit()
-        self.addTab(table_editor, "Table")
-        self.addTab(text_editor, "Text")
-        self.currentChanged.connect(self.on_tab_changed)
+        text_editor = RequestTextEdit()
+
+        stack.addWidget(table_editor)
+        stack.addWidget(text_editor)
+
+        layout = QtWidgets.QHBoxLayout(buttons)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(QtCore.Qt.AlignLeft)
+        layout.setSpacing(0)
+        layout.addWidget(table_btn)
+        layout.addWidget(text_btn, stretch=True)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        layout.addWidget(buttons)
+        layout.addWidget(stack)
+
+        def switched(to_index):
+            stack.setCurrentIndex(to_index)
+            table_btn.setChecked(to_index == 0)
+            text_btn.setChecked(to_index == 1)
+
+        table_btn.clicked.connect(lambda: switched(0))
+        text_btn.clicked.connect(lambda: switched(1))
+        stack.currentChanged.connect(self.on_tab_changed)
+
+        self._stack = stack
         self._text = text_editor
         self._table = table_editor
 
@@ -1195,14 +1231,14 @@ class RequestEditorWidget(QtWidgets.QTabWidget):
             self._table.remove_all_rows()
 
     def set_requests(self, requests):
-        index = self.currentIndex()
+        index = self._stack.currentIndex()
         if index == 0:
             self._table.replace_requests(list(map(str, requests)))
         elif index == 1:
             self._text.setPlainText("\n".join(map(str, requests)))
 
     def get_requests(self):
-        index = self.currentIndex()
+        index = self._stack.currentIndex()
         if index == 0:
             return self._table.fetch_requests()
         elif index == 1:

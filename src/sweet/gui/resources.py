@@ -960,6 +960,20 @@ class BaseTheme(object):
         #RequestTextEdit,
         #RequestTableEdit {{
             font-family: "JetBrains Mono";
+            border: 1px solid {self.palette.border};
+            padding: {px(2)};
+        }}
+        
+        #RequestTableBtn {{
+            icon: url(:icons/card-list.svg);
+        }}
+        #RequestTextBtn {{
+            icon: url(:icons/card-text.svg);
+        }}
+
+        #RequestTableBtn:checked,
+        #RequestTextBtn:checked {{
+            background-color: {self.palette.secondary.fade};
         }}
 
         """
