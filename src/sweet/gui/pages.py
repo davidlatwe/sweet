@@ -59,10 +59,10 @@ class SuitePage(BusyWidget):
         tabs.setDocumentMode(True)
         # QTabWidget's frame (pane border) will not be rendered if documentMode
         # is enabled, so we make our own with bar + stack with border.
+        tabs.addTab("Suite Tools")
+        stack.addWidget(tool_stack)
         tabs.addTab("Resolved Details")
         stack.addWidget(stacked_resolve)
-        tabs.addTab("Tool Stack")
-        stack.addWidget(tool_stack)
         tabs.addTab("Installed Packages")
         stack.addWidget(installed)
 
