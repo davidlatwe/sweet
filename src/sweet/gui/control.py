@@ -4,7 +4,6 @@ import inspect
 import traceback
 import functools
 from itertools import groupby
-from rez.resolved_context import ResolvedContext
 from ..core import (
     SuiteOp,
     InstalledPackages,

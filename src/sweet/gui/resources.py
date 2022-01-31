@@ -929,7 +929,6 @@ class BaseTheme(object):
 
         #SuiteNameEditIcon {{
             image: url(:/icons/stack.svg);
-            min-width: {px(30).floor};
             min-width: {px(30).ceil};
         }}
 
