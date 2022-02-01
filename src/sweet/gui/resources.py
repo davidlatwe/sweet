@@ -740,6 +740,7 @@ class BaseTheme(object):
         QTreeView::branch:selected,
         QAbstractItemView::item:selected:active,
         QAbstractItemView::item:selected:!focus {{
+            color: {self.palette.on_secondary};
             background-color: {self.palette.secondary};
         }}
 
@@ -1098,8 +1099,8 @@ class BaseDarkTheme(BaseTheme):
         error=HSL(11.95, 100.00, 43.33),            # Deep Orange A700
         warning=HSL(40.24, 100.00, 50.00),          # Amber A700
 
-        on_primary=HSL(0.00, 0.00, 12.94),          # Grey 900
-        on_secondary=HSL(0.00, 0.00, 25.90),        # Grey 800.02
+        on_primary=HSL(0.00, 0.00, 98.04),          # Grey 50
+        on_secondary=HSL(0.00, 0.00, 98.05),        # Grey 50.01
         on_surface=HSL(0.00, 0.00, 61.96),          # Grey 500
         on_background=HSL(0.00, 0.00, 61.97),       # Grey 500.01
         on_error=HSL(0.00, 0.00, 12.95),            # Grey 900.01
