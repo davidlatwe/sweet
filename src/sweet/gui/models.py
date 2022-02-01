@@ -295,8 +295,6 @@ class ContextToolTreeModel(ToolTreeModel):
         :type ctx: SuiteCtx
         :return:
         """
-        # todo: context may be a failed one when the suite is loaded with
-        #   bad .rxt files. Add icon to indicate this unfortunate.
         c = QtGui.QStandardItem(ctx.name)
         c.setIcon(self._icon_ctx)
         c.setData(ctx.priority, self.ContextSortRole)
