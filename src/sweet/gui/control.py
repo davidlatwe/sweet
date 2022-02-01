@@ -280,6 +280,8 @@ class Controller(QtCore.QObject):
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def new_suite(self):
+        # note: there is a dirty check on widget side, checking unsaved change
+        #   before asking controller to reset suite.
         self._reset_suite()
         # add a default context 'new'
         ctx = self._sop.add_context("new", self._sop.resolve_context([]))
