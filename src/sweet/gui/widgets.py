@@ -1896,8 +1896,8 @@ class SuiteBranchWidget(QtWidgets.QWidget):
 
     def _on_current_changed(self, index):
         saved_suite = index.data(self._model.SavedSuiteRole)
-        if saved_suite is None:
-            return  # possible root item (the branch)
+        if saved_suite is None:  # possible root item (the branch)
+            saved_suite = core.SavedSuite("", "", "", core.SweetSuite())
         self.suite_selected.emit(saved_suite)
 
     def _on_right_click(self, position):
@@ -1959,6 +1959,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         desc.setReadOnly(True)
         name.setReadOnly(True)
         name.setObjectName("SuiteNameView")
+        name.setPlaceholderText("Suite name")
+        desc.setPlaceholderText("Suite description")
 
         error = QtWidgets.QWidget()
         icon = QtWidgets.QLabel()
@@ -2009,6 +2011,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         :type saved_suite: core.SavedSuite
         :return:
         """
+        is_branch = saved_suite.name == saved_suite.branch == ""
         self._name.setText(saved_suite.name)
         self._desc.setPlainText(saved_suite.description)
         self._stack.setCurrentIndex(0)
@@ -2016,7 +2019,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         item = self._model.find_suite(saved_suite)
         self._view.setRootIndex(item.index())
 
-        if added:
+        if added and not is_branch:
             try:
                 # todo: this may takes times, timeit
                 suite_tools = list(saved_suite.iter_saved_tools())
