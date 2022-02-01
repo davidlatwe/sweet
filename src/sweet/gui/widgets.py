@@ -2,6 +2,7 @@
 import re
 import json
 import logging
+import traceback
 from io import StringIO
 from contextlib import contextmanager
 
@@ -26,6 +27,9 @@ from .models import (
     SuiteToolTreeModel,
     CompleterProxyModel,
 )
+
+
+log = logging.getLogger("sweet")
 
 
 class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
@@ -1956,10 +1960,34 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         name.setReadOnly(True)
         name.setObjectName("SuiteNameView")
 
+        error = QtWidgets.QWidget()
+        icon = QtWidgets.QLabel()
+        icon.setObjectName("LogErrorIcon")
+        label = QtWidgets.QLabel()
+        label.setObjectName("LogLevelText")
+        label.setText("Suite Corrupted")
+        detail = QtWidgets.QPlainTextEdit()
+        detail.setObjectName("LogMessageText")
+        detail.setReadOnly(True)
+        detail.setLineWrapMode(detail.NoWrap)
+
+        _layout = QtWidgets.QHBoxLayout()
+        _layout.addWidget(icon)
+        _layout.addWidget(label, stretch=True)
+
+        layout = QtWidgets.QVBoxLayout(error)
+        layout.addLayout(_layout)
+        layout.addWidget(detail)
+
+        stack = QtWidgets.QStackedWidget()
+        stack.setContentsMargins(0, 0, 0, 0)
+        stack.addWidget(view)
+        stack.addWidget(error)
+
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)
         splitter.addWidget(desc)
-        splitter.addWidget(view)
+        splitter.addWidget(stack)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
 
@@ -1969,6 +1997,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
         self._name = name
         self._desc = desc
+        self._stack = stack
+        self._error = detail
         self._view = view
         self._model = model
 
@@ -1981,8 +2011,31 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         """
         self._name.setText(saved_suite.name)
         self._desc.setPlainText(saved_suite.description)
-        with self._model.open_suite(saved_suite) as index:
-            self._view.setRootIndex(index)
+        self._stack.setCurrentIndex(0)
+        added = self._model.add_suite(saved_suite)
+        item = self._model.find_suite(saved_suite)
+        self._view.setRootIndex(item.index())
+
+        if added:
+            try:
+                # todo: this may takes times, timeit
+                suite_tools = list(saved_suite.iter_saved_tools())
+
+            except Exception as e:
+                error = f"{str(e)}\n\n{traceback.format_exc()}"
+                log.error(error)
+                self._model.set_bad_suite(item, error)
+                self._stack.setCurrentIndex(1)
+                self._error.setPlainText(error)
+
+            else:
+                self._model.update_tools(suite_tools, suite=saved_suite.name)
+
+        else:
+            error = self._model.is_bad_suite(item)
+            if error:
+                self._stack.setCurrentIndex(1)
+                self._error.setPlainText(error)
 
 
 class RequestCompleter(QtWidgets.QCompleter):

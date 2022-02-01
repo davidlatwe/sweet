@@ -1,6 +1,5 @@
 
 import os
-from contextlib import contextmanager
 from rez.packages import Variant
 from rez.config import config as rezconfig
 
@@ -613,20 +612,35 @@ class SuiteStorageModel(BaseItemModel):
 
 
 class SuiteToolTreeModel(ToolTreeModel):
+    BadSuiteRole = QtCore.Qt.UserRole + 30
 
-    @contextmanager
-    def open_suite(self, saved_suite):
+    def set_bad_suite(self, item, error):
+        item.setData(error, self.BadSuiteRole)
+
+    def is_bad_suite(self, item):
+        return item.data(self.BadSuiteRole)
+
+    def find_suite(self, saved_suite):
         """
-
         :param saved_suite:
         :type saved_suite: SavedSuite
-        :return:
+        :return: index of suite item if suite exists in model
+        :rtype: QtGui.QStandardItem or None
+        """
+        return self._root_items.get(saved_suite.name)
+
+    def add_suite(self, saved_suite):
+        """
+        :param saved_suite:
+        :type saved_suite: SavedSuite
+        :return: True if added or False if suite already exists in model
+        :rtype: bool
         """
         name = saved_suite.name
-        is_opened = name in self._root_items
+        exists = name in self._root_items
 
-        if is_opened:
-            root_item = self._root_items[name]
+        if exists:
+            return False
         else:
             root_item = QtGui.QStandardItem(name)
             self.appendRow(root_item)
@@ -637,12 +651,7 @@ class SuiteToolTreeModel(ToolTreeModel):
             c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
             c.removeRow(0)
 
-        yield root_item.index()
-
-        if not is_opened:
-            # todo: this may takes times
-            suite_tools = list(saved_suite.iter_saved_tools())
-            self.update_tools(suite_tools, suite=name)
+            return True
 
 
 class CompleterProxyModel(QtCore.QSortFilterProxyModel):
