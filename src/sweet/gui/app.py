@@ -1,6 +1,7 @@
 
 import os
 import sys
+import logging
 import signal as py_signal
 from importlib import reload
 from contextlib import contextmanager
@@ -10,6 +11,9 @@ from . import control, window, pages, widgets, resources
 
 if sys.platform == "darwin":
     os.environ["QT_MAC_WANTS_LAYER"] = "1"  # MacOS BigSur
+
+
+log = logging.getLogger("sweet")
 
 
 def launch(app_name="sweet-gui"):
@@ -279,7 +283,8 @@ class State(object):
     def preserve_layout(self, widget, group):
         # type: (QtWidgets.QWidget, str) -> None
         if not self.is_writeable():
-            # todo: prompt warning
+            log.warning("Application settings file is not writable: "
+                        f"{self._storage.fileName()}")
             return
 
         self._storage.beginGroup(group)
