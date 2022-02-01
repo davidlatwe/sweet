@@ -603,6 +603,7 @@ class SuiteStorageModel(BaseItemModel):
             return  # should be a loaded suite and just being saved over
 
         suite_item = QtGui.QStandardItem(suite.name)
+        suite_item.setIcon(self._icons["suite"])
         suite_item.setData(suite, self.SavedSuiteRole)
         self.ensure_branch_item(suite.branch).appendRow(suite_item)
 
