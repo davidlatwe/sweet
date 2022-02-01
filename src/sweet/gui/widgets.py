@@ -363,7 +363,9 @@ class SuiteHeadWidget(QtWidgets.QWidget):
     def on_suite_new_clicked(self):
         self._dirty = None
         self.dirty_asked.emit()
-        assert self._dirty is not None  # todo: prompt error to status bar
+        if self._dirty is None:
+            log.critical("signal 'dirty_asked' received no response.")
+            return
 
         if self._dirty:
             widget = QtWidgets.QLabel(
@@ -386,6 +388,10 @@ class SuiteHeadWidget(QtWidgets.QWidget):
     def on_suite_save_clicked(self):
         self._unsavable = None
         self.savable_asked.emit()
+        if self._unsavable is None:
+            log.critical("signal 'savable_asked' received no response.")
+            return
+
         if self._unsavable:
             dialog = MessageDialog(self._unsavable,
                                    title="Cannot Save Suite",
@@ -396,7 +402,10 @@ class SuiteHeadWidget(QtWidgets.QWidget):
 
         self._branches = None
         self.branch_asked.emit()
-        assert self._branches is not None  # todo: prompt error to status bar
+        if self._branches is None:
+            log.critical("signal 'branch_asked' received no response.")
+            return
+
         assert self._loaded_branch is None \
                or self._loaded_branch in self._branches
 
@@ -1556,8 +1565,7 @@ class ResolvedPackages(QtWidgets.QWidget):
             if file_path:
                 lib.open_file_location(file_path)
             else:
-                print("Not a valid filesystem package.")
-                # todo: put this into log/status-bar message
+                log.error("Not a valid filesystem package.")
 
         def on_copyfile():
             file_path = model.pkg_path_from_index(index)
@@ -1565,8 +1573,7 @@ class ResolvedPackages(QtWidgets.QWidget):
                 clipboard = QtWidgets.QApplication.instance().clipboard()
                 clipboard.setText(file_path)
             else:
-                print("Not a valid filesystem package.")
-                # todo: put this into log/status-bar message
+                log.error("Not a valid filesystem package.")
 
         openfile.triggered.connect(on_openfile)
         copyfile.triggered.connect(on_copyfile)
@@ -2028,8 +2035,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 suite_tools = list(saved_suite.iter_saved_tools())
 
             except Exception as e:
+                log.error(f"Suite corrupted: {saved_suite.path}")
                 error = f"{str(e)}\n\n{traceback.format_exc()}"
-                log.error(error)
                 self._model.set_bad_suite(item, error)
                 self._stack.setCurrentIndex(1)
                 self._error.setPlainText(error)

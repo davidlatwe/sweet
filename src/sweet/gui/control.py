@@ -83,7 +83,9 @@ def _thread(name, blocks=None):
             thread = self._thread[name]
 
             if thread.isRunning():
-                log.info(f"Thread {name!r} is busy, can't process {fn_name!r}.")
+                log.critical(
+                    f"Thread {name!r} is busy, can't process {fn_name!r}."
+                )
                 return
 
             blocks_ = blocks or []
@@ -98,11 +100,11 @@ def _thread(name, blocks=None):
                 for w in busy_widgets:
                     w.set_overwhelmed(False)
                 thread.finished.disconnect(on_finished)
-                log.info(f"Thread {name!r} finished {fn_name!r}.")
+                log.debug(f"Thread {name!r} finished {fn_name!r}.")
 
             thread.finished.connect(on_finished)
 
-            log.info(f"Thread {name!r} is about to run {fn_name!r}.")
+            log.debug(f"Thread {name!r} is about to run {fn_name!r}.")
             thread.set_job(func, *args, **kwargs)
             thread.start()
 
@@ -123,7 +125,6 @@ class Controller(QtCore.QObject):
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
     request_edited = QtCore.Signal(str, bool)
-    resolve_failed = QtCore.Signal()
     tools_updated = QtCore.Signal(list)
     pkg_scan_started = QtCore.Signal()
     pkg_families_scanned = QtCore.Signal(list)
@@ -136,6 +137,13 @@ class Controller(QtCore.QObject):
 
     def __init__(self):
         super(Controller, self).__init__(parent=None)
+
+        # sending log messages to status-bar
+        formatter = logging.Formatter(fmt="%(levelname)-8s %(message)s")
+        handler = QtStatusBarHandler(self)
+        handler.setFormatter(formatter)
+        handler.setLevel(logging.INFO)
+        log.addHandler(handler)
 
         self._sop = SuiteOp()
         self._sto = Storage()
@@ -316,13 +324,15 @@ class Controller(QtCore.QObject):
         if context.success:
             if name in self._failed:
                 self._failed.remove(name)
+            log.info(f"Context {name!r} resolved. See 'Context Info'.")
         else:
             self._failed.add(name)
-            self.resolve_failed.emit()
-            context = self._sop.resolve_context([])
+            log.error(f"Context {name!r} resolve failed. See 'Context Info'.")
             # Replace failed context with an empty one for GUI to reflect the
             # fact that given requests is not valid. Thus tools from previous
             # resolved will be flushed.
+            context = self._sop.resolve_context([])
+
         self._sop.update_context(name, context=context)
         self._tools_updated()
 
@@ -373,9 +383,8 @@ class Controller(QtCore.QObject):
             # traceback shown in tool view, simply prompt error message
             # here should be fine.
             message = f"Suite corrupted: {path}"
-            self.status_message.emit(message)
-            log.error(message)
             log.error(str(e))
+            log.error(message)
             return
 
         # loaded
@@ -398,7 +407,7 @@ class Controller(QtCore.QObject):
     @_thread(name="scanPkg")
     def scan_installed_packages(self):
         ct = QtCore.QThread.currentThread()
-        self.status_message.emit("Start scanning installed packages...")
+        log.info("Start scanning installed packages...")
         self.pkg_scan_started.emit()
         self._pkg.clear_caches()
 
@@ -416,9 +425,7 @@ class Controller(QtCore.QObject):
 
         _fm_count = len(grouped_families)
         _path_count = len(self._pkg.packages_path)
-        self.status_message.emit(
-            f"Found {_fm_count} families from {_path_count} locations."
-        )
+        log.info(f"Found {_fm_count} families from {_path_count} locations.")
 
         _current = None
         for i, (key, same_families) in enumerate(grouped_families):
@@ -435,18 +442,18 @@ class Controller(QtCore.QObject):
                 )  # type: list[PkgVersion]
 
             self.pkg_versions_scanned.emit(versions)
-            self.status_message.emit(
+            log.info(
                 f"Finding versions for {_fm_count} families from {_path_count} "
                 f"locations {'.' * (int(i / 50) % 5)}"
             )  # animated dots that also reflects the speed of the process.
 
         self.pkg_scan_ended.emit()
-        self.status_message.emit("All installed packages scanned.")
+        log.info("All installed packages scanned.")
 
     @_thread(name="scanSuite", blocks=("StoragePage",))
     def scan_suite_storage(self):
         ct = QtCore.QThread.currentThread()
-        self.status_message.emit("Start scanning saved suites...")
+        log.info("Start scanning saved suites...")
         self.storage_scan_started.emit()
 
         for branch in self._sto.branches():
@@ -457,7 +464,7 @@ class Controller(QtCore.QObject):
             )
 
         self.storage_scan_ended.emit()
-        self.status_message.emit("All saved suites scanned.")
+        log.info("All saved suites scanned.")
 
 
 class Thread(QtCore.QThread):
@@ -475,3 +482,14 @@ class Thread(QtCore.QThread):
 
     def run(self):
         self._func(*self._args, **self._kwargs)
+
+
+# https://docs.python.org/3/howto/logging-cookbook.html#a-qt-gui-for-logging
+class QtStatusBarHandler(logging.Handler):
+    def __init__(self, ctrl, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._ctrl = ctrl
+
+    def emit(self, record):
+        s = self.format(record)
+        self._ctrl.status_message.emit(s)

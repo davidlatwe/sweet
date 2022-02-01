@@ -10,10 +10,11 @@ def init_logging():
 
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
+    handler.setLevel(logging.WARNING)
 
     logger = logging.getLogger("sweet")
     logger.addHandler(handler)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
 
 
 init_logging()
