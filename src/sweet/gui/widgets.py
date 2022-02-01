@@ -2029,7 +2029,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._error.setPlainText(error)
 
             else:
-                self._model.update_tools(suite_tools, suite=saved_suite.name)
+                self._model.update_suite_tools(suite_tools, saved_suite)
 
         else:
             error = self._model.is_bad_suite(item)

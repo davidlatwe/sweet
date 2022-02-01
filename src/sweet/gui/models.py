@@ -620,6 +620,9 @@ class SuiteToolTreeModel(ToolTreeModel):
     def is_bad_suite(self, item):
         return item.data(self.BadSuiteRole)
 
+    def suite_key(self, saved_suite):
+        return f"{saved_suite.branch}/{saved_suite.name}"
+
     def find_suite(self, saved_suite):
         """
         :param saved_suite:
@@ -627,7 +630,8 @@ class SuiteToolTreeModel(ToolTreeModel):
         :return: index of suite item if suite exists in model
         :rtype: QtGui.QStandardItem or None
         """
-        return self._root_items.get(saved_suite.name)
+        key = self.suite_key(saved_suite)
+        return self._root_items.get(key)
 
     def add_suite(self, saved_suite):
         """
@@ -636,15 +640,15 @@ class SuiteToolTreeModel(ToolTreeModel):
         :return: True if added or False if suite already exists in model
         :rtype: bool
         """
-        name = saved_suite.name
-        exists = name in self._root_items
+        key = self.suite_key(saved_suite)
+        exists = key in self._root_items
 
         if exists:
             return False
         else:
-            root_item = QtGui.QStandardItem(name)
+            root_item = QtGui.QStandardItem(saved_suite.name)
             self.appendRow(root_item)
-            self._root_items[name] = root_item
+            self._root_items[key] = root_item
 
             c = root_item
             # for keeping header visible after view resets it's rootIndex.
@@ -652,6 +656,17 @@ class SuiteToolTreeModel(ToolTreeModel):
             c.removeRow(0)
 
             return True
+
+    def update_suite_tools(self, tools, saved_suite):
+        """Update tools for a suite
+        :param tools:
+        :param saved_suite:
+        :type tools: list[SuiteTool]
+        :type saved_suite: SavedSuite
+        :return:
+        """
+        suite = self.suite_key(saved_suite)
+        self.update_tools(tools, suite)
 
 
 class CompleterProxyModel(QtCore.QSortFilterProxyModel):
