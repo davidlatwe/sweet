@@ -64,7 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot(str)  # noqa
     def spoken(self, message):
-        self.statusBar().showMessage(message, 2000)
+        self.statusBar().showMessage(message, 5000)
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)
