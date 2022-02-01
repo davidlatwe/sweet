@@ -268,11 +268,14 @@ class Controller(QtCore.QObject):
     def resolve_context(self, name, requests):
         context = self._sop.resolve_context(requests)
         self.context_resolved.emit(name, context)
-        if context.success:
-            self._sop.update_context(name, context=context)
-            self._tools_updated()
-        else:
+        if not context.success:
             self.resolve_failed.emit()
+            context = self._sop.resolve_context([])
+            # Replace failed context with an empty one for GUI to reflect the
+            # fact that given requests is not valid. Thus tools from previous
+            # resolved will be flushed.
+        self._sop.update_context(name, context=context)
+        self._tools_updated()
 
     def _tools_updated(self):
         self._dirty = True
