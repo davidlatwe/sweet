@@ -365,7 +365,19 @@ class Controller(QtCore.QObject):
     def load_suite(self, name, branch, as_import):
         self._reset_suite()
         path = self._sto.suite_path(branch, name)
-        self._sop.load(path, as_import)
+
+        try:
+            self._sop.load(path, as_import)
+        except Exception as e:
+            # widgets.SuiteInsightWidget already took cared of this with
+            # traceback shown in tool view, simply prompt error message
+            # here should be fine.
+            message = f"Suite corrupted: {path}"
+            self.status_message.emit(message)
+            log.error(message)
+            log.error(str(e))
+            return
+
         # loaded
         description = self._sop.get_description()
         load_path = self._sop.loaded_from() or ""
