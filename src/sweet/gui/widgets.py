@@ -1599,11 +1599,13 @@ class ResolvedCode(QtWidgets.QWidget):
         super(ResolvedCode, self).__init__(*args, **kwargs)
 
         text = QtWidgets.QTextEdit()
+        text.setObjectName("ColoredCodeView")
         text.setPlaceholderText("Context environment shell code..")
         text.setLineWrapMode(text.NoWrap)
         text.setReadOnly(True)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.addWidget(text)
 
         self._text = text
@@ -1613,7 +1615,6 @@ class ResolvedCode(QtWidgets.QWidget):
 
         pretty = []
         for ln in text.split("\n"):
-            # todo: the color should be managed in styling module
             level = "lightgrey" if ln.startswith(comment) else "grey"
             color = "<font color=\"%s\">" % level
             pretty.append("%s%s</font>" % (color, ln.replace(" ", "&nbsp;")))
@@ -1631,14 +1632,16 @@ class ResolvedLog(QtWidgets.QWidget):
         super(ResolvedLog, self).__init__(*args, **kwargs)
 
         text = QtWidgets.QPlainTextEdit()
-        text.setPlaceholderText("Context resolve details..")
+        text.setObjectName("ColoredCodeView")
+        text.setPlaceholderText("Context resolve logs..")
         text.setLineWrapMode(text.NoWrap)
         text.setReadOnly(True)
 
         clear = QtWidgets.QPushButton("clear")
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 0)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
         layout.addWidget(text)
         layout.addWidget(clear)
 

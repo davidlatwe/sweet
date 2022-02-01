@@ -1049,6 +1049,12 @@ class BaseTheme(object):
             color: {self.palette.on_background.fade};
         }}
         
+        #ColoredCodeView {{
+            color: #9E9E9E;
+            background-color: #101010;
+            font-family: "JetBrains Mono";
+        }}
+        
         #LogMessageText {{
             font-family: "JetBrains Mono";
         }}
