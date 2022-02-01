@@ -509,12 +509,18 @@ class ContextListWidget(QtWidgets.QWidget):
 
         self._view = view
         self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
 
     def on_request_edited(self, name, edited):
         font = QtGui.QFont()
         font.setBold(edited)
         item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
         item.setFont(font)
+
+    def on_context_resolved(self, name, context):
+        icon = self._icon_ctx if context.success else self._icon_ctx_f
+        item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
+        item.setIcon(icon)
 
     def on_context_added(self, ctx):
         # todo: context may be a failed one when the suite is loaded with

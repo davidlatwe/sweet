@@ -110,6 +110,7 @@ class Session(object):
         ctrl.context_renamed.connect(tool_stack_model.on_context_renamed)
         ctrl.context_dropped.connect(tool_stack_model.on_context_dropped)
         ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
+        ctrl.context_resolved.connect(tool_stack_model.on_context_resolved)
         ctrl.request_edited.connect(tool_stack_model.on_request_edited)
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
         ctrl.suite_newed.connect(tool_stack_model.on_suite_newed)
@@ -136,6 +137,7 @@ class Session(object):
         ctrl.context_reordered.connect(context_list.on_context_reordered)
         ctrl.context_resolved.connect(stacked_request.on_context_resolved)
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
+        ctrl.context_resolved.connect(context_list.on_context_resolved)
         ctrl.request_edited.connect(context_list.on_request_edited)
 
         # view -> view

@@ -281,6 +281,12 @@ class ContextToolTreeModel(ToolTreeModel):
     def __init__(self, editable=True, *args, **kwargs):
         super(ContextToolTreeModel, self).__init__(editable, *args, **kwargs)
         self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
+
+    def on_context_resolved(self, name, context):
+        icon = self._icon_ctx if context.success else self._icon_ctx_f
+        item = self._root_items[name]
+        item.setIcon(icon)
 
     def on_context_added(self, ctx):
         """
