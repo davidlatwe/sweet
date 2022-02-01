@@ -277,7 +277,7 @@ class YesNoDialog(QtWidgets.QDialog):
 
 class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()
-    edited_asked = QtCore.Signal()
+    savable_asked = QtCore.Signal()
     dirty_asked = QtCore.Signal()
     new_clicked = QtCore.Signal()
     save_clicked = QtCore.Signal(str, str, str)
@@ -317,7 +317,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         self._loaded_branch = None
         # fields for asking
         self._dirty = None
-        self._edited = None
+        self._unsavable = None
         self._branches = None
 
     @QtCore.Slot()  # noqa
@@ -353,8 +353,8 @@ class SuiteHeadWidget(QtWidgets.QWidget):
     def answer_dirty(self, value):
         self._dirty = value
 
-    def answer_edited(self, value):
-        self._edited = value
+    def answer_savable(self, objection):
+        self._unsavable = objection
 
     def on_suite_new_clicked(self):
         self._dirty = None
@@ -380,15 +380,11 @@ class SuiteHeadWidget(QtWidgets.QWidget):
             self.new_clicked.emit()
 
     def on_suite_save_clicked(self):
-        self._edited = None
-        self.edited_asked.emit()
-        if self._edited:
-            message = "Suite can't be saved, because:\n" \
-                "These contexts' requests has been edited but not yet resolved:"
-            for _e in self._edited:
-                message += f"\n  - {_e}"
-            dialog = MessageDialog(message,
-                                   title="Unresolved Requests",
+        self._unsavable = None
+        self.savable_asked.emit()
+        if self._unsavable:
+            dialog = MessageDialog(self._unsavable,
+                                   title="Cannot Save Suite",
                                    level=logging.WARNING,
                                    parent=self)
             dialog.open()

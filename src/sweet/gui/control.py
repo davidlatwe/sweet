@@ -142,6 +142,7 @@ class Controller(QtCore.QObject):
         self._pkg = InstalledPackages()
         self._dirty = False
         self._edited = set()
+        self._failed = set()
         self._timers = dict()
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
@@ -156,8 +157,8 @@ class Controller(QtCore.QObject):
         return self._sender.pop(f, super(Controller, self).sender())
 
     @QtCore.Slot()  # noqa, somehow kwarg `result` doesn't work in both binding
-    def on_request_edit_asked(self):
-        self.sender().answer_edited(self._edited.copy())
+    def on_savable_asked(self):
+        self.sender().answer_savable(self._objection_to_save_suite())
 
     @QtCore.Slot()  # noqa
     def on_suite_dirty_asked(self):
@@ -234,6 +235,23 @@ class Controller(QtCore.QObject):
             self._edited.remove(name)
         self.request_edited.emit(name, edited)
 
+    def _objection_to_save_suite(self):
+        objection = ""
+        if self._failed:
+            objection = "Suite can't be saved, because:\n" \
+                        "These contexts were failed to resolve:"
+            for n in self._failed:
+                objection += f"\n  - {n}"
+
+        elif self._edited:
+            objection = "Suite can't be saved, because:\n" \
+                        "These contexts' requests has been edited but not " \
+                        "yet resolved:"
+            for n in self._edited:
+                objection += f"\n  - {n}"
+
+        return objection
+
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def add_context(self, name, context=None):
         _context = context or self._sop.resolve_context([])
@@ -249,6 +267,9 @@ class Controller(QtCore.QObject):
         if name in self._edited:
             self._edited.remove(name)
             self._edited.add(new_name)
+        if name in self._failed:
+            self._failed.remove(name)
+            self._failed.add(new_name)
         self.context_renamed.emit(name, new_name)
         self._tools_updated()
 
@@ -257,6 +278,8 @@ class Controller(QtCore.QObject):
         self._sop.drop_context(name)
         if name in self._edited:
             self._edited.remove(name)
+        if name in self._failed:
+            self._failed.remove(name)
         self.context_dropped.emit(name)
         self._tools_updated()
 
@@ -290,7 +313,11 @@ class Controller(QtCore.QObject):
     def resolve_context(self, name, requests):
         context = self._sop.resolve_context(requests)
         self.context_resolved.emit(name, context)
-        if not context.success:
+        if context.success:
+            if name in self._failed:
+                self._failed.remove(name)
+        else:
+            self._failed.add(name)
             self.resolve_failed.emit()
             context = self._sop.resolve_context([])
             # Replace failed context with an empty one for GUI to reflect the
