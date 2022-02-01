@@ -298,7 +298,7 @@ class ContextToolTreeModel(ToolTreeModel):
         self._root_items[ctx.name] = c
 
         # for keeping header visible after view resets it's rootIndex.
-        c.appendRow([QtGui.QStandardItem() for _ in range(len(self.Headers))])
+        c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
         c.removeRow(0)
 
         self.require_expanded.emit([c.index()])
@@ -627,6 +627,11 @@ class SuiteToolTreeModel(ToolTreeModel):
             root_item = QtGui.QStandardItem(name)
             self.appendRow(root_item)
             self._root_items[name] = root_item
+
+            c = root_item
+            # for keeping header visible after view resets it's rootIndex.
+            c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
+            c.removeRow(0)
 
         yield root_item.index()
 
