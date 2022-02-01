@@ -61,7 +61,7 @@ class SuitePage(BusyWidget):
         # is enabled, so we make our own with bar + stack with border.
         tabs.addTab("Suite Tools")
         stack.addWidget(tool_stack)
-        tabs.addTab("Resolved Details")
+        tabs.addTab("Context Info")
         stack.addWidget(stacked_resolve)
         tabs.addTab("Installed Packages")
         stack.addWidget(installed)
