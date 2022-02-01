@@ -122,6 +122,7 @@ class Controller(QtCore.QObject):
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
+    request_edited = QtCore.Signal(str, bool)
     resolve_failed = QtCore.Signal()
     tools_updated = QtCore.Signal(list)
     pkg_scan_started = QtCore.Signal()
@@ -140,6 +141,7 @@ class Controller(QtCore.QObject):
         self._sto = Storage()
         self._pkg = InstalledPackages()
         self._dirty = False
+        self._edited = set()
         self._timers = dict()
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
@@ -152,6 +154,10 @@ class Controller(QtCore.QObject):
         """Internal use. To preserve real signal sender for decorated method."""
         f = inspect.stack()[1].function
         return self._sender.pop(f, super(Controller, self).sender())
+
+    @QtCore.Slot()  # noqa, somehow kwarg `result` doesn't work in both binding
+    def on_request_edit_asked(self):
+        self.sender().answer_edited(self._edited.copy())
 
     @QtCore.Slot()  # noqa
     def on_suite_dirty_asked(self):
@@ -172,6 +178,10 @@ class Controller(QtCore.QObject):
     @QtCore.Slot(str, str, str)  # noqa
     def on_suite_save_clicked(self, branch, name, description):
         self.save_suite(branch, name, description)
+
+    @QtCore.Slot(str, bool)  # noqa
+    def on_request_edited(self, name, edited):
+        self._mark_request_edited(name, edited)
 
     @QtCore.Slot(str)  # noqa
     def on_add_context_clicked(self, name):
@@ -217,6 +227,13 @@ class Controller(QtCore.QObject):
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
 
+    def _mark_request_edited(self, name, edited):
+        if edited:
+            self._edited.add(name)
+        elif name in self._edited:
+            self._edited.remove(name)
+        self.request_edited.emit(name, edited)
+
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def add_context(self, name, context=None):
         _context = context or self._sop.resolve_context([])
@@ -229,12 +246,17 @@ class Controller(QtCore.QObject):
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def rename_context(self, name, new_name):
         self._sop.update_context(name, new_name=new_name)
+        if name in self._edited:
+            self._edited.remove(name)
+            self._edited.add(new_name)
         self.context_renamed.emit(name, new_name)
         self._tools_updated()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def drop_context(self, name):
         self._sop.drop_context(name)
+        if name in self._edited:
+            self._edited.remove(name)
         self.context_dropped.emit(name)
         self._tools_updated()
 
@@ -292,6 +314,8 @@ class Controller(QtCore.QObject):
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def save_suite(self, branch, name, description):
+        # note: there is an edit check on widget side, checking edited and not
+        #   yet resolved requests, before asking controller to save suite.
         path = self._sto.suite_path(branch, name)
         self._sop.set_description(description)
         try:

@@ -79,6 +79,7 @@ class Session(object):
         #             will be None if the slot is decorated with QtCore.Slot().
         #             this is a bug of pyside2.)
         suite_head.dirty_asked.connect(ctrl.on_suite_dirty_asked)
+        suite_head.edited_asked.connect(ctrl.on_request_edit_asked)
         suite_head.branch_asked.connect(ctrl.on_storage_branches_asked)
 
         # model -> control
@@ -97,6 +98,7 @@ class Session(object):
         suite_head.new_clicked.connect(ctrl.on_suite_new_clicked)
         suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)
         storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
+        stacked_request.request_edited.connect(ctrl.on_request_edited)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.clear)
@@ -108,6 +110,7 @@ class Session(object):
         ctrl.context_renamed.connect(tool_stack_model.on_context_renamed)
         ctrl.context_dropped.connect(tool_stack_model.on_context_dropped)
         ctrl.context_reordered.connect(tool_stack_model.on_context_reordered)
+        ctrl.request_edited.connect(tool_stack_model.on_request_edited)
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
         ctrl.suite_newed.connect(tool_stack_model.on_suite_newed)
         ctrl.suite_saved.connect(storage_model.add_new_saved_suite)
@@ -133,6 +136,7 @@ class Session(object):
         ctrl.context_reordered.connect(context_list.on_context_reordered)
         ctrl.context_resolved.connect(stacked_request.on_context_resolved)
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
+        ctrl.request_edited.connect(context_list.on_request_edited)
 
         # view -> view
         storage_view.suite_selected.connect(storage_suite.on_suite_selected)

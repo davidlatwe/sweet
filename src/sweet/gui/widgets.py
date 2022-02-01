@@ -277,6 +277,7 @@ class YesNoDialog(QtWidgets.QDialog):
 
 class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()
+    edited_asked = QtCore.Signal()
     dirty_asked = QtCore.Signal()
     new_clicked = QtCore.Signal()
     save_clicked = QtCore.Signal(str, str, str)
@@ -316,6 +317,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         self._loaded_branch = None
         # fields for asking
         self._dirty = None
+        self._edited = None
         self._branches = None
 
     @QtCore.Slot()  # noqa
@@ -351,6 +353,9 @@ class SuiteHeadWidget(QtWidgets.QWidget):
     def answer_dirty(self, value):
         self._dirty = value
 
+    def answer_edited(self, value):
+        self._edited = value
+
     def on_suite_new_clicked(self):
         self._dirty = None
         self.dirty_asked.emit()
@@ -375,14 +380,25 @@ class SuiteHeadWidget(QtWidgets.QWidget):
             self.new_clicked.emit()
 
     def on_suite_save_clicked(self):
+        self._edited = None
+        self.edited_asked.emit()
+        if self._edited:
+            message = "Suite can't be saved, because:\n" \
+                "These contexts' requests has been edited but not yet resolved:"
+            for _e in self._edited:
+                message += f"\n  - {_e}"
+            dialog = MessageDialog(message,
+                                   title="Unresolved Requests",
+                                   level=logging.WARNING,
+                                   parent=self)
+            dialog.open()
+            return
+
         self._branches = None
         self.branch_asked.emit()
         assert self._branches is not None  # todo: prompt error to status bar
         assert self._loaded_branch is None \
                or self._loaded_branch in self._branches
-
-        # todo: remember the selected branch in preference
-        # todo: use qargparse
 
         widget = QtWidgets.QWidget()
         hint = QtWidgets.QLabel("Where to save this suite ?")
@@ -497,6 +513,12 @@ class ContextListWidget(QtWidgets.QWidget):
 
         self._view = view
         self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+
+    def on_request_edited(self, name, edited):
+        font = QtGui.QFont()
+        font.setBold(edited)
+        item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
+        item.setFont(font)
 
     def on_context_added(self, ctx):
         # todo: context may be a failed one when the suite is loaded with
@@ -913,6 +935,7 @@ class StackedResolveWidget(NameStackedBase):
 
 class StackedRequestWidget(NameStackedBase):
     requested = QtCore.Signal(str, list)
+    request_edited = QtCore.Signal(str, bool)
     prefix_changed = QtCore.Signal(str, str)
     suffix_changed = QtCore.Signal(str, str)
 
@@ -926,6 +949,9 @@ class StackedRequestWidget(NameStackedBase):
         )
         panel.requested.connect(
             lambda requests: self.requested.emit(panel.name(), requests)
+        )
+        panel.request_edited.connect(
+            lambda edited: self.request_edited.emit(panel.name(), edited)
         )
         return panel
 
@@ -958,6 +984,7 @@ class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class RequestTableEdit(QtWidgets.QTableWidget):
+    edited = QtCore.Signal()
 
     def __init__(self, *args, **kwargs):
         super(RequestTableEdit, self).__init__(*args, **kwargs)
@@ -980,6 +1007,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
         if item.row() < self.rowCount() - 1:
             if not item.text():
                 self.removeRow(item.row())
+        self.edited.emit()
 
     def open_editor(self, row):
         if row < 0:
@@ -1055,6 +1083,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
 
 
 class RequestTextEdit(QtWidgets.QTextEdit):
+    edited = QtCore.Signal()
 
     def __init__(self, *args, **kwargs):
         super(RequestTextEdit, self).__init__(*args, **kwargs)
@@ -1068,6 +1097,8 @@ class RequestTextEdit(QtWidgets.QTextEdit):
         self._completer = None
         completer = RequestCompleter(self)
         self.setCompleter(completer)
+
+        self.textChanged.connect(self.edited.emit)
 
     def setCompleter(self, c):
         """
@@ -1171,6 +1202,7 @@ class RequestTextEdit(QtWidgets.QTextEdit):
 
 
 class RequestEditorWidget(QtWidgets.QWidget):
+    edited = QtCore.Signal(bool)
 
     def __init__(self, *args, **kwargs):
         super(RequestEditorWidget, self).__init__(*args, **kwargs)
@@ -1214,10 +1246,18 @@ class RequestEditorWidget(QtWidgets.QWidget):
         table_btn.clicked.connect(lambda: switched(0))
         text_btn.clicked.connect(lambda: switched(1))
         stack.currentChanged.connect(self.on_tab_changed)
+        table_editor.edited.connect(self.on_edited)
+        text_editor.edited.connect(self.on_edited)
+
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(self._deferred_edited)
 
         self._stack = stack
         self._text = text_editor
         self._table = table_editor
+        self._timer = timer
+        self._processed = None
 
     def on_tab_changed(self, index):
         if index == 0:
@@ -1229,6 +1269,13 @@ class RequestEditorWidget(QtWidgets.QWidget):
             requests = self._table.fetch_requests()
             self._text.setPlainText("\n".join(requests))
             self._table.remove_all_rows()
+
+    def on_edited(self):
+        self._timer.start(500)
+
+    def _deferred_edited(self):
+        edited = (self._processed or []) != self.get_requests()
+        self.edited.emit(edited)
 
     def set_requests(self, requests):
         index = self._stack.currentIndex()
@@ -1244,9 +1291,17 @@ class RequestEditorWidget(QtWidgets.QWidget):
         elif index == 1:
             return self._text.toPlainText().split()
 
+    def log_processed(self, requests):
+        """
+        :param list[str] requests:
+        """
+        self._processed = requests
+        self.edited.emit(False)
+
 
 class ContextRequestWidget(QtWidgets.QWidget):
     requested = QtCore.Signal(list)
+    request_edited = QtCore.Signal(bool)
     prefix_changed = QtCore.Signal(str)
     suffix_changed = QtCore.Signal(str)
 
@@ -1287,6 +1342,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         resolve.clicked.connect(
             lambda: self.requested.emit(request.get_requests())
         )
+        request.edited.connect(self.request_edited.emit)
 
         self._name = None
         self._prefix = prefix
@@ -1297,6 +1353,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         self.callbacks = {
             ":added:": ContextRequestWidget.set_context,
             ":renamed:": ContextRequestWidget.set_context,
+            ":resolved:": ContextRequestWidget.set_resolved,
         }
 
     def name(self):
@@ -1320,6 +1377,11 @@ class ContextRequestWidget(QtWidgets.QWidget):
             self.blockSignals(False)
             # todo: context may be a failed one when the suite is loaded with
             #   bad .rxt files. Change label's bg color into red as indication.
+
+    def set_resolved(self, context):
+        self._request.log_processed(
+            list(map(str, context.requested_packages()))
+        )
 
 
 class ContextResolveWidget(QtWidgets.QWidget):

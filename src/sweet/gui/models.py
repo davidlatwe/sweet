@@ -317,6 +317,12 @@ class ContextToolTreeModel(ToolTreeModel):
             c = self._root_items[name]
             c.setData(priority, self.ContextSortRole)
 
+    def on_request_edited(self, name, edited):
+        font = QtGui.QFont()
+        font.setBold(edited)
+        item = self._root_items[name]
+        item.setFont(font)
+
     def on_suite_newed(self):
         self.clear()
 
