@@ -1396,7 +1396,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         environ = ResolvedEnvironment()
         code = ResolvedCode()
         graph = ResolvedGraph()
-        log = ResolvedLog()
+        log_ = ResolvedLog()
 
         tabs = QtWidgets.QTabBar()
         stack = QtWidgets.QStackedWidget()
@@ -1416,7 +1416,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         tabs.addTab("Graph")
         stack.addWidget(graph)
         tabs.addTab("Log")
-        stack.addWidget(log)
+        stack.addWidget(log_)
 
         _layout = QtWidgets.QVBoxLayout()
         _layout.setSpacing(0)
@@ -1435,7 +1435,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._environ = environ
         self._code = code
         self._graph = graph
-        self._log = log
+        self._log = log_
 
         # will be called by StackedResolveWidget
         self.callbacks = {
