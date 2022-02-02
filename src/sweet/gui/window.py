@@ -62,9 +62,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dark_btn.setChecked(state.retrieve_dark_mode())
         tabs.setCurrentIndex(1)  # editor
 
-    @QtCore.Slot(str)  # noqa
-    def spoken(self, message):
-        self.statusBar().showMessage(message, 5000)
+    @QtCore.Slot(str, int)  # noqa
+    def spoken(self, message, duration=5000):
+        if message:
+            self.statusBar().showMessage(message, duration)
+        else:
+            self.statusBar().clearMessage()
 
     def find(self, widget_cls, name=None):
         return self._body.findChild(widget_cls, name)

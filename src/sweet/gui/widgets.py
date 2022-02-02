@@ -869,9 +869,11 @@ class NameStackedBase(QtWidgets.QStackedWidget):
 
 
 class StackedResolveWidget(NameStackedBase):
+    env_hovered = QtCore.Signal(str, int)
 
     def create_panel(self):
         panel = ContextResolveWidget()
+        panel.env_hovered.connect(self.env_hovered.emit)
         return panel
 
 
@@ -1326,6 +1328,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
 
 class ContextResolveWidget(QtWidgets.QWidget):
+    env_hovered = QtCore.Signal(str, int)
 
     def __init__(self, *args, **kwargs):
         super(ContextResolveWidget, self).__init__(*args, **kwargs)
@@ -1366,6 +1369,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         layout.addLayout(_layout)
 
         tabs.currentChanged.connect(stack.setCurrentIndex)
+        environ.hovered.connect(self.env_hovered.emit)
 
         self._name = None
         self._tabs = tabs
@@ -1447,7 +1451,8 @@ class ResolvedTools(QtWidgets.QWidget):
         if ctx_name and not self._view_fixed:
             index = self._model.find_root_index(ctx_name)
             if index is None:
-                print("Unable to find context item index from model.")
+                log.critical("Unable to find context item index from model.")
+                # should not happen.
             else:
                 self._view.setRootIndex(index)
                 self._view_fixed = True
@@ -1518,6 +1523,7 @@ class ResolvedPackages(QtWidgets.QWidget):
 
 
 class ResolvedEnvironment(QtWidgets.QWidget):
+    hovered = QtCore.Signal(str, int)
 
     def __init__(self, *args, **kwargs):
         super(ResolvedEnvironment, self).__init__(*args, **kwargs)
@@ -1525,6 +1531,7 @@ class ResolvedEnvironment(QtWidgets.QWidget):
         model = ResolvedEnvironmentModel()
         view = JsonView()
         view.setModel(model)
+        view.setTextElideMode(QtCore.Qt.ElideMiddle)
         header = view.header()
         header.setSectionResizeMode(0, header.ResizeToContents)
         header.setSectionResizeMode(1, header.Stretch)
@@ -1532,10 +1539,31 @@ class ResolvedEnvironment(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
 
+        view.setMouseTracking(True)
+        view.entered.connect(self._on_entered)
+
         self._model = model
 
     def model(self):
         return self._model
+
+    def leaveEvent(self, event: QtCore.QEvent):
+        super(ResolvedEnvironment, self).leaveEvent(event)
+        self.hovered.emit("", 0)  # clear
+
+    def _on_entered(self, index):
+        if not index.isValid():
+            return
+        if index.column() == 0:
+            self.hovered.emit("", 0)  # clear
+        elif index.column() == 1:
+            parent = index.parent()
+            if parent.isValid():
+                key = self._model.index(parent.row(), 0).data()
+            else:
+                key = self._model.index(index.row(), 0).data()
+            value = index.data()
+            self.hovered.emit(f"{key} | {value}", 0)
 
 
 class ResolvedCode(QtWidgets.QWidget):
