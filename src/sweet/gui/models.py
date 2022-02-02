@@ -458,6 +458,15 @@ class ResolvedEnvironmentModel(JsonModel):
 
         super(ResolvedEnvironmentModel, self).load(data)
 
+    def flags(self, index):
+        """
+        :param index:
+        :type index: QtCore.QModelIndex
+        :return:
+        :rtype: QtCore.Qt.ItemFlags
+        """
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
 
 class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
 
