@@ -79,12 +79,6 @@ class Session(object):
         preference = view_.find(pages.PreferencePage)
         busy_filter = widgets.BusyEventFilterSingleton()
 
-        # data query (note: this connection has to be made first or the sender()
-        #             will be None if the slot is decorated with QtCore.Slot().
-        #             this is a bug of pyside2.)
-        suite_head.savable_asked.connect(ctrl.on_savable_asked)
-        suite_head.branch_asked.connect(ctrl.on_storage_branches_asked)
-
         # model -> control
         tool_stack_model.alias_changed.connect(ctrl.on_tool_alias_changed)
         tool_stack_model.hidden_changed.connect(ctrl.on_tool_hidden_changed)

@@ -14,7 +14,7 @@ from ..core import (
     PkgVersion,
 )
 from ._vendor.Qt5 import QtCore, QtWidgets
-from .widgets import BusyWidget, YesNoDialog
+from .widgets import BusyWidget, YesNoDialog, MessageDialog
 
 
 log = logging.getLogger("sweet")
@@ -164,25 +164,17 @@ class Controller(QtCore.QObject):
         f = inspect.stack()[1].function
         return self._sender.pop(f, super(Controller, self).sender())
 
-    @QtCore.Slot()  # noqa, somehow kwarg `result` doesn't work in both binding
-    def on_savable_asked(self):
-        self.sender().answer_savable(self._objection_to_save_suite())
-
-    @QtCore.Slot()  # noqa
-    def on_storage_branches_asked(self):
-        self.sender().answer_branches(self._sto.branches())
-
     @QtCore.Slot()  # noqa
     def on_suite_new_clicked(self):
         self._about_to_new(parent=self.sender())
 
+    @QtCore.Slot(str, str, str)  # noqa
+    def on_suite_save_clicked(self, name, desc, loaded_branch):
+        self._about_to_save(name, desc, loaded_branch, parent=self.sender())
+
     @QtCore.Slot(str, str, bool)  # noqa
     def on_suite_load_clicked(self, name, branch, as_import):
         self.load_suite(name, branch, as_import)
-
-    @QtCore.Slot(str, str, str)  # noqa
-    def on_suite_save_clicked(self, branch, name, description):
-        self.save_suite(branch, name, description)
 
     @QtCore.Slot(str, bool)  # noqa
     def on_request_edited(self, name, edited):
@@ -238,23 +230,6 @@ class Controller(QtCore.QObject):
         elif name in self._edited:
             self._edited.remove(name)
         self.request_edited.emit(name, edited)
-
-    def _objection_to_save_suite(self):
-        objection = ""
-        if self._failed:
-            objection = "Suite can't be saved, because:\n" \
-                        "These contexts were failed to resolve:"
-            for n in self._failed:
-                objection += f"\n  - {n}"
-
-        elif self._edited:
-            objection = "Suite can't be saved, because:\n" \
-                        "These contexts' requests has been edited but not " \
-                        "yet resolved:"
-            for n in self._edited:
-                objection += f"\n  - {n}"
-
-        return objection
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def add_context(self, name, context=None):
@@ -415,6 +390,56 @@ class Controller(QtCore.QObject):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+
+    def _about_to_save(self, name, description, loaded_branch, parent):
+        reason = self._objection_to_save_suite()
+        if reason:
+            dialog = MessageDialog(
+                reason, "Cannot Save", level=logging.WARNING, parent=parent)
+            dialog.open()
+            return
+
+        branches = self._sto.branches()
+        if loaded_branch and loaded_branch not in branches:
+            log.critical(f"Suite loaded from unknown branch {loaded_branch!r}.")
+            # should not happen
+
+        widget = QtWidgets.QWidget()
+        _hint = QtWidgets.QLabel("Where to save suite ?")
+        _box = QtWidgets.QComboBox()
+        _box.addItems(branches)
+        if loaded_branch and loaded_branch in branches:
+            _box.setCurrentText(loaded_branch)
+
+        _layout = QtWidgets.QVBoxLayout(widget)
+        _layout.addWidget(_hint)
+        _layout.addWidget(_box)
+
+        dialog = YesNoDialog(widget, parent=parent)
+        dialog.setWindowTitle("Save Suite")
+
+        def on_finished(result):
+            if result:
+                branch = _box.currentText()
+                self.save_suite(branch, name, description)
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
+
+    def _objection_to_save_suite(self):
+        if self._edited:
+            reason = "Suite can't be saved, because:\n" \
+                     "Context requests edited but not yet resolved:"
+            for n in self._edited:
+                reason += f"\n  - {n}"
+            return reason
+
+        elif self._failed:
+            reason = "Suite can't be saved, because:\n" \
+                     "Context requests failed to resolve:"
+            for n in self._failed:
+                reason += f"\n  - {n}"
+            return reason
 
     @_thread(name="scanPkg")
     def scan_installed_packages(self):

@@ -311,23 +311,24 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         layout.addWidget(new_btn)
 
         name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
+        save_btn.clicked.connect(lambda: self.save_clicked.emit(
+                self._name.text(),
+                self._desc.toPlainText(),
+                self._loaded_branch,
+        ))
         new_btn.clicked.connect(self.new_clicked.emit)
-        save_btn.clicked.connect(self.on_suite_save_clicked)
 
         self._name = name
         self._desc = details.description
         self._path = details.load_path
-        self._loaded_branch = None
-        # fields for asking
-        self._unsavable = None
-        self._branches = None
+        self._loaded_branch = ""
 
     @QtCore.Slot()  # noqa
     def on_suite_newed(self):
         self._name.setText("")
         self._desc.setPlainText("")
         self._path.setText("")
-        self._loaded_branch = None
+        self._loaded_branch = ""
 
     @QtCore.Slot(core.SavedSuite)  # noqa
     def on_suite_saved(self, saved_suite):
@@ -347,61 +348,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         self._name.setText(name)
         self._desc.setPlainText(description)
         self._path.setText(load_path)
-        self._loaded_branch = None if is_import else branch
-
-    def answer_branches(self, result):
-        self._branches = result
-
-    def answer_savable(self, objection):
-        self._unsavable = objection
-
-    def on_suite_save_clicked(self):
-        self._unsavable = None
-        self.savable_asked.emit()
-        if self._unsavable is None:
-            log.critical("signal 'savable_asked' received no response.")
-            return
-
-        if self._unsavable:
-            dialog = MessageDialog(self._unsavable,
-                                   title="Cannot Save Suite",
-                                   level=logging.WARNING,
-                                   parent=self)
-            dialog.open()
-            return
-
-        self._branches = None
-        self.branch_asked.emit()
-        if self._branches is None:
-            log.critical("signal 'branch_asked' received no response.")
-            return
-
-        assert self._loaded_branch is None \
-               or self._loaded_branch in self._branches
-
-        widget = QtWidgets.QWidget()
-        hint = QtWidgets.QLabel("Where to save this suite ?")
-        box = QtWidgets.QComboBox()
-        box.addItems(self._branches)
-        layout = QtWidgets.QVBoxLayout(widget)
-        layout.addWidget(hint)
-        layout.addWidget(box)
-
-        if self._loaded_branch:
-            box.setCurrentText(self._loaded_branch)
-
-        dialog = YesNoDialog(widget, parent=self)
-        dialog.setWindowTitle("Save Suite")
-
-        def on_finished(result):
-            if result:
-                branch = box.currentText()
-                name = self._name.text()
-                description = self._desc.toPlainText()
-                self.save_clicked.emit(branch, name, description)
-
-        dialog.finished.connect(on_finished)
-        dialog.open()
+        self._loaded_branch = "" if is_import else branch
 
 
 class SuiteDetailsWidget(QtWidgets.QWidget):
