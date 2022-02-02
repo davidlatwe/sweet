@@ -95,8 +95,26 @@ class BaseItemModel(QtGui.QStandardItemModel):
             section, orientation, role)
 
     def clear(self):
+        """Clear model and header
+
+        Removes all items (including header items) from the model and sets
+        the number of rows and columns to zero.
+
+        Note: Header view's section resize mode setting will be cleared
+            altogether. Consider this action as a full reset.
+
+        """
         super(BaseItemModel, self).clear()  # also clears header items, hence..
         self.setHorizontalHeaderLabels(self.Headers)
+
+    def reset(self):
+        """Remove all rows and set row count to zero
+
+        This doesn't touch header.
+
+        """
+        self.removeRows(0, self.rowCount())
+        self.setRowCount(0)
 
     def flags(self, index):
         """
@@ -139,9 +157,9 @@ class ToolTreeModel(BaseItemModel):
         self._root_items = dict()
         self._editable = editable
 
-    def clear(self):
+    def reset(self):
         self._root_items.clear()
-        super(ToolTreeModel, self).clear()
+        super(ToolTreeModel, self).reset()
 
     def find_root_index(self, name):
         """
@@ -327,7 +345,7 @@ class ContextToolTreeModel(ToolTreeModel):
         item.setFont(font)
 
     def on_suite_newed(self):
-        self.clear()
+        self.reset()
 
     def update_tools(self, tools, *_, **__):
         super(ContextToolTreeModel, self).update_tools(tools, suite=None)
@@ -375,7 +393,7 @@ class ResolvedPackagesModel(BaseItemModel):
         :type packages: list[Variant]
         :return:
         """
-        self.clear()
+        self.reset()
         indicator = _LocationIndicator()
 
         for pkg in packages:
@@ -442,10 +460,10 @@ class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
         self._initials = dict()  # type: dict[str, QtGui.QStandardItem]
         self._families = dict()  # type: dict[str, QtGui.QStandardItem]
 
-    def clear(self):
+    def reset(self):
         self._initials.clear()
         self._families.clear()
-        super(InstalledPackagesModel, self).clear()
+        super(InstalledPackagesModel, self).reset()
 
     def initials(self):
         return sorted(self._initials.keys())

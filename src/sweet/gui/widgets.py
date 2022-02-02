@@ -729,6 +729,7 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         header = view.header()
         header.setSortIndicatorShown(False)
         header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
 
         # layout
 
@@ -1459,8 +1460,13 @@ class ResolvedPackages(QtWidgets.QWidget):
 
         model = ResolvedPackagesModel()
         view = TreeView()
-        view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         view.setModel(model)
+        view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+        header = view.header()
+        header.setSectionResizeMode(0, header.Stretch)
+        header.setSectionResizeMode(1, header.ResizeToContents)
+        header.setSectionResizeMode(2, header.Stretch)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
@@ -1519,6 +1525,9 @@ class ResolvedEnvironment(QtWidgets.QWidget):
         model = ResolvedEnvironmentModel()
         view = JsonView()
         view.setModel(model)
+        header = view.header()
+        header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(view)
@@ -1672,6 +1681,10 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         search.setPlaceholderText(" Search by family, version or tool..")
+
+        header = view.header()
+        header.setSectionResizeMode(0, header.Stretch)
+        header.setSectionResizeMode(1, header.Stretch)
 
         # layout
 

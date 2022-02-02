@@ -98,9 +98,9 @@ class Session(object):
         stacked_request.request_edited.connect(ctrl.on_request_edited)
 
         # control -> model
-        ctrl.storage_scan_started.connect(storage_model.clear)
+        ctrl.storage_scan_started.connect(storage_model.reset)
         ctrl.storage_scanned.connect(storage_model.add_saved_suites)
-        ctrl.pkg_scan_started.connect(installed_pkg_model.clear)
+        ctrl.pkg_scan_started.connect(installed_pkg_model.reset)
         ctrl.pkg_families_scanned.connect(installed_pkg_model.add_families)
         ctrl.pkg_versions_scanned.connect(installed_pkg_model.add_versions)
         ctrl.context_added.connect(tool_stack_model.on_context_added)
