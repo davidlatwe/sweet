@@ -325,9 +325,10 @@ class BaseTheme(object):
             font-weight: bold;
         }}
         QPushButton:disabled {{
+            color: {self.palette.on_background.fade};
             background-color: {self.palette.background};
             border: 2px dashed {self.palette.border.fade};
-            color: {self.palette.on_background.fade};
+            padding: {px(6).ceil};  /* smaller padding for thicker border */
         }}
 
         """
