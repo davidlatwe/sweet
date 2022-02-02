@@ -920,6 +920,7 @@ class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
             # works better with full completion replacement.
 
             editor.setCompleter(completer)
+            editor.textChanged.connect(lambda _: self.parent().edited.emit())
 
             return editor
 
@@ -1212,7 +1213,7 @@ class RequestEditorWidget(QtWidgets.QWidget):
             self._table.remove_all_rows()
 
     def on_edited(self):
-        self._timer.start(500)
+        self._timer.start(450)
 
     def _deferred_edited(self):
         edited = (self._processed or []) != self.get_requests()

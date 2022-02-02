@@ -169,6 +169,7 @@ class Controller(QtCore.QObject):
         self._about_to_new(parent=self.sender())
 
     @QtCore.Slot(str, str, str)  # noqa
+    @_defer(on_time=450)  # wait for requests-editor's edited signal
     def on_suite_save_clicked(self, name, desc, loaded_branch):
         self._about_to_save(name, desc, loaded_branch, parent=self.sender())
 
