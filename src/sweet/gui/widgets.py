@@ -1337,8 +1337,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
         tools = ResolvedTools()
         packages = ResolvedPackages()
         environ = ResolvedEnvironment()
-        code = ResolvedCode()
+        context = ResolvedContextView()
         graph = ResolvedGraph()
+        code = ResolvedCode()
         log_ = ResolvedLog()
 
         tabs = QtWidgets.QTabBar()
@@ -1354,10 +1355,12 @@ class ContextResolveWidget(QtWidgets.QWidget):
         stack.addWidget(packages)
         tabs.addTab("Environ")
         stack.addWidget(environ)
-        tabs.addTab("Code")
-        stack.addWidget(code)
+        tabs.addTab("Context")
+        stack.addWidget(context)
         tabs.addTab("Graph")
         stack.addWidget(graph)
+        tabs.addTab("Code")
+        stack.addWidget(code)
         tabs.addTab("Log")
         stack.addWidget(log_)
 
@@ -1377,8 +1380,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._tools = tools
         self._packages = packages
         self._environ = environ
-        self._code = code
+        self._context = context
         self._graph = graph
+        self._code = code
         self._log = log_
 
         # will be called by StackedResolveWidget
@@ -1409,11 +1413,17 @@ class ContextResolveWidget(QtWidgets.QWidget):
         :type context: ResolvedContext
         :return:
         """
+        self._context.model().load(context.to_dict())
+
         if context.success:
             self._packages.model().load(context.resolved_packages)
             self._environ.model().load(context.get_environ())
             self._code.set_shell_code(context.get_shell_code())
         else:
+            self._packages.model().reset()
+            self._environ.model().clear()
+            self._code.set_shell_code("")
+
             self._tabs.setCurrentIndex(self._tabs.count() - 1)  # Log widget
 
         with HtmlPrinter.patch_context_printer():
@@ -1619,6 +1629,26 @@ class ResolvedEnvironment(QtWidgets.QWidget):
         self._proxy.setFilterRegExp(text)
         self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
+
+
+class ResolvedContextView(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedContextView, self).__init__(*args, **kwargs)
+
+        # todo: use proper widget for each (selected) context data entry,
+        #   instead of viewing it as dict without filtering.
+        model = JsonModel()
+        view = JsonView()
+        view.setModel(model)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(view)
+
+        self._model = model
+
+    def model(self):
+        return self._model
 
 
 class ResolvedCode(QtWidgets.QWidget):
