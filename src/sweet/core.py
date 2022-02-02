@@ -671,6 +671,18 @@ class BrokenContext(object):
     def get_resolved_package(self, *_, **__):
         return None
 
+    def to_dict(self, fields=None):
+        data = dict(
+            timestamp=self.timestamp,
+            resolved_packages=self.resolved_packages,
+            package_requests=list(map(str, self._package_requests)),
+            status=self.status.name,
+            failure_description=self.failure_description,
+        )
+        if fields:
+            data = dict((k, v) for k, v in data.items() if k in fields)
+        return data
+
     def validate(self):
         raise ResolvedContextError(str(self))
 
