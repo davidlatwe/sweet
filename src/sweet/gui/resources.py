@@ -862,6 +862,15 @@ class BaseTheme(object):
 
         """
 
+    def _q_status_bar(self):
+        return f"""
+        
+        QStatusBar {{
+            font-family: "JetBrains Mono";
+        }}
+        
+        """
+
     def _q_dialog(self):
         return f"""
 
