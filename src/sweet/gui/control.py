@@ -13,8 +13,8 @@ from ..core import (
     PkgFamily,
     PkgVersion,
 )
-from ._vendor.Qt5 import QtCore
-from .widgets import BusyWidget
+from ._vendor.Qt5 import QtCore, QtWidgets
+from .widgets import BusyWidget, YesNoDialog
 
 
 log = logging.getLogger("sweet")
@@ -169,16 +169,12 @@ class Controller(QtCore.QObject):
         self.sender().answer_savable(self._objection_to_save_suite())
 
     @QtCore.Slot()  # noqa
-    def on_suite_dirty_asked(self):
-        self.sender().answer_dirty(self._dirty)
-
-    @QtCore.Slot()  # noqa
     def on_storage_branches_asked(self):
         self.sender().answer_branches(self._sto.branches())
 
     @QtCore.Slot()  # noqa
     def on_suite_new_clicked(self):
-        self.new_suite()
+        self._about_to_new(parent=self.sender())
 
     @QtCore.Slot(str, str, bool)  # noqa
     def on_suite_load_clicked(self, name, branch, as_import):
@@ -403,6 +399,22 @@ class Controller(QtCore.QObject):
         self._sop.reset()
         self._dirty = False
         self.suite_newed.emit()
+
+    def _about_to_new(self, parent):
+        if not self._dirty:
+            self.new_suite()
+            return
+
+        widget = QtWidgets.QLabel("Current changes not saved, discard ?")
+        dialog = YesNoDialog(widget, yes_as_default=False, parent=parent)
+        dialog.setWindowTitle("Unsaved Changes")
+
+        def on_finished(result):
+            if result:
+                self.new_suite()
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
 
     @_thread(name="scanPkg")
     def scan_installed_packages(self):

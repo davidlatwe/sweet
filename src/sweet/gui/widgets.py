@@ -282,7 +282,6 @@ class YesNoDialog(QtWidgets.QDialog):
 class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()
     savable_asked = QtCore.Signal()
-    dirty_asked = QtCore.Signal()
     new_clicked = QtCore.Signal()
     save_clicked = QtCore.Signal(str, str, str)
 
@@ -312,7 +311,7 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         layout.addWidget(new_btn)
 
         name.textChanged.connect(lambda t: save_btn.setEnabled(bool(t)))
-        new_btn.clicked.connect(self.on_suite_new_clicked)
+        new_btn.clicked.connect(self.new_clicked.emit)
         save_btn.clicked.connect(self.on_suite_save_clicked)
 
         self._name = name
@@ -320,7 +319,6 @@ class SuiteHeadWidget(QtWidgets.QWidget):
         self._path = details.load_path
         self._loaded_branch = None
         # fields for asking
-        self._dirty = None
         self._unsavable = None
         self._branches = None
 
@@ -354,36 +352,8 @@ class SuiteHeadWidget(QtWidgets.QWidget):
     def answer_branches(self, result):
         self._branches = result
 
-    def answer_dirty(self, value):
-        self._dirty = value
-
     def answer_savable(self, objection):
         self._unsavable = objection
-
-    def on_suite_new_clicked(self):
-        self._dirty = None
-        self.dirty_asked.emit()
-        if self._dirty is None:
-            log.critical("signal 'dirty_asked' received no response.")
-            return
-
-        if self._dirty:
-            widget = QtWidgets.QLabel(
-                "Current suite is not saved, are you sure to discard and start "
-                "a new one ?"
-            )
-            dialog = YesNoDialog(widget, yes_as_default=False, parent=self)
-            dialog.setWindowTitle("Unsaved Changes")
-
-            def on_finished(result):
-                if result:
-                    self.new_clicked.emit()
-
-            dialog.finished.connect(on_finished)
-            dialog.open()
-
-        else:
-            self.new_clicked.emit()
 
     def on_suite_save_clicked(self):
         self._unsavable = None

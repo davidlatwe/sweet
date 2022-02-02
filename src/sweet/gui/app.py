@@ -82,7 +82,6 @@ class Session(object):
         # data query (note: this connection has to be made first or the sender()
         #             will be None if the slot is decorated with QtCore.Slot().
         #             this is a bug of pyside2.)
-        suite_head.dirty_asked.connect(ctrl.on_suite_dirty_asked)
         suite_head.savable_asked.connect(ctrl.on_savable_asked)
         suite_head.branch_asked.connect(ctrl.on_storage_branches_asked)
 
