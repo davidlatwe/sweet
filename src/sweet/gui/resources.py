@@ -356,15 +356,16 @@ class BaseTheme(object):
         return f"""
 
         QCheckBox {{
-            spacing: {px(5).floor};
+            spacing: {px(4).floor};
             margin-bottom: {px(2).floor};
         }}
         QCheckBox:focus {{
             border: none;
         }}
         QCheckBox::indicator {{
-            width: {px(15).floor};
-            height: {px(15).floor};
+            width: {px(24).floor};
+            height: {px(24).floor};
+            padding: {px(4)};
             background-color: {self.palette.background};
         }}
         QCheckBox::indicator:unchecked {{
@@ -1056,6 +1057,16 @@ class BaseTheme(object):
         
         #DocStrings {{
             color: {self.palette.on_background.fade};
+        }}
+        
+        #EnvFilterSwitch {{
+            width: {px(80)};
+        }}
+        #EnvFilterSwitch::indicator:unchecked {{
+            image: url(:icons/toggle-off.svg);
+        }}
+        #EnvFilterSwitch::indicator:checked {{
+            image: url(:icons/toggle-on.svg);
         }}
         
         #ColoredCodeView {{

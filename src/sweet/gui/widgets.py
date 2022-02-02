@@ -19,6 +19,7 @@ from .models import (
     JsonModel,
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
+    ResolvedEnvironmentProxyModel,
     ContextToolTreeModelSingleton,
     ContextToolTreeSortProxyModel,
     InstalledPackagesModel,
@@ -1528,21 +1529,50 @@ class ResolvedEnvironment(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedEnvironment, self).__init__(*args, **kwargs)
 
+        search = QtWidgets.QLineEdit()
+        search.setPlaceholderText("Search environ var..")
+        switch = QtWidgets.QCheckBox()
+        switch.setObjectName("EnvFilterSwitch")
+        inverse = QtWidgets.QCheckBox("Inverse")
+
         model = ResolvedEnvironmentModel()
+        proxy = ResolvedEnvironmentProxyModel()
+        proxy.setSourceModel(model)
         view = JsonView()
-        view.setModel(model)
+        view.setModel(proxy)
         view.setTextElideMode(QtCore.Qt.ElideMiddle)
         header = view.header()
         header.setSectionResizeMode(0, header.ResizeToContents)
         header.setSectionResizeMode(1, header.Stretch)
 
+        _layout = QtWidgets.QHBoxLayout()
+        _layout.setContentsMargins(0, 0, 0, 0)
+        _layout.addWidget(search, stretch=True)
+        _layout.addWidget(switch)
+        _layout.addWidget(inverse)
+
         layout = QtWidgets.QVBoxLayout(self)
+        layout.addLayout(_layout)
         layout.addWidget(view)
 
         view.setMouseTracking(True)
         view.entered.connect(self._on_entered)
+        search.textChanged.connect(self._on_searched)
+        switch.stateChanged.connect(self._on_switched)
+        inverse.stateChanged.connect(self._on_inverse)
 
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(self._deferred_search)
+
+        self._view = view
+        self._proxy = proxy
         self._model = model
+        self._timer = timer
+        self._search = search
+        self._switch = switch
+
+        switch.setCheckState(QtCore.Qt.Checked)
 
     def model(self):
         return self._model
@@ -1554,6 +1584,7 @@ class ResolvedEnvironment(QtWidgets.QWidget):
     def _on_entered(self, index):
         if not index.isValid():
             return
+        index = self._proxy.mapToSource(index)
         if index.column() == 0:
             self.hovered.emit("", 0)  # clear
         elif index.column() == 1:
@@ -1564,6 +1595,30 @@ class ResolvedEnvironment(QtWidgets.QWidget):
                 key = self._model.index(index.row(), 0).data()
             value = index.data()
             self.hovered.emit(f"{key} | {value}", 0)
+
+    def _on_searched(self, _):
+        self._timer.start(400)
+
+    def _on_switched(self, state):
+        if state == QtCore.Qt.Checked:
+            self._switch.setText("On Key")
+            self._proxy.filter_by_key()
+        else:
+            self._switch.setText("On Value")
+            self._proxy.filter_by_value()
+
+    def _on_inverse(self, state):
+        self._proxy.inverse_filter(state)
+        text = self._search.text()
+        self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
+        self._view.reset_extension()
+
+    def _deferred_search(self):
+        # https://doc.qt.io/qt-5/qregexp.html#introduction
+        text = self._search.text()
+        self._proxy.setFilterRegExp(text)
+        self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
+        self._view.reset_extension()
 
 
 class ResolvedCode(QtWidgets.QWidget):

@@ -51,6 +51,12 @@ class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
 class JsonModel(qjsonmodel.QJsonModel):
 
     JsonRole = QtCore.Qt.UserRole + 1
+    KeyRole = QtCore.Qt.UserRole + 2
+    ValueRole = QtCore.Qt.UserRole + 3
+
+    def __init__(self, parent=None):
+        super(JsonModel, self).__init__(parent)
+        self._headers = ("Key", "Value/[Count]")
 
     def setData(self, index, value, role):
         # Support copy/paste, but prevent edits
@@ -65,16 +71,29 @@ class JsonModel(qjsonmodel.QJsonModel):
             return None
 
         item = index.internalPointer()
+        parent = item.parent()
 
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             if index.column() == 0:
+                if parent.type is list:
+                    return f"#{item.key} [{parent.childCount()}]"
                 return item.key
 
             if index.column() == 1:
+                if item.type is list:
+                    return f"[{item.childCount()}]"
                 return item.value
 
-        if role == self.JsonRole:
+        elif role == self.JsonRole:
             return self.json(item)
+
+        elif role == self.KeyRole:
+            if parent.type is list:
+                return parent.key
+            return item.key
+
+        elif role == self.ValueRole:
+            return item.value
 
         return super(JsonModel, self).data(index, role)
 
@@ -430,14 +449,45 @@ class ResolvedPackagesModel(BaseItemModel):
 class ResolvedEnvironmentModel(JsonModel):
 
     def load(self, data):
-        # Convert PATH environment variables to lists
+        # Convert PATH-like environment variables to lists
         # for improved viewing experience
         for key, value in data.copy().items():
-            if os.pathsep in value:
+            if os.pathsep in value and any(s in value for s in ("/", "\\")):
                 value = value.split(os.pathsep)
             data[key] = value
 
         super(ResolvedEnvironmentModel, self).load(data)
+
+
+class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
+
+    def __init__(self, *args, **kwargs):
+        super(ResolvedEnvironmentProxyModel, self).__init__(*args, **kwargs)
+        self.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.setRecursiveFilteringEnabled(True)
+        self._inverse = False
+
+    def filter_by_key(self):
+        self.setFilterRole(JsonModel.KeyRole)
+        self.invalidateFilter()
+
+    def filter_by_value(self):
+        self.setFilterRole(JsonModel.ValueRole)
+        self.invalidateFilter()
+
+    def inverse_filter(self, value):
+        self._inverse = bool(value)
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self,
+                         source_row: int,
+                         source_parent: QtCore.QModelIndex) -> bool:
+        accept = super(ResolvedEnvironmentProxyModel,
+                       self).filterAcceptsRow(source_row, source_parent)
+        if self._inverse:
+            return not accept
+        return accept
 
 
 class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):
