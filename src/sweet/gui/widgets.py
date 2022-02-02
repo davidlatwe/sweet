@@ -278,6 +278,17 @@ class YesNoDialog(QtWidgets.QDialog):
             widget.validated.connect(btn_accept.setEnabled)
             btn_accept.setEnabled(False)
 
+        self._accept = btn_accept
+        self._reject = btn_reject
+        self._yes = yes_as_default
+
+    def open(self):
+        super(YesNoDialog, self).open()
+        if self._yes:
+            self._accept.setFocus()
+        else:
+            self._reject.setFocus()
+
 
 class SuiteHeadWidget(QtWidgets.QWidget):
     branch_asked = QtCore.Signal()
