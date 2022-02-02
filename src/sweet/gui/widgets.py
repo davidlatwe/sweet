@@ -2027,24 +2027,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         name.setPlaceholderText("Suite name")
         desc.setPlaceholderText("Suite description")
 
-        error = QtWidgets.QWidget()
-        icon = QtWidgets.QLabel()
-        icon.setObjectName("LogErrorIcon")
-        label = QtWidgets.QLabel()
-        label.setObjectName("LogLevelText")
-        label.setText("Suite Corrupted")
-        detail = QtWidgets.QPlainTextEdit()
-        detail.setObjectName("LogMessageText")
-        detail.setReadOnly(True)
-        detail.setLineWrapMode(detail.NoWrap)
-
-        _layout = QtWidgets.QHBoxLayout()
-        _layout.addWidget(icon)
-        _layout.addWidget(label, stretch=True)
-
-        layout = QtWidgets.QVBoxLayout(error)
-        layout.addLayout(_layout)
-        layout.addWidget(detail)
+        error = BadSuiteMessageBox()
 
         stack = QtWidgets.QStackedWidget()
         stack.setContentsMargins(0, 0, 0, 0)
@@ -2065,7 +2048,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._name = name
         self._desc = desc
         self._stack = stack
-        self._error = detail
+        self._error = error
         self._view = view
         self._model = model
 
@@ -2094,7 +2077,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 error = f"{str(e)}\n\n{traceback.format_exc()}"
                 self._model.set_bad_suite(item, error)
                 self._stack.setCurrentIndex(1)
-                self._error.setPlainText(error)
+                self._error.set_message(error)
 
             else:
                 self._model.update_suite_tools(suite_tools, saved_suite)
@@ -2103,7 +2086,36 @@ class SuiteInsightWidget(QtWidgets.QWidget):
             error = self._model.is_bad_suite(item)
             if error:
                 self._stack.setCurrentIndex(1)
-                self._error.setPlainText(error)
+                self._error.set_message(error)
+
+
+class BadSuiteMessageBox(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(BadSuiteMessageBox, self).__init__(*args, **kwargs)
+
+        icon = QtWidgets.QLabel()
+        icon.setObjectName("LogErrorIcon")
+        label = QtWidgets.QLabel()
+        label.setObjectName("LogLevelText")
+        label.setText("Suite Corrupted")
+        text = QtWidgets.QPlainTextEdit()
+        text.setObjectName("LogMessageText")
+        text.setReadOnly(True)
+        text.setLineWrapMode(text.NoWrap)
+
+        _layout = QtWidgets.QHBoxLayout()
+        _layout.addWidget(icon)
+        _layout.addWidget(label, stretch=True)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addLayout(_layout)
+        layout.addWidget(text)
+
+        self._text = text
+
+    def set_message(self, text):
+        self._text.setPlainText(text)
 
 
 class RequestCompleter(QtWidgets.QCompleter):
