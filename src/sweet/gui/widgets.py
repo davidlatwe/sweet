@@ -1935,6 +1935,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(view)
 
         # signals
@@ -2027,27 +2028,45 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
         error = BadSuiteMessageBox()
 
+        _stack = QtWidgets.QWidget()
         stack = QtWidgets.QStackedWidget()
-        stack.setContentsMargins(0, 0, 0, 0)
         stack.addWidget(view)
         stack.addWidget(error)
+        layout = QtWidgets.QVBoxLayout(_stack)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.addWidget(stack)
 
         contexts = SuiteContextsView()
 
-        tabs = QtWidgets.QTabWidget()
-        tabs.addTab(stack, "Overview")
-        tabs.addTab(contexts, "Contexts")
+        _tabs = QtWidgets.QWidget()
+        tabs = QtWidgets.QTabBar()
+        tabs_stack = QtWidgets.QStackedWidget()
+        tabs_stack.setObjectName("TabStackWidgetLeft")
+        tabs.addTab("Overview")
+        tabs_stack.addWidget(_stack)
+        tabs.addTab("Contexts")
+        tabs_stack.addWidget(contexts)
+        tabs.setShape(tabs.RoundedWest)
+        tabs.setDocumentMode(True)
+        layout = QtWidgets.QHBoxLayout(_tabs)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(tabs, alignment=QtCore.Qt.AlignTop)
+        layout.addWidget(tabs_stack, stretch=True)
 
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)
         splitter.addWidget(desc)
-        splitter.addWidget(tabs)
+        splitter.addWidget(_tabs)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(2, 4, 2, 4)
         layout.addWidget(name)
         layout.addWidget(splitter)
+
+        tabs.currentChanged.connect(tabs_stack.setCurrentIndex)
 
         self._name = name
         self._desc = desc
@@ -2131,8 +2150,16 @@ class SuiteContextsView(QtWidgets.QWidget):
         ctx_list = ContextList()
         ctx_view = ResolvedContextView()
 
+        _ctx_list = QtWidgets.QWidget()
+        _label = QtWidgets.QLabel("Context Stack")
+        layout = QtWidgets.QVBoxLayout(_ctx_list)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(_label)
+        layout.addWidget(ctx_list)
+
         splitter = QtWidgets.QSplitter()
-        splitter.addWidget(ctx_list)
+        splitter.addWidget(_ctx_list)
         splitter.addWidget(ctx_view)
 
         splitter.setOrientation(QtCore.Qt.Horizontal)
@@ -2142,7 +2169,7 @@ class SuiteContextsView(QtWidgets.QWidget):
         splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(splitter)
 
         ctx_list.currentRowChanged.connect(self._on_context_selected)
