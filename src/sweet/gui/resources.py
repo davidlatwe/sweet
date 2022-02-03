@@ -736,6 +736,12 @@ class BaseTheme(object):
         QAbstractItemView:focus {{
             border: none;
         }}
+        
+        QTreeView::item,
+        QListWidget::item {{
+            padding: 5px 1px;
+            border: 0px;
+        }}
 
         /* note: transparent background color is really hard to look good */
 

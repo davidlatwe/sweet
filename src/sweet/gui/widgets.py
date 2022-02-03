@@ -116,24 +116,6 @@ class BusyWidget(QtWidgets.QWidget):
         action(self)
 
 
-class DragDropListWidget(QtWidgets.QListWidget):
-    dropped = QtCore.Signal()
-
-    def __init__(self, *args, **kwargs):
-        super(DragDropListWidget, self).__init__(*args, **kwargs)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
-        self.setDragDropMode(self.InternalMove)
-        self.setDefaultDropAction(QtCore.Qt.MoveAction)
-
-    def dropEvent(self, event):
-        # type: (QtGui.QDropEvent) -> None
-        super(DragDropListWidget, self).dropEvent(event)
-        if event.isAccepted():
-            self.dropped.emit()
-
-
 class TreeView(qoverview.VerticalExtendedTreeView):
 
     def __init__(self, *args, **kwargs):
@@ -141,12 +123,6 @@ class TreeView(qoverview.VerticalExtendedTreeView):
         self.setAllColumnsShowFocus(True)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setStyleSheet("""
-            QTreeView::item{
-                padding: 5px 1px;
-                border: 0px;
-            }
-        """)
 
 
 class JsonView(TreeView):
@@ -388,28 +364,40 @@ class SuiteDetailsWidget(QtWidgets.QWidget):
         self.load_path = load_path
 
 
-class ContextDragDropList(DragDropListWidget):
+class ContextList(QtWidgets.QListWidget):
 
     def __init__(self, *args, **kwargs):
-        super(ContextDragDropList, self).__init__(*args, **kwargs)
+        super(ContextList, self).__init__(*args, **kwargs)
         self.setSortingEnabled(False)  # do not sort this !
         self.setSelectionMode(self.SingleSelection)
-        self.setStyleSheet("""
-            QListWidget::item{
-                padding: 5px 1px;
-                border: 0px;
-            }
-        """)
 
     def mouseReleaseEvent(self, event):
         # type: (QtGui.QMouseEvent) -> None
-        super(ContextDragDropList, self).mouseReleaseEvent(event)
+        super(ContextList, self).mouseReleaseEvent(event)
         # disable item deselecting
         #   we need the selection as on indicator for knowing which context
         #   other widgets are representing.
         item = self.itemAt(event.pos())
         if item and item == self.currentItem():
             item.setSelected(True)
+
+
+class ContextDragDropList(ContextList):
+    dropped = QtCore.Signal()
+
+    def __init__(self, *args, **kwargs):
+        super(ContextDragDropList, self).__init__(*args, **kwargs)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(self.InternalMove)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+
+    def dropEvent(self, event):
+        # type: (QtGui.QDropEvent) -> None
+        super(ContextDragDropList, self).dropEvent(event)
+        if event.isAccepted():
+            self.dropped.emit()
 
 
 class ContextListWidget(QtWidgets.QWidget):
@@ -1643,6 +1631,7 @@ class ResolvedContextView(QtWidgets.QWidget):
         view.setModel(model)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.addWidget(view)
 
         self._model = model
