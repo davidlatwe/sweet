@@ -2032,10 +2032,16 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         stack.addWidget(view)
         stack.addWidget(error)
 
+        contexts = SuiteContextsView()
+
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(stack, "Overview")
+        tabs.addTab(contexts, "Contexts")
+
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)
         splitter.addWidget(desc)
-        splitter.addWidget(stack)
+        splitter.addWidget(tabs)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
 
@@ -2047,6 +2053,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._desc = desc
         self._stack = stack
         self._error = error
+        self._ctxs = contexts
+        self._tabs = tabs
         self._view = view
         self._model = model
 
@@ -2070,6 +2078,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         if added and not is_branch:
             if error_message:
                 self._model.set_bad_suite(item, error_message)
+                self._tabs.setCurrentIndex(0)
                 self._stack.setCurrentIndex(1)
                 self._error.set_message(error_message)
             else:
@@ -2078,8 +2087,11 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         else:
             error = self._model.is_bad_suite(item)
             if error:
+                self._tabs.setCurrentIndex(0)
                 self._stack.setCurrentIndex(1)
                 self._error.set_message(error)
+
+        self._ctxs.load(saved_suite)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
@@ -2109,6 +2121,60 @@ class BadSuiteMessageBox(QtWidgets.QWidget):
 
     def set_message(self, text):
         self._text.setPlainText(text)
+
+
+class SuiteContextsView(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(SuiteContextsView, self).__init__(*args, **kwargs)
+
+        ctx_list = ContextList()
+        ctx_view = ResolvedContextView()
+
+        splitter = QtWidgets.QSplitter()
+        splitter.addWidget(ctx_list)
+        splitter.addWidget(ctx_view)
+
+        splitter.setOrientation(QtCore.Qt.Horizontal)
+        splitter.setChildrenCollapsible(False)
+        splitter.setContentsMargins(0, 0, 0, 0)
+        splitter.setStretchFactor(0, 30)
+        splitter.setStretchFactor(1, 70)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(splitter)
+
+        ctx_list.currentRowChanged.connect(self._on_context_selected)
+
+        self._list = ctx_list
+        self._view = ctx_view
+        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
+        self._contexts = []
+
+    def load(self, saved_suite: core.SavedSuite):
+        self._contexts.clear()
+        self._view.model().clear()
+
+        self._list.blockSignals(True)
+        self._list.clear()
+        self._list.blockSignals(False)
+
+        for name, context in saved_suite.iter_contexts():
+            item = QtWidgets.QListWidgetItem(name)
+            item.setIcon(self._icon_ctx)
+            self._list.addItem(item)
+            self._contexts.append(context)
+
+        self._list.setCurrentRow(0)
+
+    def _on_context_selected(self, index: int):
+        if index < 0:
+            self._view.model().clear()
+        else:
+            context = self._contexts[index]
+            self._view.model().load(context.to_dict())
 
 
 class RequestCompleter(QtWidgets.QCompleter):
