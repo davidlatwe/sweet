@@ -236,6 +236,10 @@ class Controller(QtCore.QObject):
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
 
+    @QtCore.Slot()  # noqa
+    def on_suite_storage_scan_clicked(self):
+        self.scan_suite_storage()
+
     def _mark_request_edited(self, name, edited):
         if edited:
             self._edited.add(name)

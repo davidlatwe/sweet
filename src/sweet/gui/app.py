@@ -97,6 +97,7 @@ class Session(object):
         storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
         stacked_request.request_edited.connect(ctrl.on_request_edited)
         storage_view.suite_selected.connect(ctrl.on_saved_suite_selected)
+        storage_view.refresh_clicked.connect(ctrl.on_suite_storage_scan_clicked)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.reset)
@@ -115,6 +116,7 @@ class Session(object):
         ctrl.suite_saved.connect(storage_model.add_new_saved_suite)
 
         # control -> view
+        ctrl.storage_scan_started.connect(storage_suite.on_refreshed)
         ctrl.suite_newed.connect(stacked_request.on_suite_newed)
         ctrl.suite_newed.connect(stacked_resolve.on_suite_newed)
         ctrl.suite_newed.connect(context_list.on_suite_newed)

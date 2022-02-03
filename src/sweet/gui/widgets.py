@@ -1932,6 +1932,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 class SuiteBranchWidget(QtWidgets.QWidget):
     suite_selected = QtCore.Signal(core.SavedSuite)
     suite_load_clicked = QtCore.Signal(str, str, bool)
+    refresh_clicked = QtCore.Signal()
 
     def __init__(self, *args, **kwargs):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
@@ -1972,7 +1973,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         view.selectionModel().currentChanged.connect(self._on_current_changed)
         view.customContextMenuRequested.connect(self._on_right_click)
         search.textChanged.connect(self._on_searched)
-        refresh.clicked.connect(self._on_refreshed)
+        refresh.clicked.connect(self.refresh_clicked)
 
         timer = QtCore.QTimer(self)
         timer.setSingleShot(True)
@@ -2011,9 +2012,6 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self._proxy.setFilterRegExp(text)
         self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
-
-    def _on_refreshed(self):
-        print("Not Implemented.")
 
     def _on_right_click(self, position):
         index = self._view.indexAt(position)
@@ -2128,8 +2126,16 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._view = view
         self._model = model
 
+    @QtCore.Slot()  # noqa
+    def on_refreshed(self):
+        self.view_suite(core.SavedSuite("", "", "", core.SweetSuite()))
+        self._model.reset()
+
     @QtCore.Slot(core.SavedSuite, str)  # noqa
     def on_suite_viewed(self, saved_suite, error_message=None):
+        self.view_suite(saved_suite, error_message)
+
+    def view_suite(self, saved_suite, error_message=None):
         """
         :param saved_suite:
         :param error_message:
