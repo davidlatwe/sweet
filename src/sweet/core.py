@@ -157,15 +157,15 @@ class SavedSuite:
 
         :param ascending: Iter contexts by priority in ascending order.
         :type ascending: bool or False
-        :return: An ResolvedContext iterator
-        :rtype: collections.Iterator[ResolvedContext]
+        :return: An context name, resolved-context tuple pair iterator
+        :rtype: collections.Iterator[tuple[str, ResolvedContext]]
         """
         ctx_data = sorted(
             self._suite.contexts.values(), key=lambda x: x["priority"],
             reverse=not ascending
         )
         for d in ctx_data:
-            yield self._suite.context(d["name"])
+            yield d["name"], self._suite.context(d["name"])
 
 
 def _warn(message, category=None):
