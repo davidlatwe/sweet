@@ -2,7 +2,6 @@
 import re
 import json
 import logging
-import traceback
 from io import StringIO
 from contextlib import contextmanager
 
