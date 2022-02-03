@@ -176,7 +176,7 @@ class Controller(QtCore.QObject):
 
     @QtCore.Slot(str, str, bool)  # noqa
     def on_suite_load_clicked(self, name, branch, as_import):
-        self.load_suite(name, branch, as_import)
+        self._about_to_load(name, branch, as_import, parent=self.sender())
 
     @QtCore.Slot(SavedSuite)  # noqa
     @_defer(on_time=400)
@@ -422,6 +422,22 @@ class Controller(QtCore.QObject):
         def on_finished(result):
             if result:
                 self.new_suite()
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
+
+    def _about_to_load(self, name, branch, as_import, parent):
+        if not self._dirty:
+            self.load_suite(name, branch, as_import)
+            return
+
+        widget = QtWidgets.QLabel("Current changes not saved, discard ?")
+        dialog = YesNoDialog(widget, yes_as_default=False, parent=parent)
+        dialog.setWindowTitle("Unsaved Changes")
+
+        def on_finished(result):
+            if result:
+                self.load_suite(name, branch, as_import)
 
         dialog.finished.connect(on_finished)
         dialog.open()
