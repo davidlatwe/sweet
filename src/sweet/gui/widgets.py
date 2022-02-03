@@ -1792,6 +1792,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QHBoxLayout(head)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
         layout.addWidget(refresh)
         layout.addWidget(search)
 
@@ -1830,11 +1831,17 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         model.modelReset.connect(lambda: self.setEnabled(False))
         model.family_updated.connect(self.on_model_family_updated)
 
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(self._deferred_search)
+
         self._view = view
         self._model = model
         self._proxy = proxy
+        self._timer = timer
 
         self._tabs = tabs
+        self._search = search
         self._groups = []
 
     def model(self):
@@ -1843,11 +1850,16 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
     def proxy(self):
         return self._proxy
 
-    @QtCore.Slot(str)  # noqa
-    def on_searched(self, text):
+    def _deferred_search(self):
+        # https://doc.qt.io/qt-5/qregexp.html#introduction
+        text = self._search.text()
         self._proxy.setFilterRegExp(text)
         self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
         self._view.reset_extension()
+
+    @QtCore.Slot(str)  # noqa
+    def on_searched(self, _):
+        self._timer.start(400)
 
     @QtCore.Slot(int)  # noqa
     def on_tab_clicked(self, index):
