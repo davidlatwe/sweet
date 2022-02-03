@@ -149,6 +149,24 @@ class SavedSuite:
         sop._working_suite = self._suite
         return sop.iter_tools(visible_only=True)
 
+    def iter_contexts(self, ascending=False):
+        """Iterate contexts (from rxt files) in suite in priority ordered
+
+        By default (descending ordered), the context that has higher priority
+        will be iterated first.
+
+        :param ascending: Iter contexts by priority in ascending order.
+        :type ascending: bool or False
+        :return: An ResolvedContext iterator
+        :rtype: collections.Iterator[ResolvedContext]
+        """
+        ctx_data = sorted(
+            self._suite.contexts.values(), key=lambda x: x["priority"],
+            reverse=not ascending
+        )
+        for d in ctx_data:
+            yield self._suite.context(d["name"])
+
 
 def _warn(message, category=None):
     category = category or SuiteOpWarning
