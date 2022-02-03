@@ -1936,27 +1936,53 @@ class SuiteBranchWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
 
+        head = QtWidgets.QWidget()
+        refresh = QtWidgets.QPushButton()
+        refresh.setObjectName("RefreshButton")
+        search = QtWidgets.QLineEdit()
+        search.setPlaceholderText("Search saved suites..")
+
         view = TreeView()
         proxy = QtCore.QSortFilterProxyModel()
         model = SuiteStorageModel()
 
         proxy.setSourceModel(model)
+        proxy.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        proxy.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        proxy.setRecursiveFilteringEnabled(True)
         view.setModel(proxy)
         view.setSortingEnabled(True)
         view.setSelectionMode(view.SingleSelection)
         view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
+        layout = QtWidgets.QHBoxLayout(head)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(refresh)
+        layout.addWidget(search)
+
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(8, 12, 8, 8)
+        layout.setSpacing(0)
+        layout.addWidget(head)
         layout.addWidget(view)
 
         # signals
 
         view.selectionModel().currentChanged.connect(self._on_current_changed)
         view.customContextMenuRequested.connect(self._on_right_click)
+        search.textChanged.connect(self._on_searched)
+        refresh.clicked.connect(self._on_refreshed)
+
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(self._deferred_search)
 
         self._view = view
+        self._proxy = proxy
         self._model = model
+        self._timer = timer
+        self._search = search
 
     def model(self):
         return self._model
@@ -1975,6 +2001,19 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         if saved_suite is None:  # possible root item (the branch)
             saved_suite = core.SavedSuite("", "", "", core.SweetSuite())
         self.suite_selected.emit(saved_suite)
+
+    def _on_searched(self, _):
+        self._timer.start(400)
+
+    def _deferred_search(self):
+        # https://doc.qt.io/qt-5/qregexp.html#introduction
+        text = self._search.text()
+        self._proxy.setFilterRegExp(text)
+        self._view.expandAll() if len(text) > 1 else self._view.collapseAll()
+        self._view.reset_extension()
+
+    def _on_refreshed(self):
+        print("Not Implemented.")
 
     def _on_right_click(self, position):
         index = self._view.indexAt(position)
