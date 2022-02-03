@@ -1054,6 +1054,8 @@ class SweetSuite(_Suite):
             if self._is_live:
                 context = data["context"]
                 requests = [str(r) for r in context.requested_packages()]
+                # todo: instead of parsing requests, load the rxt and re-resolve
+                #   again.
                 kwargs = {
                     "module": ("command", "sweet"),  # rez plugin
                     "func_name": "_FWD__invoke_suite_tool_alias_in_live",

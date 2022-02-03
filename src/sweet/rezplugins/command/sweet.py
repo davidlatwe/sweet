@@ -94,11 +94,15 @@ def _FWD__invoke_suite_tool_alias_in_live(package_requests,
     # Load configs
     from rez.resolved_context import ResolvedContext
     from rez.config import _load_config_from_filepaths, config
+    # todo: config override should be handled by the Application
+    #   launcher, not sweet.
     configs = find_configs(os.getcwd())
     overrides, _ = _load_config_from_filepaths(configs)
     for key, value in overrides.items():
         config.override(key, value)
 
+    # todo: instead of parsing requests, load the rxt and re-resolve
+    #   again.
     suite_path = os.path.dirname(os.path.dirname(_script))
     context = ResolvedContext(package_requests)
 
