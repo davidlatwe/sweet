@@ -119,6 +119,7 @@ class Controller(QtCore.QObject):
     suite_saved = QtCore.Signal(SavedSuite)
     suite_save_failed = QtCore.Signal(str)
     suite_loaded = QtCore.Signal(str, str, str, str)
+    suite_viewed = QtCore.Signal(SavedSuite, str)
     context_added = QtCore.Signal(SuiteCtx)
     context_resolved = QtCore.Signal(str, object)
     context_dropped = QtCore.Signal(str)
@@ -176,6 +177,16 @@ class Controller(QtCore.QObject):
     @QtCore.Slot(str, str, bool)  # noqa
     def on_suite_load_clicked(self, name, branch, as_import):
         self.load_suite(name, branch, as_import)
+
+    @QtCore.Slot(SavedSuite)  # noqa
+    @_defer(on_time=400)
+    def on_saved_suite_selected(self, saved_suite):
+        suite_branch = self.sender()
+        if suite_branch.is_already_viewed(saved_suite):
+            self.suite_viewed.emit(saved_suite, "")
+        else:
+            self.view_suite(saved_suite)
+            suite_branch.mark_as_viewed(saved_suite)
 
     @QtCore.Slot(str, bool)  # noqa
     def on_request_edited(self, name, edited):
@@ -370,6 +381,25 @@ class Controller(QtCore.QObject):
         self._tools_updated()
         self._dirty = False
         self.suite_loaded.emit(name, description, load_path, branch)
+
+    @_thread(name="suiteOp", blocks=("SuitePage", "StoragePage"))
+    def view_suite(self, saved_suite):
+        # read contexts into suite
+        _ = list(saved_suite.iter_contexts())
+        #   shouldn't raise any error while iterating contexts, because
+        #   SweetSuite.contexts() already handled all exceptions with
+        #   BrokenContext yielded.
+
+        try:
+            # update tools into suite
+            _ = list(saved_suite.iter_saved_tools())
+        except Exception as e:
+            log.error(f"Suite corrupted: {saved_suite.path}")
+            error = f"{str(e)}\n\n{traceback.format_exc()}"
+        else:
+            error = ""
+
+        self.suite_viewed.emit(saved_suite, error)
 
     def _reset_suite(self):
         self._sop.reset()

@@ -1959,6 +1959,15 @@ class SuiteBranchWidget(QtWidgets.QWidget):
     def model(self):
         return self._model
 
+    def is_already_viewed(self, saved_suite):
+        item = self._model.find_suite(saved_suite)
+        if item is None:
+            return False
+        return item.data(self._model.ViewedRole)
+
+    def mark_as_viewed(self, saved_suite):
+        self._model.mark_as_viewed(saved_suite)
+
     def _on_current_changed(self, index):
         saved_suite = index.data(self._model.SavedSuiteRole)
         if saved_suite is None:  # possible root item (the branch)
@@ -2052,11 +2061,13 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._view = view
         self._model = model
 
-    def on_suite_selected(self, saved_suite):
+    @QtCore.Slot(core.SavedSuite, str)  # noqa
+    def on_suite_viewed(self, saved_suite, error_message=None):
         """
-
         :param saved_suite:
+        :param error_message:
         :type saved_suite: core.SavedSuite
+        :type error_message: str or None
         :return:
         """
         is_branch = saved_suite.name == saved_suite.branch == ""
@@ -2068,20 +2079,13 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._view.setRootIndex(item.index())
 
         if added and not is_branch:
-            try:
-                # todo: this may takes times, timeit
-                suite_tools = list(saved_suite.iter_saved_tools())
-
-            except Exception as e:
-                log.error(f"Suite corrupted: {saved_suite.path}")
-                error = f"{str(e)}\n\n{traceback.format_exc()}"
-                self._model.set_bad_suite(item, error)
+            if error_message:
+                self._model.set_bad_suite(item, error_message)
                 self._stack.setCurrentIndex(1)
-                self._error.set_message(error)
-
+                self._error.set_message(error_message)
             else:
+                suite_tools = list(saved_suite.iter_saved_tools())
                 self._model.update_suite_tools(suite_tools, saved_suite)
-
         else:
             error = self._model.is_bad_suite(item)
             if error:

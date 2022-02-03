@@ -1,5 +1,6 @@
 
 import os
+import logging
 from rez.packages import Variant
 from rez.config import config as rezconfig
 
@@ -8,6 +9,9 @@ from ..core import \
     SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
+
+
+log = logging.getLogger("sweet")
 
 
 class QSingleton(type(QtCore.QObject), type):
@@ -636,6 +640,7 @@ class InstalledPackagesProxyModel(QtCore.QSortFilterProxyModel):
 
 class SuiteStorageModel(BaseItemModel):
     SavedSuiteRole = QtCore.Qt.UserRole + 10
+    ViewedRole = QtCore.Qt.UserRole + 11
     Headers = [
         "Name",
     ]
@@ -648,8 +653,7 @@ class SuiteStorageModel(BaseItemModel):
         }
 
     def ensure_branch_item(self, branch):
-        branch_item = next(iter(self.findItems(branch)),
-                           None)  # type: QtGui.QStandardItem
+        branch_item = self.find_branch(branch)
 
         if branch_item is None:
             branch_item = QtGui.QStandardItem(branch)
@@ -673,19 +677,54 @@ class SuiteStorageModel(BaseItemModel):
             suite_item = QtGui.QStandardItem(suite.name)
             suite_item.setIcon(self._icons["suite"])
             suite_item.setData(suite, self.SavedSuiteRole)
+            suite_item.setData(False, self.ViewedRole)
             branches[suite.branch].appendRow(suite_item)
 
     def add_new_saved_suite(self, suite):
-        suite_item = next(iter(self.findItems(suite.name)),
-                          None)  # type: QtGui.QStandardItem
-
+        suite_item = self.find_suite(suite)
         if suite_item is not None:
             return  # should be a loaded suite and just being saved over
 
         suite_item = QtGui.QStandardItem(suite.name)
         suite_item.setIcon(self._icons["suite"])
         suite_item.setData(suite, self.SavedSuiteRole)
+        suite_item.setData(False, self.ViewedRole)
         self.ensure_branch_item(suite.branch).appendRow(suite_item)
+
+    def find_branch(self, branch):
+        """
+        :param str branch:
+        :return:
+        :rtype: QtGui.QStandardItem or None
+        """
+        return next(iter(self.findItems(branch)), None)
+
+    def find_suite(self, suite):
+        """
+        :param SavedSuite suite:
+        :return:
+        :rtype: QtGui.QStandardItem or None
+        """
+        branch = self.find_branch(suite.branch)
+        if branch is None:
+            return
+
+        parent = branch.index()
+        for row in range(branch.rowCount()):
+            index = self.index(row, 0, parent)
+            if index.data() == suite.name:
+                return self.itemFromIndex(index)
+
+    def mark_as_viewed(self, suite):
+        suite_item = self.find_suite(suite)
+
+        if suite_item is None:
+            branch_dummy = not (suite.branch and suite.name)
+            if not branch_dummy:
+                log.critical(f"Suite {suite.branch}/{suite.name} not in model.")
+            return
+
+        suite_item.setData(True, self.ViewedRole)
 
 
 class SuiteToolTreeModel(ToolTreeModel):

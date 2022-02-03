@@ -96,6 +96,7 @@ class Session(object):
         suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)
         storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
         stacked_request.request_edited.connect(ctrl.on_request_edited)
+        storage_view.suite_selected.connect(ctrl.on_saved_suite_selected)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.reset)
@@ -122,6 +123,7 @@ class Session(object):
         ctrl.suite_save_failed.connect(suite_head.on_suite_save_failed)
         ctrl.suite_loaded.connect(suite_head.on_suite_loaded)
         ctrl.suite_loaded.connect(lambda *_: view_.switch_tab(1))  # editor
+        ctrl.suite_viewed.connect(storage_suite.on_suite_viewed)
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_request.on_context_added)
         ctrl.context_added.connect(stacked_resolve.on_context_added)
@@ -138,7 +140,6 @@ class Session(object):
         ctrl.request_edited.connect(context_list.on_request_edited)
 
         # view -> view
-        storage_view.suite_selected.connect(storage_suite.on_suite_selected)
         context_list.selected.connect(stacked_request.on_context_selected)
         context_list.selected.connect(stacked_resolve.on_context_selected)
         preference.changed.connect(self.on_preference_changed)
