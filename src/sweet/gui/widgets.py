@@ -1432,6 +1432,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._stashes = []  # type: list[ResolvedContext]
         self._staged = None  # type: ResolvedContext or None
 
+        self._icon_re = QtGui.QIcon(":/icons/lightning-fill-mono.svg")
+        self._icon_rx = QtGui.QIcon(":/icons/file-earmark-code-fill.svg")
+
         # will be called by StackedResolveWidget
         self.callbacks = {
             ":added:": ContextResolveWidget.set_context,
@@ -1452,9 +1455,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
             return
         menu = QtWidgets.QMenu(self)
         for i, c in enumerate(self._stashes):
-            # todo: add icon, should have different icon for .rxt
+            icon = self._icon_rx if c.load_path else self._icon_re
             label = f"{i:02}| {delegates.pretty_timestamp(c.created)}"
-            a = QtWidgets.QAction(label, menu)
+            a = QtWidgets.QAction(icon, label, menu)
             a.triggered.connect(lambda chk=False, x=i: self.stage_to_diff(x))
             menu.addAction(a)
         menu.move(QtGui.QCursor.pos())

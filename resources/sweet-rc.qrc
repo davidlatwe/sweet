@@ -28,12 +28,14 @@
     <file>icons/exclamation-triangle-fill.svg</file>
     <file>icons/exclamation-warn.svg</file>
     <file>icons/file-diff.svg</file>
+    <file>icons/file-earmark-code-fill.svg</file>
     <file>icons/funnel-fill-dim.svg</file>
     <file>icons/funnel-fill.svg</file>
     <file>icons/gear-fill-dim.svg</file>
     <file>icons/gear-fill.svg</file>
     <file>icons/layers-half.svg</file>
     <file>icons/lightning-fill-dim.svg</file>
+    <file>icons/lightning-fill-mono.svg</file>
     <file>icons/lightning-fill.svg</file>
     <file>icons/list-ul.svg</file>
     <file>icons/log-critical.svg</file>
