@@ -875,6 +875,10 @@ class BaseTheme(object):
         
         QStatusBar {{
             font-family: "JetBrains Mono";
+            border: 1px solid {self.palette.border};
+            border-top: none;
+            border-bottom-left-radius: {px(12)};
+            border-bottom-right-radius: {px(12)};
         }}
         
         """
