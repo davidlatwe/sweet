@@ -204,18 +204,18 @@ class SuiteOp(object):
 
         return suite_dict
 
-    def load(self, path, as_import=False):
+    def load(self, path, as_import=False, re_resolve=True):
         """Load existing suite
 
         When loading suite, all contexts requests and .rxt files will be
         resolved and loaded.
 
-        :param path: Location to save current working suite
-        :param as_import: If True, suite could not save over to where it
-            was loaded from.
-        :type path: str
-        :type as_import: bool
-        :return:
+        :param str path: Location to save current working suite
+        :param bool as_import: If True, suite could not save over to where it
+            was loaded from. Default is False.
+        :param bool re_resolve: If True, all loaded contexts (.rxt) will be
+            re-resolved as live contexts. Default is True.
+        :return: None
         """
 
         filepath = os.path.join(path, "suite.yaml")
@@ -234,7 +234,8 @@ class SuiteOp(object):
         self._working_suite = suite
         self._previous_tools = list(self.iter_tools(visible_only=True))
 
-        suite.re_resolve_rxt_contexts()
+        if re_resolve:
+            suite.re_resolve_rxt_contexts()
         suite.load_path = None if as_import else os.path.realpath(path)
 
     def save(self, path):
@@ -516,6 +517,12 @@ class SuiteOp(object):
 
         data = self._suite.contexts[ctx_name]
         return self._ctx_data_to_tuple(data)
+
+    def re_resolve_rxt_contexts(self):
+        """Re-resolve all contexts that loaded from .rxt files
+        :return:
+        """
+        self._suite.re_resolve_rxt_contexts()
 
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria
