@@ -991,7 +991,7 @@ class BaseTheme(object):
 
         #RequestTableBtn:checked,
         #RequestTextBtn:checked {{
-            background-color: {self.palette.secondary.fade};
+            background-color: {self.palette.primary.fade};
         }}
 
         """
@@ -1113,6 +1113,19 @@ class BaseTheme(object):
         #LogUndefinedIcon {{
             image: url(:/icons/log-undefined.svg);
             min-width: {px(26).ceil};
+        }}
+
+        #StashCtxDiffSwitch {{
+            icon: url(:/icons/file-diff.svg);
+        }}
+        #StashCtxDiffSwitch:checked {{
+            background-color: {self.palette.primary.fade};
+        }}
+        #StashCtxPushBtn {{
+            icon: url(:icons/box-arrow-down.svg);
+        }}
+        #StashCtxMenuBtn {{
+            icon: url(:icons/list-ul.svg);
         }}
 
         """

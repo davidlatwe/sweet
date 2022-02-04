@@ -3,6 +3,7 @@ import re
 import json
 import logging
 from io import StringIO
+from datetime import datetime
 from contextlib import contextmanager
 
 from rez.system import system
@@ -806,7 +807,21 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self._callbacks.insert(0, getattr(panel, "callbacks", {}))
         self.run_panel_callback(0, op_name, ctx)
 
-    @QtCore.Slot(str, object)  # noqa
+    @QtCore.Slot(str, ResolvedContext)  # noqa
+    def on_context_stashed(self, name, context):
+        """
+
+        :param name:
+        :param context:
+        :type name: str
+        :type context: ResolvedContext or core.BrokenContext
+        :return:
+        """
+        op_name = ":stashed:"
+        index = self._names.index(name)
+        self.run_panel_callback(index, op_name, context)
+
+    @QtCore.Slot(str, ResolvedContext)  # noqa
     def on_context_resolved(self, name, context):
         """
 
@@ -858,10 +873,14 @@ class NameStackedBase(QtWidgets.QStackedWidget):
 
 class StackedResolveWidget(NameStackedBase):
     env_hovered = QtCore.Signal(str, int)
+    stash_clicked = QtCore.Signal(str)
 
     def create_panel(self):
         panel = ContextResolveWidget()
         panel.env_hovered.connect(self.env_hovered.emit)
+        panel.stash_clicked.connect(
+            lambda: self.stash_clicked.emit(panel.name())
+        )
         return panel
 
 
@@ -1317,6 +1336,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
 class ContextResolveWidget(QtWidgets.QWidget):
     env_hovered = QtCore.Signal(str, int)
+    stash_clicked = QtCore.Signal()
 
     def __init__(self, *args, **kwargs):
         super(ContextResolveWidget, self).__init__(*args, **kwargs)
@@ -1351,16 +1371,48 @@ class ContextResolveWidget(QtWidgets.QWidget):
         tabs.addTab("Log")
         stack.addWidget(log_)
 
+        _diff = QtWidgets.QWidget()
+        _diff.setObjectName("ButtonBelt")
+
+        solve_line = PrettyTimeLineEdit()
+        solve_line.setPlaceholderText("current context resolved date..")
+        solve_push = QtWidgets.QPushButton()
+        solve_push.setObjectName("StashCtxPushBtn")
+
+        stash_line = PrettyTimeLineEdit()
+        stash_line.setPlaceholderText("select resolved context to diff..")
+        stash_menu = QtWidgets.QPushButton()
+        stash_menu.setObjectName("StashCtxMenuBtn")
+        diff_stash = QtWidgets.QPushButton()
+        diff_stash.setObjectName("StashCtxDiffSwitch")
+        diff_stash.setCheckable(True)
+
+        layout = QtWidgets.QGridLayout(_diff)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(solve_push, 0, 1, 1, 1)
+        layout.addWidget(solve_line, 0, 2, 1, 4)
+        layout.addWidget(diff_stash, 1, 0, 1, 1)
+        layout.addWidget(stash_menu, 1, 1, 1, 1)
+        layout.addWidget(stash_line, 1, 2, 1, 4)
+
         _layout = QtWidgets.QVBoxLayout()
         _layout.setSpacing(0)
         _layout.addWidget(tabs)
         _layout.addWidget(stack)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(8, 2, 6, 6)
+        layout.setSpacing(2)
+        layout.addWidget(_diff)
+        layout.addSpacing(8)
         layout.addLayout(_layout)
 
         tabs.currentChanged.connect(stack.setCurrentIndex)
         environ.hovered.connect(self.env_hovered.emit)
+        solve_push.clicked.connect(self._on_stash_solve_clicked)
+        stash_menu.clicked.connect(self._on_stash_menu_clicked)
+        diff_stash.toggled.connect(self._on_diff_toggled)
 
         self._name = None
         self._tabs = tabs
@@ -1372,15 +1424,59 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._code = code
         self._log = log_
 
+        self._solve_line = solve_line
+        self._stash_line = stash_line
+        self._stashes = []  # type: list[ResolvedContext]
+        self._staged = None  # type: ResolvedContext or None
+
         # will be called by StackedResolveWidget
         self.callbacks = {
             ":added:": ContextResolveWidget.set_context,
             ":renamed:": ContextResolveWidget.set_context,
             ":resolved:": ContextResolveWidget.set_resolved,
+            ":stashed:": ContextResolveWidget.stash_context,
         }
+
+    def _on_stash_solve_clicked(self):
+        if self._solve_line.text():
+            self.stash_clicked.emit()
+        else:
+            log.warning("No resolved context to add.")
+
+    def _on_stash_menu_clicked(self):
+        if not self._stashes:
+            log.warning("Context stash is empty.")
+            return
+        menu = QtWidgets.QMenu(self)
+        for i, c in enumerate(self._stashes):
+            label = f"{i:02}| {delegates.pretty_timestamp(c.created)}"
+            a = QtWidgets.QAction(label, menu)
+            a.triggered.connect(lambda chk=False, x=i: self.stage_to_diff(x))
+            menu.addAction(a)
+        menu.move(QtGui.QCursor.pos())
+        menu.show()
+
+    def _on_diff_toggled(self, on):
+        if on:
+            # note: prompt warning if package search path is different
+            pass
+        else:
+            pass
 
     def name(self):
         return self._name
+
+    def stash_context(self, context):
+        if context in self._stashes:
+            log.warning("A very same context already exists in stash.")
+            return
+        self._stashes.insert(0, context)
+        self.stage_to_diff(0)
+
+    def stage_to_diff(self, index):
+        context = self._stashes[index]
+        self._staged = context
+        self._stash_line.set_timestamp(context.created)
 
     def set_context(self, ctx):
         """
@@ -1395,11 +1491,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
 
     def set_resolved(self, context):
         """
-
-        :param context:
-        :type context: ResolvedContext
-        :return:
+        :param ResolvedContext context:
         """
+        self._solve_line.set_timestamp(context.created)
         self._context.model().load(context.to_dict())
 
         if context.success:
@@ -2300,6 +2394,57 @@ class CompleterPopup(QtWidgets.QListView):
         # this seems to be the only way to apply stylesheet to completer
         # popup.
         super(CompleterPopup, self).showEvent(event)
+
+
+class PrettyTimeLineEdit(QtWidgets.QLineEdit):
+    """A LineEdit to display a timestamp as a pretty date.
+
+    This displays dates like `pretty_date`.
+
+    """
+
+    def __init__(self, timestamp: int = None, parent=None):
+        super(PrettyTimeLineEdit, self).__init__(parent)
+        self.setReadOnly(True)
+
+        timer = QtCore.QTimer()
+        timer.timeout.connect(self._on_ticked)
+
+        self._timer = timer
+        self._dt = None
+
+        if timestamp is not None:
+            self.set_timestamp(timestamp)
+
+    def set_timestamp(self, timestamp: int):
+        dt = datetime.fromtimestamp(timestamp)
+        self.setText(delegates.pretty_date(dt))
+        self._dt = dt
+        self._timer.setInterval(1000)  # update every 1 secs for start
+        self._timer.start()
+
+    def _on_ticked(self):
+        now = datetime.now()
+        diff = now - self._dt
+
+        second_diff = diff.seconds
+        day_diff = diff.days
+
+        if day_diff > 0:
+            self._timer.stop()
+            return
+        if day_diff < 0 or second_diff < 10:
+            return  # "just now"
+        if second_diff < 60:
+            pass
+        elif second_diff < 120:
+            self._timer.setInterval(5000)  # change to update every 5 secs
+        elif second_diff < 3600:
+            self._timer.setInterval(30000)  # change to update every 30 secs
+        elif second_diff < 86400:
+            self._timer.setInterval(60000)  # change to update every 60 secs
+
+        self.setText(delegates.pretty_date(self._dt))
 
 
 class HtmlPrinter(colorize.Printer):

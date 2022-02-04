@@ -4,6 +4,7 @@ import inspect
 import traceback
 import functools
 from itertools import groupby
+from rez.resolved_context import ResolvedContext
 from ..core import (
     SuiteOp,
     InstalledPackages,
@@ -121,7 +122,8 @@ class Controller(QtCore.QObject):
     suite_loaded = QtCore.Signal(str, str, str, str)
     suite_viewed = QtCore.Signal(SavedSuite, str)
     context_added = QtCore.Signal(SuiteCtx)
-    context_resolved = QtCore.Signal(str, object)
+    context_stashed = QtCore.Signal(str, ResolvedContext)
+    context_resolved = QtCore.Signal(str, ResolvedContext)
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
@@ -193,6 +195,10 @@ class Controller(QtCore.QObject):
         self._mark_request_edited(name, edited)
 
     @QtCore.Slot(str)  # noqa
+    def on_stash_clicked(self, name):
+        self.stash_context(name)
+
+    @QtCore.Slot(str)  # noqa
     def on_add_context_clicked(self, name):
         self.add_context(name)
 
@@ -246,6 +252,10 @@ class Controller(QtCore.QObject):
         elif name in self._edited:
             self._edited.remove(name)
         self.request_edited.emit(name, edited)
+
+    def stash_context(self, name):
+        context = self._sop.get_context(name)
+        self.context_stashed.emit(name, context)
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def add_context(self, name, context=None):
@@ -364,7 +374,7 @@ class Controller(QtCore.QObject):
         path = self._sto.suite_path(branch, name)
 
         try:
-            self._sop.load(path, as_import)
+            self._sop.load(path, as_import, re_resolve=False)
         except Exception as e:
             # widgets.SuiteInsightWidget already took cared of this with
             # traceback shown in tool view, simply prompt error message
@@ -378,8 +388,14 @@ class Controller(QtCore.QObject):
         description = self._sop.get_description()
         load_path = self._sop.loaded_from() or ""
 
+        # stash saved contexts (.rxt)
         for ctx in self._sop.iter_contexts(ascending=True):
             self.context_added.emit(ctx)
+            self.context_stashed.emit(ctx.name, ctx.context)
+
+        # re-resolve contexts
+        self._sop.re_resolve_rxt_contexts()
+        for ctx in self._sop.iter_contexts(ascending=True):
             self.context_resolved.emit(ctx.name, ctx.context)
 
         self._tools_updated()

@@ -96,6 +96,7 @@ class Session(object):
         suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)
         storage_view.suite_load_clicked.connect(ctrl.on_suite_load_clicked)
         stacked_request.request_edited.connect(ctrl.on_request_edited)
+        stacked_resolve.stash_clicked.connect(ctrl.on_stash_clicked)
         storage_view.suite_selected.connect(ctrl.on_saved_suite_selected)
         storage_view.refresh_clicked.connect(ctrl.on_suite_storage_scan_clicked)
 
@@ -139,6 +140,7 @@ class Session(object):
         ctrl.context_resolved.connect(stacked_request.on_context_resolved)
         ctrl.context_resolved.connect(stacked_resolve.on_context_resolved)
         ctrl.context_resolved.connect(context_list.on_context_resolved)
+        ctrl.context_stashed.connect(stacked_resolve.on_context_stashed)
         ctrl.request_edited.connect(context_list.on_request_edited)
 
         # view -> view
