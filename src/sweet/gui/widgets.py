@@ -1461,8 +1461,13 @@ class ContextResolveWidget(QtWidgets.QWidget):
         menu.show()
 
     def _on_diff_toggled(self, on):
+        if on and self._staged is None:
+            log.warning("No other context to diff with.")
+            self.sender().setChecked(False)
+            return
         if on:
             # note: prompt warning if package search path is different
+            # todo: compare package, environ, context
             pass
         else:
             pass
