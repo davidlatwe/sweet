@@ -1170,6 +1170,9 @@ class RequestEditorWidget(QtWidgets.QWidget):
         text_btn.setObjectName("RequestTextBtn")
         text_btn.setCheckable(True)
 
+        # todo: load/save context
+        # todo: advance request options
+
         stack = QtWidgets.QStackedWidget()
         table_editor = RequestTableEdit()
         text_editor = RequestTextEdit()
@@ -1449,6 +1452,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
             return
         menu = QtWidgets.QMenu(self)
         for i, c in enumerate(self._stashes):
+            # todo: add icon, should have different icon for .rxt
             label = f"{i:02}| {delegates.pretty_timestamp(c.created)}"
             a = QtWidgets.QAction(label, menu)
             a.triggered.connect(lambda chk=False, x=i: self.stage_to_diff(x))
