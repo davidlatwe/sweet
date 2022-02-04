@@ -1454,9 +1454,10 @@ class ContextResolveWidget(QtWidgets.QWidget):
             log.warning("Context stash is empty.")
             return
         menu = QtWidgets.QMenu(self)
+        n = len(self._stashes) - 1
         for i, c in enumerate(self._stashes):
             icon = self._icon_rx if c.load_path else self._icon_re
-            label = f"{i:02}| {delegates.pretty_timestamp(c.created)}"
+            label = f"{n - i:02}| {delegates.pretty_timestamp(c.created)}"
             a = QtWidgets.QAction(icon, label, menu)
             a.triggered.connect(lambda chk=False, x=i: self.stage_to_diff(x))
             menu.addAction(a)
