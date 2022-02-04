@@ -3,10 +3,10 @@ Main business logic, with event notification
 """
 import os
 import sys
-import time
 import warnings
 from typing import List
 from dataclasses import dataclass
+from contextlib import contextmanager
 from collections import MutableMapping
 
 from rez.vendor import yaml
@@ -647,79 +647,28 @@ class SuiteOp(object):
         )
 
 
-class BrokenContext(object):
+class BrokenContext(ResolvedContext):
     """A simple replacement for a failed context
-
-    This should survive through most of the Suite operations but error will
-    raised when trying to add into or save suite.
-
     """
-    def __init__(self, failure_description, package_requests=None):
+    def __init__(self, failure_description, package_requests=None,
+                 *args, **kwargs):
+        _requests = package_requests or []
+        with _BrokenResolver.patch_resolver():
+            super(BrokenContext, self).__init__(_requests, *args, **kwargs)
         self.failure_description = failure_description
-        self.timestamp = int(time.time())
-        self.load_path = None
-
-        self._package_requests = []
-        for req in package_requests or []:
-            if isinstance(req, str):
-                req = PackageRequest(req)
-            self._package_requests.append(req)
-
-    def __str__(self):
-        return f"{self.__class__.__name__}:broken({self.failure_description})"
-
-    @property
-    def success(self):
-        return False
-
-    @property
-    def status(self):
-        return ResolverStatus.failed
-
-    @property
-    def resolved_packages(self):
-        return []
-
-    def requested_packages(self, *_, **__):
-        return self._package_requests
-
-    def get_tools(self, *_, **__):
-        return dict()
-
-    def get_resolved_package(self, *_, **__):
-        return None
-
-    def to_dict(self, fields=None):
-        data = dict(
-            timestamp=self.timestamp,
-            resolved_packages=self.resolved_packages,
-            package_requests=list(map(str, self._package_requests)),
-            status=self.status.name,
-            failure_description=self.failure_description,
-        )
-        if fields:
-            data = dict((k, v) for k, v in data.items() if k in fields)
-        return data
+        self.graph_string = "{}"
 
     def validate(self):
         raise ResolvedContextError(str(self))
 
-    def print_info(self, buf=sys.stdout, *_, **__):
-        from rez.utils.colorize import critical, warning
+    def print_info(self, buf=sys.stdout, *args, **kwargs):
+        from rez.utils.colorize import warning
         from rez.resolved_context import Printer
+        super(BrokenContext, self).print_info(buf, *args, **kwargs)
         # the Printer may gets patched in GUI for writing HTML formatted log
         _pr = Printer(buf)
-        _pr(f"Context is broken: \n{self.failure_description}", critical)
-        if self._package_requests:
-            _req = "\n".join(map(str, self._package_requests))
-            _pr()
-            _pr(f"The requests were: \n{_req}", warning)
-            _pr()
-
-    def _invalid_action(self, *_, **__):
-        raise SuiteError("Invalid action.")
-
-    save = _set_parent_suite = _invalid_action
+        _pr("This is a broken context:", warning)
+        _pr("A context that error out during the resolve.", warning)
 
 
 class Storage(object):
@@ -1218,3 +1167,28 @@ class SweetSuite(_Suite):
     # Exposing protected member that I'd like to use.
     update_tools = Suite._update_tools
     flush_tools = Suite._flush_tools
+
+
+class _BrokenResolver(object):
+
+    def __init__(self, *_, **__):
+        self.status = ResolverStatus.failed
+        self.solve_time = 0.0
+        self.load_time = 0.0
+        self.failure_description = "A broken resolve."
+        self.graph = None
+        self.from_cache = False
+        self.resolved_packages = ()
+        self.resolved_ephemerals = ()
+
+    def solve(self):
+        pass
+
+    @classmethod
+    @contextmanager
+    def patch_resolver(cls):
+        from rez import resolved_context
+        _Resolver = getattr(resolved_context, "Resolver")
+        setattr(resolved_context, "Resolver", cls)
+        yield
+        setattr(resolved_context, "Resolver", _Resolver)
