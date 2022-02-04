@@ -524,6 +524,15 @@ class SuiteOp(object):
         """
         self._suite.re_resolve_rxt_contexts()
 
+    def get_context(self, name):
+        """Get a copy of context in suite
+
+        :param str name: context name
+        :return: A copy of the context
+        :rtype: ResolvedContext
+        """
+        return self._suite.context(name).copy()
+
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria
 
