@@ -180,6 +180,7 @@ class Session(object):
     def on_dark_toggled(self, value):
         self._state.store_dark_mode(value)
         self.apply_theme(dark=value)
+        self._view.on_status_changed(self._view.statusBar().currentMessage())
 
     def on_preference_changed(self, key, value):
         if key == "theme":

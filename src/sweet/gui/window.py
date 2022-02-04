@@ -1,6 +1,6 @@
 
 from ._vendor.Qt5 import QtCore, QtWidgets
-from . import app, pages
+from . import app, pages, resources as res
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -46,6 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         tabs.currentChanged.connect(stack.setCurrentIndex)
         dark_btn.toggled.connect(self.dark_toggled.emit)
+        self.statusBar().messageChanged.connect(self.on_status_changed)
 
         self._body = body
         self._tabs = tabs
@@ -61,6 +62,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         dark_btn.setChecked(state.retrieve_dark_mode())
         tabs.setCurrentIndex(1)  # editor
+
+    def on_status_changed(self, message):
+        theme = res.current_theme()
+        if theme is None:
+            return
+        if message.startswith("WARNING"):
+            color = theme.palette.on_warning
+            bg_cl = theme.palette.warning
+        elif message.startswith("ERROR") or message.startswith("CRITICAL"):
+            color = theme.palette.on_error
+            bg_cl = theme.palette.error
+        else:
+            color = theme.palette.on_background
+            bg_cl = theme.palette.background
+
+        style = f"color: {color}; background-color: {bg_cl};"
+        self.statusBar().setStyleSheet(style)
 
     @QtCore.Slot(str, int)  # noqa
     def spoken(self, message, duration=5000):
