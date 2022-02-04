@@ -932,11 +932,11 @@ class BaseTheme(object):
         #ContextAddOpBtn:hover {{
             icon: url(:/icons/plus-lg.svg);
         }}
-        #ContextRemoveOpBtn {{
-            icon: url(:/icons/trash-fill-dim.svg);
+        #ContextDropOpBtn {{
+            icon: url(:/icons/backspace-dim.svg);
         }}
-        #ContextRemoveOpBtn:hover {{
-            icon: url(:/icons/trash-fill.svg);
+        #ContextDropOpBtn:hover {{
+            icon: url(:/icons/backspace.svg);
         }}
 
         """

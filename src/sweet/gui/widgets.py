@@ -418,8 +418,8 @@ class ContextListWidget(QtWidgets.QWidget):
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
 
-        btn_rm = QtWidgets.QPushButton("Remove")
-        btn_rm.setObjectName("ContextRemoveOpBtn")
+        btn_rm = QtWidgets.QPushButton("Drop")
+        btn_rm.setObjectName("ContextDropOpBtn")
 
         # layout
 

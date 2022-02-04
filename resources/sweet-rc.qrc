@@ -3,6 +3,8 @@
 <qresource>
     <file>icons/arrow-clockwise-on.svg</file>
     <file>icons/arrow-clockwise.svg</file>
+    <file>icons/backspace-dim.svg</file>
+    <file>icons/backspace.svg</file>
     <file>icons/box-arrow-down.svg</file>
     <file>icons/brightness-high-fill.svg</file>
     <file>icons/brightness-low-fill.svg</file>
@@ -59,8 +61,6 @@
     <file>icons/toggle-on-bright.svg</file>
     <file>icons/toggle-on-dim.svg</file>
     <file>icons/toggle-on.svg</file>
-    <file>icons/trash-fill-dim.svg</file>
-    <file>icons/trash-fill.svg</file>
     <file>icons/x.svg</file>
     <file>fonts/opensans/OpenSans-Bold.ttf</file>
     <file>fonts/opensans/OpenSans-Italic.ttf</file>
