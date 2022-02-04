@@ -80,7 +80,7 @@ class JsonModel(qjsonmodel.QJsonModel):
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             if index.column() == 0:
                 if parent.type is list:
-                    return f"#{item.key} [{parent.childCount()}]"
+                    return f"#{item.key:03} [{parent.childCount()}]"
                 return item.key
 
             if index.column() == 1:
