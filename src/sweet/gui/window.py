@@ -32,6 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         dark_btn.setObjectName("DarkSwitch")
         dark_btn.setCheckable(True)
 
+        self.statusBar().setSizeGripEnabled(False)
+
         layout = QtWidgets.QHBoxLayout(buttons)
         layout.setContentsMargins(4, 0, 4, 0)
         layout.addWidget(dark_btn)
