@@ -1462,6 +1462,12 @@ class ContextResolveWidget(QtWidgets.QWidget):
             a = QtWidgets.QAction(icon, label, menu)
             a.triggered.connect(lambda chk=False, x=i: self.stage_to_diff(x))
             menu.addAction(a)
+
+        def on_hide():
+            _btn.style().polish(_btn)  # ensure btn !hover state updated
+        _btn = self.sender()
+
+        menu.aboutToHide.connect(on_hide)
         menu.move(QtGui.QCursor.pos())
         menu.show()
 
