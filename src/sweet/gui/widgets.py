@@ -1517,6 +1517,9 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._context.model().load(context.to_dict())
 
         if context.success:
+            # note: maybe we could set `append_sys_path` to false for a bit
+            #   purer environ view.
+            #   context.append_sys_path = False
             self._packages.model().load(context.resolved_packages)
             self._environ.model().load(context.get_environ())
             self._code.set_shell_code(context.get_shell_code())
