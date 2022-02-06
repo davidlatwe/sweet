@@ -27,6 +27,7 @@ from .models import (
     SuiteStorageModel,
     SuiteToolTreeModel,
     CompleterProxyModel,
+    ContextDataModel,
 )
 
 
@@ -1514,7 +1515,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         :param ResolvedContext context:
         """
         self._solve_line.set_timestamp(context.created)
-        self._context.model().load(context.to_dict())
+        self._context.model().load(context)
 
         if context.success:
             # note: maybe we could set `append_sys_path` to false for a bit
@@ -1740,11 +1741,17 @@ class ResolvedContextView(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedContextView, self).__init__(*args, **kwargs)
 
-        # todo: use proper widget for each (selected) context data entry,
-        #   instead of viewing it as dict without filtering.
-        model = JsonModel()
-        view = JsonView()
+        model = ContextDataModel()
+        view = TreeView()
         view.setModel(model)
+
+        delegate = delegates.OffsetIndentDelegate(view)
+        delegate.set_indent(view.indentation())
+        view.setItemDelegateForColumn(0, delegate)
+
+        header = view.header()
+        header.setSectionResizeMode(0, header.Stretch)
+        header.setSectionResizeMode(0, header.ResizeToContents)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -2355,7 +2362,7 @@ class SuiteContextsView(QtWidgets.QWidget):
 
     def load(self, saved_suite: core.SavedSuite):
         self._contexts.clear()
-        self._view.model().clear()
+        self._view.model().reset()
 
         self._list.blockSignals(True)
         self._list.clear()
@@ -2371,10 +2378,10 @@ class SuiteContextsView(QtWidgets.QWidget):
 
     def _on_context_selected(self, index: int):
         if index < 0:
-            self._view.model().clear()
+            self._view.model().reset()
         else:
             context = self._contexts[index]
-            self._view.model().load(context.to_dict())
+            self._view.model().load(context)
 
 
 class RequestCompleter(QtWidgets.QCompleter):

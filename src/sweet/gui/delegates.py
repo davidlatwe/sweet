@@ -1,7 +1,7 @@
 
 import time
 from datetime import datetime
-from ._vendor.Qt5 import QtCore, QtWidgets
+from ._vendor.Qt5 import QtCore, QtGui, QtWidgets
 
 
 def pretty_date(t, now=None, strftime="%b %d %Y %H:%M"):
@@ -119,3 +119,25 @@ class IconCenterDelegate(QtWidgets.QStyledItemDelegate):
             QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom
         )
         option.decorationPosition = QtWidgets.QStyleOptionViewItem.Top
+
+
+class OffsetIndentDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    https://stackoverflow.com/a/70078448/14054728
+    """
+    def __init__(self, *args, **kwargs):
+        super(OffsetIndentDelegate, self).__init__(*args, **kwargs)
+        self._indent = 0
+
+    def set_indent(self, value):
+        self._indent = value
+
+    def paint(self, painter, option, index):
+        """
+        :type painter: QtGui.QPainter
+        :type option: QtWidgets.QStyleOptionViewItem
+        :type index: QtCore.QModelIndex
+        """
+        if index.parent().isValid():  # index has parent
+            option.rect.adjust(-self._indent, 0, 0, 0)
+        super(OffsetIndentDelegate, self).paint(painter, option, index)
