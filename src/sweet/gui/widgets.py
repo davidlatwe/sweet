@@ -1283,6 +1283,7 @@ class ContextRequestWidget(QtWidgets.QWidget):
         layout.addWidget(suffix, 1, 1)
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(2, 0, 10, 12)
         layout.addWidget(naming)
         layout.addWidget(request)
         layout.addWidget(resolve)
