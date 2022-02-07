@@ -2198,38 +2198,25 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         name.setPlaceholderText("Suite name")
         desc.setPlaceholderText("Suite description")
 
-        error = BadSuiteMessageBox()
-
-        _stack = QtWidgets.QWidget()
-        stack = QtWidgets.QStackedWidget()
-        stack.addWidget(view)
-        stack.addWidget(error)
-        layout = QtWidgets.QVBoxLayout(_stack)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(stack)
-
         contexts = SuiteContextsView()
+        error = BadSuiteMessageBox()
+        suite = QtWidgets.QStackedWidget()
+        suite.addWidget(view)
+        suite.addWidget(error)
 
-        _tabs = QtWidgets.QWidget()
-        tabs = QtWidgets.QTabBar()
-        tabs_stack = QtWidgets.QStackedWidget()
-        tabs_stack.setObjectName("TabStackWidgetLeft")
-        tabs.addTab("Overview")
-        tabs_stack.addWidget(_stack)
-        tabs.addTab("Contexts")
-        tabs_stack.addWidget(contexts)
-        tabs.setShape(tabs.RoundedWest)
-        tabs.setDocumentMode(True)
-        layout = QtWidgets.QHBoxLayout(_tabs)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(tabs, alignment=QtCore.Qt.AlignTop)
-        layout.addWidget(tabs_stack, stretch=True)
+        overview = QtWidgets.QSplitter()
+        overview.addWidget(suite)
+        overview.addWidget(contexts)
+        overview.setOrientation(QtCore.Qt.Horizontal)
+        overview.setChildrenCollapsible(False)
+        overview.setContentsMargins(0, 0, 0, 0)
+        overview.setStretchFactor(0, 4)
+        overview.setStretchFactor(1, 6)
 
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)
         splitter.addWidget(desc)
-        splitter.addWidget(_tabs)
+        splitter.addWidget(overview)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
 
@@ -2238,14 +2225,11 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         layout.addWidget(name)
         layout.addWidget(splitter)
 
-        tabs.currentChanged.connect(tabs_stack.setCurrentIndex)
-
         self._name = name
         self._desc = desc
-        self._stack = stack
+        self._suite = suite
         self._error = error
         self._ctxs = contexts
-        self._tabs = tabs
         self._view = view
         self._model = model
 
@@ -2269,7 +2253,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         is_branch = saved_suite.name == saved_suite.branch == ""
         self._name.setText(saved_suite.name)
         self._desc.setPlainText(saved_suite.description)
-        self._stack.setCurrentIndex(0)
+        self._suite.setCurrentIndex(0)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
         self._view.setRootIndex(item.index())
@@ -2277,8 +2261,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         if added and not is_branch:
             if error_message:
                 self._model.set_bad_suite(item, error_message)
-                self._tabs.setCurrentIndex(0)
-                self._stack.setCurrentIndex(1)
+                self._suite.setCurrentIndex(1)
                 self._error.set_message(error_message)
             else:
                 suite_tools = list(saved_suite.iter_saved_tools())
@@ -2286,8 +2269,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         else:
             error = self._model.is_bad_suite(item)
             if error:
-                self._tabs.setCurrentIndex(0)
-                self._stack.setCurrentIndex(1)
+                self._suite.setCurrentIndex(1)
                 self._error.set_message(error)
 
         self._ctxs.load(saved_suite)
@@ -2327,32 +2309,15 @@ class SuiteContextsView(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(SuiteContextsView, self).__init__(*args, **kwargs)
 
-        ctx_list = ContextList()
+        ctx_list = QtWidgets.QComboBox()
         ctx_view = ResolvedContextView()
-
-        _ctx_list = QtWidgets.QWidget()
-        _label = QtWidgets.QLabel("Context Stack")
-        layout = QtWidgets.QVBoxLayout(_ctx_list)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
-        layout.addWidget(_label)
-        layout.addWidget(ctx_list)
-
-        splitter = QtWidgets.QSplitter()
-        splitter.addWidget(_ctx_list)
-        splitter.addWidget(ctx_view)
-
-        splitter.setOrientation(QtCore.Qt.Horizontal)
-        splitter.setChildrenCollapsible(False)
-        splitter.setContentsMargins(0, 0, 0, 0)
-        splitter.setStretchFactor(0, 30)
-        splitter.setStretchFactor(1, 70)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(splitter)
+        layout.addWidget(ctx_list)
+        layout.addWidget(ctx_view)
 
-        ctx_list.currentRowChanged.connect(self._on_context_selected)
+        ctx_list.currentIndexChanged.connect(self._on_context_selected)
 
         self._list = ctx_list
         self._view = ctx_view
@@ -2369,14 +2334,14 @@ class SuiteContextsView(QtWidgets.QWidget):
         self._list.blockSignals(False)
 
         for name, context in saved_suite.iter_contexts():
-            item = QtWidgets.QListWidgetItem(name)
-            item.setIcon(self._icon_ctx)
-            self._list.addItem(item)
+            icon = self._icon_ctx if context.success else self._icon_ctx_f
+            self._list.addItem(icon, name)
             self._contexts.append(context)
 
-        self._list.setCurrentRow(0)
+        self._on_context_selected(0)
 
     def _on_context_selected(self, index: int):
+        index = index if len(self._contexts) else -1
         if index < 0:
             self._view.model().reset()
         else:
