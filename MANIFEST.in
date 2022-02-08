@@ -1,3 +1,7 @@
 
 global-include *LICENSE* *.txt *.md *.rst
+recursive-include src/sweet/gui/resources/icons *.svg
+recursive-include src/sweet/gui/resources/fonts *.ttf
+include src/sweet/gui/resources/*.qrc
+include src/sweet/gui/resources/*.py
 include pyproject.toml
