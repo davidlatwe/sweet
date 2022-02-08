@@ -1235,12 +1235,16 @@ def compile_qrc(timestamp):
     }
     for binding, rcc_exec in _execs.items():
         rcc_exec += ".exe" if sys.platform == "win32" else ""
+        if shutil.which(rcc_exec):
+            break
         rcc_exec = _bin_dir / rcc_exec
         if os.access(rcc_exec, os.X_OK):
             break
     else:
-        raise Exception("Resource compiler not found.")
-
+        raise Exception(
+            f"No resource compiler ({' or '.join(_execs.values())}) "
+            f"found in $PATH, also searched in Python bin dir: {_bin_dir}"
+        )
     # go to work
     os.chdir(resources)
 
