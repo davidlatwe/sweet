@@ -1,5 +1,5 @@
 
-from ._vendor.Qt5 import QtCore, QtWidgets
+from ._vendor.Qt5 import QtCore, QtGui, QtWidgets
 from . import app, pages, resources as res
 
 
@@ -12,6 +12,8 @@ class MainWindow(QtWidgets.QMainWindow):
         :type state: app.State
         """
         super(MainWindow, self).__init__(flags=QtCore.Qt.Window)
+        self.setWindowTitle("Sweet")  # todo: add version num
+        self.setWindowIcon(QtGui.QIcon(":/icons/rez_logo.svg"))
 
         body = QtWidgets.QWidget()
 
