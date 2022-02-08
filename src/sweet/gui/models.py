@@ -405,6 +405,64 @@ class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
         return super(ContextToolTreeSortProxyModel, self).sort(column, order)
 
 
+class SuiteToolTreeModel(ToolTreeModel):
+    BadSuiteRole = QtCore.Qt.UserRole + 30
+
+    def set_bad_suite(self, item, error):
+        item.setData(error, self.BadSuiteRole)
+
+    def is_bad_suite(self, item):
+        return item.data(self.BadSuiteRole)
+
+    def suite_key(self, saved_suite):
+        return f"{saved_suite.branch}/{saved_suite.name}"
+
+    def find_suite(self, saved_suite):
+        """
+        :param saved_suite:
+        :type saved_suite: SavedSuite
+        :return: index of suite item if suite exists in model
+        :rtype: QtGui.QStandardItem or None
+        """
+        key = self.suite_key(saved_suite)
+        return self._root_items.get(key)
+
+    def add_suite(self, saved_suite):
+        """
+        :param saved_suite:
+        :type saved_suite: SavedSuite
+        :return: True if added or False if suite already exists in model
+        :rtype: bool
+        """
+        key = self.suite_key(saved_suite)
+        exists = key in self._root_items
+
+        if exists:
+            return False
+        else:
+            root_item = QtGui.QStandardItem(saved_suite.name)
+            self.appendRow(root_item)
+            self._root_items[key] = root_item
+
+            c = root_item
+            # for keeping header visible after view resets it's rootIndex.
+            c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
+            c.removeRow(0)
+
+            return True
+
+    def update_suite_tools(self, tools, saved_suite):
+        """Update tools for a suite
+        :param tools:
+        :param saved_suite:
+        :type tools: list[SuiteTool]
+        :type saved_suite: SavedSuite
+        :return:
+        """
+        suite = self.suite_key(saved_suite)
+        self.update_tools(tools, suite)
+
+
 class ResolvedPackagesModel(BaseItemModel):
     Headers = [
         "Name",
@@ -729,64 +787,6 @@ class SuiteStorageModel(BaseItemModel):
             return
 
         suite_item.setData(True, self.ViewedRole)
-
-
-class SuiteToolTreeModel(ToolTreeModel):
-    BadSuiteRole = QtCore.Qt.UserRole + 30
-
-    def set_bad_suite(self, item, error):
-        item.setData(error, self.BadSuiteRole)
-
-    def is_bad_suite(self, item):
-        return item.data(self.BadSuiteRole)
-
-    def suite_key(self, saved_suite):
-        return f"{saved_suite.branch}/{saved_suite.name}"
-
-    def find_suite(self, saved_suite):
-        """
-        :param saved_suite:
-        :type saved_suite: SavedSuite
-        :return: index of suite item if suite exists in model
-        :rtype: QtGui.QStandardItem or None
-        """
-        key = self.suite_key(saved_suite)
-        return self._root_items.get(key)
-
-    def add_suite(self, saved_suite):
-        """
-        :param saved_suite:
-        :type saved_suite: SavedSuite
-        :return: True if added or False if suite already exists in model
-        :rtype: bool
-        """
-        key = self.suite_key(saved_suite)
-        exists = key in self._root_items
-
-        if exists:
-            return False
-        else:
-            root_item = QtGui.QStandardItem(saved_suite.name)
-            self.appendRow(root_item)
-            self._root_items[key] = root_item
-
-            c = root_item
-            # for keeping header visible after view resets it's rootIndex.
-            c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
-            c.removeRow(0)
-
-            return True
-
-    def update_suite_tools(self, tools, saved_suite):
-        """Update tools for a suite
-        :param tools:
-        :param saved_suite:
-        :type tools: list[SuiteTool]
-        :type saved_suite: SavedSuite
-        :return:
-        """
-        suite = self.suite_key(saved_suite)
-        self.update_tools(tools, suite)
 
 
 class CompleterProxyModel(QtCore.QSortFilterProxyModel):
