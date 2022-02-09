@@ -1180,8 +1180,21 @@ class SweetSuite(_Suite):
             if context.load_path:
                 self.update_context(name, re_resolve_rxt(context))
 
+    def _update_tools(self):
+        try:
+            super(SweetSuite, self)._update_tools()
+        except ResolvedContextError as e:
+            for data in self.contexts.values():
+                context = data.get("context")
+                if context is None:
+                    continue  # possibly not yet loaded
+                if not context.success and context.failure_description:
+                    raise ResolvedContextError(context.failure_description)
+            else:
+                raise e
+
     # Exposing protected member that I'd like to use.
-    update_tools = Suite._update_tools
+    update_tools = _update_tools
     flush_tools = Suite._flush_tools
 
 
