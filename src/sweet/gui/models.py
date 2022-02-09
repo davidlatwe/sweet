@@ -514,6 +514,14 @@ class ResolvedPackagesModel(BaseItemModel):
 
 class ResolvedEnvironmentModel(JsonModel):
 
+    def __init__(self, parent=None):
+        super(ResolvedEnvironmentModel, self).__init__(parent)
+        self._headers = ("Key", "Value", "From")
+        self._inspected = dict()
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 3
+
     def load(self, data):
         # Convert PATH-like environment variables to lists
         # for improved viewing experience
@@ -523,6 +531,37 @@ class ResolvedEnvironmentModel(JsonModel):
             data[key] = value
 
         super(ResolvedEnvironmentModel, self).load(data)
+
+    def note(self, inspection):
+        """
+        :param inspection:
+        :type inspection: list[tuple[Variant or str or None, str, str]]
+        """
+        for scope, key, value in inspection:
+            self._inspected[f"{key}/{value}"] = scope
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return None
+
+        item = index.internalPointer()
+        parent = item.parent()
+
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() == 2:
+                if parent.type is list:
+                    _id = f"{parent.key}/{item.value}"
+                else:
+                    _id = f"{item.key}/{item.value}"
+                scope = self._inspected.get(_id)
+
+                if isinstance(scope, Variant):
+                    return scope.qualified_name
+                elif isinstance(scope, str):
+                    return f"({scope})"
+                return None
+
+        return super(ResolvedEnvironmentModel, self).data(index, role)
 
     def flags(self, index):
         """

@@ -1523,6 +1523,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
             #   context.append_sys_path = False
             self._packages.model().load(context.resolved_packages)
             self._environ.model().load(context.get_environ())
+            self._environ.model().note(lib.ContextEnvInspector.inspect(context))
             self._code.set_shell_code(context.get_shell_code())
         else:
             self._packages.model().reset()
