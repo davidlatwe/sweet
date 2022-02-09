@@ -1701,16 +1701,26 @@ class ResolvedEnvironment(QtWidgets.QWidget):
         if not index.isValid():
             return
         index = self._proxy.mapToSource(index)
-        if index.column() == 0:
+        column = index.column()
+
+        if column == 0:
             self.hovered.emit("", 0)  # clear
-        elif index.column() == 1:
+
+        elif column > 0:
             parent = index.parent()
             if parent.isValid():
                 key = self._model.index(parent.row(), 0).data()
             else:
                 key = self._model.index(index.row(), 0).data()
-            value = index.data()
-            self.hovered.emit(f"{key} | {value}", 0)
+
+            if column == 1:
+                value = index.data()
+                scope = self._model.index(index.row(), 2).data()
+            else:
+                value = self._model.index(index.row(), 1).data()
+                scope = index.data()
+
+            self.hovered.emit(f"{key} | {value} <- {scope}", 0)
 
     def _on_searched(self, _):
         self._timer.start(400)
