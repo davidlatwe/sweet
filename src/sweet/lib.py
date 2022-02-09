@@ -36,7 +36,7 @@ class ContextEnvInspector(ActionInterpreter):
     By parsing rex commenting actions, trace which environ key-value
     was set/append/prepend by which package or by rez.
 
-    Example:
+    Example 1:
         >>> from rez.resolved_context import ResolvedContext
         >>>
         >>> context = ResolvedContext(["maya-2020", "python"])
@@ -45,6 +45,13 @@ class ContextEnvInspector(ActionInterpreter):
         >>> context._execute(executor)
         >>> executor.get_output()
         profit!!
+
+    Example 2:
+        >>> from rez.resolved_context import ResolvedContext
+        >>>
+        >>> context = ResolvedContext(["maya-2020", "python"])
+        >>> ContextEnvInspector.inspect(context)
+        easy profit!!!
 
     """
     expand_env_vars = True
