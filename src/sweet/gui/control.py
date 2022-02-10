@@ -424,6 +424,8 @@ class Controller(QtCore.QObject):
     def _reset_suite(self):
         self._sop.reset()
         self._dirty = False
+        self._edited = set()
+        self._failed = set()
         self.suite_newed.emit()
 
     def _about_to_new(self, parent):
