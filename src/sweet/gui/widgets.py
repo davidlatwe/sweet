@@ -2236,6 +2236,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         layout.addWidget(name)
         layout.addWidget(splitter)
 
+        view.clicked.connect(self._on_item_activated)
+
         self._name = name
         self._desc = desc
         self._suite = suite
@@ -2268,7 +2270,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._suite.setCurrentIndex(0)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
-        self._view.setRootIndex(self._proxy.mapFromSource(item.index()))
+        index = self._proxy.mapFromSource(item.index())
+        self._view.setRootIndex(index)
 
         if added and not is_branch:
             if error_message:
@@ -2277,6 +2280,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._error.set_message(error_message)
             else:
                 self._model.update_suite_tools(saved_suite)
+                self._view.expandRecursively(index)
         else:
             error = self._model.is_bad_suite(item)
             if error:
@@ -2284,6 +2288,12 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._error.set_message(error)
 
         self._ctxs.load(saved_suite)
+
+    def _on_item_activated(self, index):
+        index = self._proxy.mapToSource(index)
+        priority = self._model.data(index, self._model.ContextSortRole)
+        if priority is not None:
+            self._ctxs.on_context_selected(priority)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
@@ -2319,44 +2329,28 @@ class SuiteContextsView(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(SuiteContextsView, self).__init__(*args, **kwargs)
-
-        ctx_list = QtWidgets.QComboBox()
         ctx_view = ResolvedContextView()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(ctx_list)
         layout.addWidget(ctx_view)
 
-        ctx_list.currentIndexChanged.connect(self._on_context_selected)
-
-        self._list = ctx_list
         self._view = ctx_view
-        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
-        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
-        self._contexts = []
+        self._contexts = dict()
 
     def load(self, saved_suite: core.SavedSuite):
         self._contexts.clear()
         self._view.model().reset()
 
-        self._list.blockSignals(True)
-        self._list.clear()
-        self._list.blockSignals(False)
-
         for ctx in saved_suite.iter_contexts():
-            icon = self._icon_ctx if ctx.context.success else self._icon_ctx_f
-            self._list.addItem(icon, ctx.name)
-            self._contexts.append(ctx.context)
+            self._contexts[ctx.priority] = ctx.context
 
-        self._on_context_selected(0)
-
-    def _on_context_selected(self, index: int):
-        index = index if len(self._contexts) else -1
-        if index < 0:
+    def on_context_selected(self, priority: int):
+        priority = priority if len(self._contexts) else -1
+        if priority < 0:
             self._view.model().reset()
         else:
-            context = self._contexts[index]
+            context = self._contexts[priority]
             self._view.model().load(context)
 
 

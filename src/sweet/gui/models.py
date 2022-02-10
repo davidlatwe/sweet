@@ -532,8 +532,9 @@ class SuiteCtxToolTreeModel(ToolTreeModel):
         self._suite_namespace = key
 
         for ctx in saved_suite.iter_contexts():
+            icon = self._icon_ctx if ctx.context.success else self._icon_ctx_f
             c = QtGui.QStandardItem(ctx.name)
-            c.setIcon(self._icon_ctx)
+            c.setIcon(icon)
             c.setData(ctx.priority, self.ContextSortRole)
             suite_item.appendRow(c)
             self.add_context_item(ctx.name, c)
