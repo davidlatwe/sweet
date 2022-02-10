@@ -160,6 +160,7 @@ class ToolTreeModel(BaseItemModel):
 
     ToolNameRole = QtCore.Qt.UserRole + 10
     ToolEditRole = QtCore.Qt.UserRole + 11
+    ToolItemRole = QtCore.Qt.UserRole + 12
 
     Headers = [
         "Name",  # context name and tool alias
@@ -181,65 +182,80 @@ class ToolTreeModel(BaseItemModel):
             Constants.TOOL_SHADOWED: "Has naming conflict, can't be accessed.",
             Constants.TOOL_MISSING: "Missing from last resolve.",
         }
-        self._root_items = dict()
+        self._ctx_items = dict()
         self._editable = editable
 
     def reset(self):
-        self._root_items.clear()
+        self._ctx_items.clear()
         super(ToolTreeModel, self).reset()
 
-    def find_root_index(self, name):
+    def get_context_item(self, name):
         """
-        :param name:
-        :type name: str
-        :return:
-        :rtype: QtCore.QModelIndex
+        :param str name:
+        :rtype: QtGui.QStandardItem or None
         """
-        if name in self._root_items:
-            return self._root_items[name].index()
+        return self._ctx_items.get(name)
 
-    def update_tools(self, tools, suite=None):
-        """Update tools for contexts or a suite
+    def add_context_item(self, name, item):
+        """
+        :param str name:
+        :param QtGui.QStandardItem item:
+        :rtype: None
+        """
+        if name in self._ctx_items:
+            log.critical(f"Context item {name!r} already exists in model.")
+        self._ctx_items[name] = item
 
-        When `suite` is given, all tools in this batch goes into the root
-        item of that suite. Or goes to each context root item.
+    def pop_context_item(self, name):
+        """
+        :param str name:
+        :rtype: QtGui.QStandardItem or None
+        """
+        return self._ctx_items.pop(name, None)
 
-        :param tools:
-        :param suite: suite name, if this model is for storing suite tools.
-        :type tools: list[SuiteTool]
-        :type suite: str or None
-        :return:
+    def iter_context_items(self):
+        return self._ctx_items.values()
+
+    def update_tools(self, tools):
+        """Update tools of one suite
+        :param list[SuiteTool] tools:
         """
         indicator = _LocationIndicator()
-        missing_ctx = self.MissingToolsHolder
+        missing_grp = self.MissingToolsHolder
 
-        if not suite:
-            if any(t.status == Constants.TOOL_MISSING for t in tools):
-                if missing_ctx not in self._root_items:
-                    _item = QtGui.QStandardItem(missing_ctx)
-                    self._root_items[missing_ctx] = _item
-                    self.appendRow(_item)
-            else:
-                if missing_ctx in self._root_items:
-                    _item = self._root_items.pop(missing_ctx)
-                    self.removeRow(_item.row())
+        # if any tool missing, ensure the group for them exists, or
+        # if no tool missing, ensure the group is removed
+        if any(t.status == Constants.TOOL_MISSING for t in tools):
+            _item = self.get_context_item(missing_grp)
+            if _item is None:
+                _item = QtGui.QStandardItem(missing_grp)
+                self.add_context_item(missing_grp, _item)
+                self.appendRow(_item)
+        else:
+            _item = self.pop_context_item(missing_grp)
+            if _item is not None:
+                self.removeRow(_item.row())
 
-        for root_name, root_item in self._root_items.items():
-            if suite and suite != root_name:
-                continue
-            root_item.removeRows(0, root_item.rowCount())
+        # clear out previous tools from all contexts in current suite
+        for ctx_item in self.iter_context_items():
+            ctx_item.removeRows(0, ctx_item.rowCount())
 
+        # add new tools
         for tool in sorted(tools, key=lambda t: t.name):
             is_hidden = tool.status == Constants.TOOL_HIDDEN
             is_missing = tool.status == Constants.TOOL_MISSING
 
-            _missing = missing_ctx if is_missing else None
-            root_name = suite or _missing or tool.ctx_name
-            root_item = self._root_items[root_name]
+            _name = missing_grp if is_missing else tool.ctx_name
+            ctx_item = self.get_context_item(_name)
+            if ctx_item is None:
+                log.critical(f"Context item {_name!r} not exists, {tool.alias} "
+                             "not added.")
+                continue
 
             name_item = QtGui.QStandardItem(tool.alias)
             name_item.setIcon(self._status_icon[tool.status])
             name_item.setToolTip(self._status_tip[tool.status])
+            name_item.setData(tool, self.ToolItemRole)
             name_item.setData(tool.name, self.ToolNameRole)
             name_item.setData(not is_missing, self.ToolEditRole)
             if not is_missing and self._editable:
@@ -252,7 +268,7 @@ class ToolTreeModel(BaseItemModel):
             pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
             pkg_item.setIcon(loc_icon)
 
-            root_item.appendRow([name_item, pkg_item])
+            ctx_item.appendRow([name_item, pkg_item])
 
     def flags(self, index):
         """
@@ -265,10 +281,10 @@ class ToolTreeModel(BaseItemModel):
         if not index.isValid():
             return
 
-        is_context = index.parent() == self.invisibleRootItem().index()
+        is_tool = bool(index.data(self.ToolItemRole))
         base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
-        if self._editable and index.column() == 0 and not is_context:
+        if self._editable and index.column() == 0 and is_tool:
             if self.data(index, self.ToolEditRole):
                 return (
                     base_flags
@@ -294,8 +310,8 @@ class ToolTreeModel(BaseItemModel):
             return False
 
         if role == QtCore.Qt.CheckStateRole:
-            is_context = index.parent() == self.invisibleRootItem().index()
-            if index.column() == 0 and not is_context:
+            is_tool = bool(index.data(self.ToolItemRole))
+            if index.column() == 0 and is_tool:
                 ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
                 tool_name = self.data(index, self.ToolNameRole)
                 item = self.itemFromIndex(index)
@@ -305,8 +321,8 @@ class ToolTreeModel(BaseItemModel):
                 return True
 
         if role == QtCore.Qt.EditRole:
-            is_context = index.parent() == self.invisibleRootItem().index()
-            if index.column() == 0 and not is_context:
+            is_tool = bool(index.data(self.ToolItemRole))
+            if index.column() == 0 and is_tool:
                 if value:
                     ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
                     tool_name = self.data(index, self.ToolNameRole)
@@ -329,8 +345,11 @@ class ContextToolTreeModel(ToolTreeModel):
 
     def on_context_resolved(self, name, context):
         icon = self._icon_ctx if context.success else self._icon_ctx_f
-        item = self._root_items[name]
-        item.setIcon(icon)
+        item = self.get_context_item(name)
+        if item is None:
+            log.critical(f"Context item {name!r} not exists.")
+        else:
+            item.setIcon(icon)
 
     def on_context_added(self, ctx):
         """
@@ -339,11 +358,16 @@ class ContextToolTreeModel(ToolTreeModel):
         :type ctx: SuiteCtx
         :return:
         """
-        c = QtGui.QStandardItem(ctx.name)
-        c.setIcon(self._icon_ctx)
-        c.setData(ctx.priority, self.ContextSortRole)
-        self.appendRow(c)
-        self._root_items[ctx.name] = c
+        c = self.get_context_item(ctx.name)
+        if c is None:
+            c = QtGui.QStandardItem(ctx.name)
+            c.setIcon(self._icon_ctx)
+            c.setData(ctx.priority, self.ContextSortRole)
+            self.appendRow(c)
+            self.add_context_item(ctx.name, c)
+        else:
+            # shouldn't happen
+            log.critical(f"Context {ctx.name} already exists in model.")
 
         # for keeping header visible after view resets it's rootIndex.
         c.appendRow([QtGui.QStandardItem() for _ in self.Headers])
@@ -352,33 +376,45 @@ class ContextToolTreeModel(ToolTreeModel):
         self.require_expanded.emit([c.index()])
 
     def on_context_renamed(self, name, new_name):
-        item = self._root_items.pop(name)
-        item.setText(new_name)
-        self._root_items[new_name] = item
+        item = self.pop_context_item(name)
+        if item is None:
+            log.critical(f"Context item {name!r} not exists.")
+        else:
+            item.setText(new_name)
+            self.add_context_item(new_name, item)
 
     def on_context_dropped(self, name):
-        item = self._root_items.pop(name)
-        self.removeRow(item.row())
+        item = self.pop_context_item(name)
+        if item is not None:
+            self.removeRow(item.row())
 
     def on_context_reordered(self, new_order):
         for priority, name in enumerate(reversed(new_order)):
-            c = self._root_items[name]
-            c.setData(priority, self.ContextSortRole)
+            c = self.get_context_item(name)
+            if c is None:
+                log.critical(f"Context item {name!r} not exists.")
+            else:
+                c.setData(priority, self.ContextSortRole)
 
     def on_request_edited(self, name, edited):
-        font = QtGui.QFont()
-        font.setBold(edited)
-        item = self._root_items[name]
-        item.setFont(font)
+        item = self.get_context_item(name)
+        if item is None:
+            log.critical(f"Context item {name!r} not exists.")
+        else:
+            font = QtGui.QFont()
+            font.setBold(edited)
+            item.setFont(font)
 
     def on_suite_newed(self):
         self.reset()
 
-    def update_tools(self, tools, *_, **__):
-        super(ContextToolTreeModel, self).update_tools(tools, suite=None)
-        index = self.find_root_index(self.MissingToolsHolder)
-        if index is not None:
-            self.setData(index, value=-1, role=self.ContextSortRole)
+    def update_tools(self, tools):
+        super(ContextToolTreeModel, self).update_tools(tools)
+        item = self.get_context_item(self.MissingToolsHolder)
+        if item is not None:
+            index = item.index()
+            # stay on top (with a number that's bigger than all others)
+            self.setData(index, value=float("inf"), role=self.ContextSortRole)
             self.require_expanded.emit([index])
 
 
@@ -405,8 +441,20 @@ class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
         return super(ContextToolTreeSortProxyModel, self).sort(column, order)
 
 
-class SuiteToolTreeModel(ToolTreeModel):
+class SuiteCtxToolTreeModel(ToolTreeModel):
     BadSuiteRole = QtCore.Qt.UserRole + 30
+    ContextSortRole = QtCore.Qt.UserRole + 20
+
+    def __init__(self, editable=True, *args, **kwargs):
+        super(SuiteCtxToolTreeModel, self).__init__(editable, *args, **kwargs)
+        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
+        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
+        self._suite_items = dict()
+        self._suite_namespace = ""
+
+    def reset(self):
+        self._suite_items.clear()
+        super(SuiteCtxToolTreeModel, self).reset()
 
     def set_bad_suite(self, item, error):
         item.setData(error, self.BadSuiteRole)
@@ -425,7 +473,7 @@ class SuiteToolTreeModel(ToolTreeModel):
         :rtype: QtGui.QStandardItem or None
         """
         key = self.suite_key(saved_suite)
-        return self._root_items.get(key)
+        return self._suite_items.get(key)
 
     def add_suite(self, saved_suite):
         """
@@ -435,14 +483,14 @@ class SuiteToolTreeModel(ToolTreeModel):
         :rtype: bool
         """
         key = self.suite_key(saved_suite)
-        exists = key in self._root_items
+        exists = key in self._suite_items
 
         if exists:
             return False
         else:
             root_item = QtGui.QStandardItem(saved_suite.name)
             self.appendRow(root_item)
-            self._root_items[key] = root_item
+            self._suite_items[key] = root_item
 
             c = root_item
             # for keeping header visible after view resets it's rootIndex.
@@ -451,16 +499,48 @@ class SuiteToolTreeModel(ToolTreeModel):
 
             return True
 
-    def update_suite_tools(self, tools, saved_suite):
+    def get_context_item(self, name):
+        """
+        :param str name:
+        :rtype: QtGui.QStandardItem or None
+        """
+        name = f"{self._suite_namespace}/{name}"
+        return super(SuiteCtxToolTreeModel, self).get_context_item(name)
+
+    def add_context_item(self, name, item):
+        """
+        :param str name:
+        :param QtGui.QStandardItem item:
+        :rtype: None
+        """
+        name = f"{self._suite_namespace}/{name}"
+        super(SuiteCtxToolTreeModel, self).add_context_item(name, item)
+
+    def iter_context_items(self):
+        for ctx_name, ctx_item in self._ctx_items.items():
+            if ctx_name.startswith(self._suite_namespace + "/"):
+                yield ctx_item
+
+    def update_suite_tools(self, saved_suite):
         """Update tools for a suite
-        :param tools:
         :param saved_suite:
-        :type tools: list[SuiteTool]
         :type saved_suite: SavedSuite
         :return:
         """
-        suite = self.suite_key(saved_suite)
-        self.update_tools(tools, suite)
+        suite_item = self.find_suite(saved_suite)
+        key = self.suite_key(saved_suite)
+        self._suite_namespace = key
+
+        for ctx in saved_suite.iter_contexts():
+            c = QtGui.QStandardItem(ctx.name)
+            c.setIcon(self._icon_ctx)
+            c.setData(ctx.priority, self.ContextSortRole)
+            suite_item.appendRow(c)
+            self.add_context_item(ctx.name, c)
+
+        tools = list(saved_suite.iter_saved_tools())
+        self.update_tools(tools)
+        self._suite_namespace = ""
 
 
 class ResolvedPackagesModel(BaseItemModel):

@@ -25,7 +25,7 @@ from .models import (
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
     SuiteStorageModel,
-    SuiteToolTreeModel,
+    SuiteCtxToolTreeModel,
     CompleterProxyModel,
     ContextDataModel,
 )
@@ -1566,12 +1566,12 @@ class ResolvedTools(QtWidgets.QWidget):
 
     def set_name(self, ctx_name):
         if ctx_name and not self._view_fixed:
-            index = self._model.find_root_index(ctx_name)
-            if index is None:
+            item = self._model.get_context_item(ctx_name)
+            if item is None:
                 log.critical("Unable to find context item index from model.")
                 # should not happen.
             else:
-                self._view.setRootIndex(index)
+                self._view.setRootIndex(item.index())
                 self._view_fixed = True
 
 
@@ -2196,12 +2196,12 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         name = QtWidgets.QLineEdit()
         desc = QtWidgets.QTextEdit()
         view = ToolsView()
-        model = SuiteToolTreeModel(editable=False)
+        model = SuiteCtxToolTreeModel(editable=False)
+        proxy = ContextToolTreeSortProxyModel()
         header = view.header()
 
-        # todo: tools are not ordered by contexts
-
-        view.setModel(model)
+        proxy.setSourceModel(model)
+        view.setModel(proxy)
         header.setSectionResizeMode(0, header.ResizeToContents)
         desc.setReadOnly(True)
         name.setReadOnly(True)
@@ -2242,6 +2242,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._error = error
         self._ctxs = contexts
         self._view = view
+        self._proxy = proxy
         self._model = model
 
     @QtCore.Slot()  # noqa
@@ -2267,7 +2268,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._suite.setCurrentIndex(0)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
-        self._view.setRootIndex(item.index())
+        self._view.setRootIndex(self._proxy.mapFromSource(item.index()))
 
         if added and not is_branch:
             if error_message:
@@ -2275,8 +2276,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._suite.setCurrentIndex(1)
                 self._error.set_message(error_message)
             else:
-                suite_tools = list(saved_suite.iter_saved_tools())
-                self._model.update_suite_tools(suite_tools, saved_suite)
+                self._model.update_suite_tools(saved_suite)
         else:
             error = self._model.is_bad_suite(item)
             if error:
@@ -2344,10 +2344,10 @@ class SuiteContextsView(QtWidgets.QWidget):
         self._list.clear()
         self._list.blockSignals(False)
 
-        for name, context in saved_suite.iter_contexts():
-            icon = self._icon_ctx if context.success else self._icon_ctx_f
-            self._list.addItem(icon, name)
-            self._contexts.append(context)
+        for ctx in saved_suite.iter_contexts():
+            icon = self._icon_ctx if ctx.context.success else self._icon_ctx_f
+            self._list.addItem(icon, ctx.name)
+            self._contexts.append(ctx.context)
 
         self._on_context_selected(0)
 
