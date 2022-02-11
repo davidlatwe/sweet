@@ -36,6 +36,7 @@ from .exceptions import (
 
 
 sweetconfig = rezconfig.plugins.command.sweet
+# todo: load rezconfig from suite-saving path
 
 
 __all__ = (
