@@ -95,11 +95,11 @@ def _thread(name, blocks=None):
             ]  # type: list[BusyWidget]
 
             for widget in busy_widgets:
-                widget.set_overwhelmed(True)
+                widget.set_overwhelmed(name)
 
             def on_finished():
                 for w in busy_widgets:
-                    w.set_overwhelmed(False)
+                    w.pop_overwhelmed(name)
                 thread.finished.disconnect(on_finished)
                 log.debug(f"Thread {name!r} finished {fn_name!r}.")
 

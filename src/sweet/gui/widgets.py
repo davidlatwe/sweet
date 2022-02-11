@@ -62,7 +62,7 @@ class BusyWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(BusyWidget, self).__init__(*args, **kwargs)
-        self._is_busy = False
+        self._busy_works = set()
         self._entered = False
         self._filter = BusyEventFilterSingleton(self)
         self._instances.append(self)
@@ -71,23 +71,33 @@ class BusyWidget(QtWidgets.QWidget):
     def instances(cls):
         return cls._instances[:]
 
-    @QtCore.Slot(bool)  # noqa
-    def set_overwhelmed(self, busy):
-        if self._is_busy == busy:
-            return
-        self._is_busy = busy
-        if self._entered:
-            self._over_busy_cursor(busy)
-        self._block_children(busy)
+    @QtCore.Slot(str)  # noqa
+    def set_overwhelmed(self, worker: str):
+        if not self._busy_works:
+            if self._entered:
+                self._over_busy_cursor(True)
+            self._block_children(True)
+
+        self._busy_works.add(worker)
+
+    @QtCore.Slot(str)  # noqa
+    def pop_overwhelmed(self, worker: str):
+        if worker in self._busy_works:
+            self._busy_works.remove(worker)
+
+        if not self._busy_works:
+            if self._entered:
+                self._over_busy_cursor(False)
+            self._block_children(False)
 
     def enterEvent(self, event):
-        if self._is_busy:
+        if self._busy_works:
             self._over_busy_cursor(True)
         self._entered = True
         super(BusyWidget, self).enterEvent(event)
 
     def leaveEvent(self, event):
-        if self._is_busy:
+        if self._busy_works:
             self._over_busy_cursor(False)
         self._entered = False
         super(BusyWidget, self).leaveEvent(event)
