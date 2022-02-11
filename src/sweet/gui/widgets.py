@@ -1325,10 +1325,10 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
         naming = QtWidgets.QWidget()
         prefix_label = QtWidgets.QLabel("prefix:")
-        prefix = QtWidgets.QLineEdit()
+        prefix = ValidNameLineEdit()
         prefix.setPlaceholderText("context prefix..")
         suffix_label = QtWidgets.QLabel("suffix:")
-        suffix = QtWidgets.QLineEdit()
+        suffix = ValidNameLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
         request = RequestEditorWidget()
