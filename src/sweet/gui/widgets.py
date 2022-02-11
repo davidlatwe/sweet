@@ -455,6 +455,7 @@ class ContextListWidget(QtWidgets.QWidget):
     def on_request_edited(self, name, edited):
         font = QtGui.QFont()
         font.setBold(edited)
+        font.setItalic(edited)
         item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
         item.setFont(font)
 

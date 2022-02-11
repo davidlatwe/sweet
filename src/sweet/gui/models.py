@@ -418,6 +418,7 @@ class ContextToolTreeModel(ToolTreeModel):
         else:
             font = QtGui.QFont()
             font.setBold(edited)
+            font.setItalic(edited)
             item.setFont(font)
 
     def on_suite_newed(self):
