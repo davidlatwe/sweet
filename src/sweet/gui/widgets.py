@@ -1575,7 +1575,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         :param ResolvedContext context:
         """
         self._solve_line.set_timestamp(context.created)
-        self._context.model().load(context)
+        self._context.load(context)
 
         if context.success:
             # note: maybe we could set `append_sys_path` to false for a bit
@@ -1812,26 +1812,74 @@ class ResolvedContextView(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedContextView, self).__init__(*args, **kwargs)
 
+        top_bar = QtWidgets.QWidget()
+        top_bar.setObjectName("ButtonBelt")
+        attr_toggle = QtWidgets.QPushButton()
+        attr_toggle.setCheckable(True)
+
+        body = QtWidgets.QScrollArea()
+
+        ctx_name = QtWidgets.QLineEdit()
+        ctx_status = None
+        ctx_date = None
+
+        # self.read("suite_context_name", context, "Context Name")
+        # self.read("status", context, "Context Status")
+        # self.read("created", context, "Creation Date")
+
+        # if field in ("created", "requested_timestamp"):
+        #     if value:
+        #         dt = datetime.fromtimestamp(value)
+        #         value = dt.strftime("%b %d %Y %H:%M:%S")
+        #     else:
+        #         value = "(no timestamp set)"
+
+        # resolved
+        # "Ignore Packages After"
+        # self.read("requested_timestamp", context, "Ignore Packages After")
+        # self.read("_package_requests", context, "Requests")
+        # self.read("resolved_packages", context)
+        # self.read("resolved_ephemerals", context)
+        # self.read("implicit_packages", context)
+        # self.read("package_paths", context)
+        # context.package_filter
+        # context.package_orderers
+
+        # other context details
+        #
         model = ContextDataModel()
-        view = TreeView()
+        view = QtWidgets.QTreeView()
         view.setModel(model)
-
-        delegate = delegates.OffsetIndentDelegate(view)
-        delegate.set_indent(view.indentation())
-        view.setItemDelegateForColumn(0, delegate)
-
+        view.setTextElideMode(QtCore.Qt.ElideMiddle)
+        view.setAllColumnsShowFocus(True)
+        view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         header = view.header()
-        header.setSectionResizeMode(0, header.Stretch)
         header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
+
+        # layout
+
+        layout = QtWidgets.QHBoxLayout(top_bar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(attr_toggle, alignment=QtCore.Qt.AlignLeft)
+
+        layout = QtWidgets.QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(ctx_name)
+        layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
-        layout.addWidget(view)
+        layout.addWidget(top_bar)
+        layout.addWidget(body)
 
         self._model = model
 
-    def model(self):
-        return self._model
+    def load(self, context):
+        self._model.load(context)
+
+    def reset(self):
+        self._model.reset()
 
 
 class ResolvedCode(QtWidgets.QWidget):
@@ -2400,7 +2448,7 @@ class SuiteContextsView(QtWidgets.QWidget):
 
     def load(self, saved_suite: core.SavedSuite):
         self._contexts.clear()
-        self._view.model().reset()
+        self._view.reset()
 
         for ctx in saved_suite.iter_contexts():
             self._contexts[ctx.priority] = ctx.context
@@ -2408,10 +2456,10 @@ class SuiteContextsView(QtWidgets.QWidget):
     def on_context_selected(self, priority: int):
         priority = priority if len(self._contexts) else -1
         if priority < 0:
-            self._view.model().reset()
+            self._view.reset()
         else:
             context = self._contexts[priority]
-            self._view.model().load(context)
+            self._view.load(context)
 
 
 class RequestCompleter(QtWidgets.QCompleter):

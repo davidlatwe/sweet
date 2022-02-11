@@ -1,8 +1,6 @@
 
 import os
 import logging
-from datetime import datetime
-from contextlib import contextmanager
 
 from rez.packages import Variant
 from rez.config import config as rezconfig
@@ -957,98 +955,49 @@ class ContextDataModel(BaseItemModel):
             True: QtGui.QIcon(":/icons/check-ok.svg"),
         }
 
-    @contextmanager
-    def group(self, item):
-        if isinstance(item, str):
-            item = QtGui.QStandardItem(item)
-            item.setColumnCount(self.columnCount())
-            item.setData(True, self.FieldGroupRole)
-            self.appendRow(item)
-        self.__group = item
-        yield
-        self.__group = None
-
     def read(self, field, context, pretty=None):
         pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
         value = getattr(context, field)
-        item = QtGui.QStandardItem(pretty)
-        item.setData(field, self.FieldNameRole)
 
-        if field == "status":
-            value = value.name
-
-        elif field == "load_time":
+        if field == "load_time":
             value = f"{value:.02} secs"
-
         elif field == "solve_time":
             actual_solve_time = value - context.load_time
             value = f"{actual_solve_time:.02} secs"
 
-        elif field in ("created", "requested_timestamp"):
-            if value:
-                dt = datetime.fromtimestamp(value)
-                value = dt.strftime("%b %d %Y %H:%M:%S")
-            else:
-                value = "-"
-
-        if isinstance(value, list):
-            item.setColumnCount(self.columnCount())
-            for elem in value:
-                _elem = QtGui.QStandardItem("")
-                _elem.setData(str(elem), self.FieldValueRole)
-                item.appendRow(_elem)
-        else:
-            item.setData(value, self.FieldValueRole)
-
-        if self.__group is None:
-            self.appendRow(item)
-        else:
-            self.__group.appendRow(item)
+        item = QtGui.QStandardItem(pretty + ": ")  # add some spacing
+        item.setData(field, self.FieldNameRole)
+        item.setData(value, self.FieldValueRole)
+        self.appendRow(item)
 
     def load(self, context: ResolvedContext):
         self.reset()
 
-        self.read("suite_context_name", context, "Context Name")
-        self.read("status", context, "Context Status")
-        self.read("created", context, "Creation Date")
+        self.read("load_time", context)
+        self.read("solve_time", context)
+        self.read("num_loaded_packages", context, "Packages Queried")
+        self.read("caching", context, "MemCache Enabled")
+        self.read("from_cache", context, "Is MemCached Resolve")
+        self.read("building", context, "Is Building")
+        self.read("package_caching", context, "Cached Package Allowed")
+        self.read("append_sys_path", context)
 
-        self.read("requested_timestamp", context, "Ignore Packages After")
-        self.read("_package_requests", context, "Requests")
-        self.read("resolved_packages", context)
-        self.read("resolved_ephemerals", context)
-        self.read("implicit_packages", context)
-        self.read("package_paths", context)
-        # context.package_filter
-        # context.package_orderers
+        self.read("parent_suite_path", context, "Suite Path")
+        self.read("load_path", context, ".RXT Path")
 
-        with self.group("Stats"):
-            self.read("load_time", context)
-            self.read("solve_time", context)
-            self.read("num_loaded_packages", context, "Packages Queried")
-            self.read("caching", context, "MemCache Enabled")
-            self.read("from_cache", context, "Is MemCached Resolve")
-            self.read("building", context, "Is Building")
-            self.read("package_caching", context, "Cached Package Allowed")
-            self.read("append_sys_path", context)
-
-        with self.group("Saved"):
-            self.read("parent_suite_path", context, "Suite Path")
-            self.read("load_path", context, ".RXT Path")
-
-        with self.group("From"):
-            self.read("rez_version", context)
-            self.read("rez_path", context)
-            self.read("os", context, "OS")
-            self.read("arch", context)
-            self.read("platform", context)
-            self.read("host", context)
-            self.read("user", context)
+        self.read("rez_version", context)
+        self.read("rez_path", context)
+        self.read("os", context, "OS")
+        self.read("arch", context)
+        self.read("platform", context)
+        self.read("host", context)
+        self.read("user", context)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
             column = index.column()
             if column == 1:
                 item_index = self.index(index.row(), 0, index.parent())
@@ -1071,3 +1020,16 @@ class ContextDataModel(BaseItemModel):
                 return QtCore.Qt.AlignRight
 
         return super(ContextDataModel, self).data(index, role)
+
+    def flags(self, index):
+        """
+        :param QtCore.QModelIndex index:
+        :rtype: QtCore.Qt.ItemFlags
+        """
+        if not index.isValid():
+            return
+
+        base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        if index.column() == 1:
+            return base_flags | QtCore.Qt.ItemIsEditable
+        return base_flags
