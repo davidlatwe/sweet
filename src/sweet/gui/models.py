@@ -290,6 +290,24 @@ class ToolTreeModel(BaseItemModel):
 
         return base_flags
 
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        """
+        :param QtCore.QModelIndex index:
+        :param int role:
+        :rtype: Any
+        """
+        if not index.isValid():
+            return
+
+        if role == QtCore.Qt.FontRole and index.column() == 0:
+            is_tool = bool(index.data(self.ToolItemRole))
+            if is_tool and index.data() != index.data(self.ToolNameRole):
+                font = QtGui.QFont()
+                font.setBold(True)
+                return font
+
+        return super(ToolTreeModel, self).data(index, role)
+
     def setData(self, index, value, role=QtCore.Qt.EditRole):
         """
 
