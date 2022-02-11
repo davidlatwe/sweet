@@ -727,8 +727,6 @@ class RegExpValidator(QtGui.QRegExpValidator):
 
 
 class ToolsView(TreeView):
-    alias_changed = QtCore.Signal(str, str, str)
-    hide_changed = QtCore.Signal(str, str, bool)
 
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
