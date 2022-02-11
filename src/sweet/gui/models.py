@@ -1008,6 +1008,7 @@ class ContextDataModel(BaseItemModel):
     def load(self, context: ResolvedContext):
         self.reset()
 
+        self.read("suite_context_name", context, "Context Name")
         self.read("status", context, "Context Status")
         self.read("created", context, "Creation Date")
 
@@ -1031,7 +1032,6 @@ class ContextDataModel(BaseItemModel):
             self.read("append_sys_path", context)
 
         with self.group("Saved"):
-            self.read("suite_context_name", context, "Context Name")
             self.read("parent_suite_path", context, "Suite Path")
             self.read("load_path", context, ".RXT Path")
 
