@@ -20,6 +20,7 @@ from .models import (
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
     ResolvedEnvironmentProxyModel,
+    ToolTreeModel,
     ContextToolTreeModelSingleton,
     ContextToolTreeSortProxyModel,
     InstalledPackagesModel,
@@ -264,7 +265,6 @@ class YesNoDialog(QtWidgets.QDialog):
         btn_reject.clicked.connect(lambda: self.done(self.Rejected))
         if hasattr(widget, "validated"):
             widget.validated.connect(btn_accept.setEnabled)
-            btn_accept.setEnabled(False)
 
         self._accept = btn_accept
         self._reject = btn_reject
@@ -506,7 +506,9 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def add_context(self):
         existing = self.context_names()
-        widget = ContextNameEditWidget(existing=existing)
+        widget = ValidNameEditWidget(placeholder="Input context name..",
+                                     blacklist=existing,
+                                     blacked_msg="Duplicated Name.")
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
 
@@ -516,6 +518,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+        widget.validate_default()
 
     def rename_context(self, item):
         """
@@ -527,7 +530,10 @@ class ContextListWidget(QtWidgets.QWidget):
         existing = self.context_names()
         existing.remove(old_name)
 
-        widget = ContextNameEditWidget(existing=existing, default=old_name)
+        widget = ValidNameEditWidget(placeholder=f"old-name: {old_name}",
+                                     blacklist=existing,
+                                     blacked_msg="Duplicated Name.",
+                                     default=old_name)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Rename Context")
 
@@ -539,6 +545,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+        widget.validate_default()
 
     def drop_context(self):
         names = self.selected_contexts()
@@ -566,7 +573,8 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
     prompted = QtCore.Signal(str)
     validated = QtCore.Signal(bool)
 
-    def __init__(self, blacklist=None, default="", *args, **kwargs):
+    def __init__(self, blacklist=None, default="", blank_ok=False,
+                 *args, **kwargs):
         super(ValidNameLineEdit, self).__init__(*args, **kwargs)
 
         interval = 1000
@@ -595,13 +603,17 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         self._timer = timer
         self._color = None
         self._interval = interval
+        self._default = default
         self._blacklist = blacklist
+        self._blank_ok = blank_ok
         self.__block = False
 
         anim.setTargetObject(self)
         anim.setPropertyName(QtCore.QByteArray(b"_qproperty_color"))
-        # disabling yes-no-dialog's accept button on launch if no default
-        self.validated.emit(bool(default))
+
+    def validate_default(self):
+        """Emit validated signal with default value, call this on open"""
+        self.validated.emit(bool(self._default) or self._blank_ok)
 
     def _on_validator_validated(self, state):
         if state == QtGui.QValidator.Invalid:
@@ -617,7 +629,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
     def _on_changed_check_blacklist(self, value):
         is_blacked = value in self._blacklist
         self._blacked_hint(is_blacked)
-        self.validated.emit(not is_blacked and bool(value))
+        self.validated.emit(not is_blacked and (bool(value) or self._blank_ok))
 
     def _blacked_hint(self, show):
         self._setup_anim_colors()
@@ -658,27 +670,37 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
             self.__block = False
 
 
-class ContextNameEditWidget(QtWidgets.QWidget):
+class ValidNameEditWidget(QtWidgets.QWidget):
     validated = QtCore.Signal(bool)
 
-    def __init__(self, existing, default="", *args, **kwargs):
-        super(ContextNameEditWidget, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 placeholder="input name..",
+                 blacklist=None,
+                 blacked_msg="blacklisted name.",
+                 default="",
+                 blank_ok=False,
+                 *args,
+                 **kwargs):
+        super(ValidNameEditWidget, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
 
-        name = ValidNameLineEdit(blacklist=existing, default=default)
-        name.setPlaceholderText("Input context name..")
+        line = ValidNameLineEdit(blacklist=blacklist,
+                                 default=default,
+                                 blank_ok=blank_ok)
+        line.setPlaceholderText(placeholder)
         message = QtWidgets.QLabel()
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(name)
+        layout.addWidget(line)
         layout.addWidget(message)
 
-        name.prompted.connect(message.setText)
-        name.blacked.connect(lambda: message.setText("Duplicated Name."))
-        name.validated.connect(self.validated)
-        name.textChanged.connect(self._on_text_changed)
+        line.prompted.connect(message.setText)
+        line.blacked.connect(lambda: message.setText(blacked_msg))
+        line.validated.connect(self.validated)
+        line.textChanged.connect(self._on_text_changed)
 
         self._name = ""
+        self._line = line
         self._message = message
 
     def _on_text_changed(self, text):
@@ -686,6 +708,9 @@ class ContextNameEditWidget(QtWidgets.QWidget):
 
     def get_name(self):
         return self._name
+
+    def validate_default(self):
+        self._line.validate_default()
 
 
 class RegExpValidator(QtGui.QRegExpValidator):
@@ -708,6 +733,32 @@ class ToolsView(TreeView):
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
         self.setObjectName("ToolsView")
+        self.activated.connect(self._on_item_activated)
+
+    def _on_item_activated(self, index):
+        if not (index.isValid() and index.column() == 0):
+            return
+
+        alias = index.data(QtCore.Qt.DisplayRole)
+        name = index.data(ToolTreeModel.ToolNameRole)
+        default = "" if alias == name else alias
+
+        # edit tool alias
+        #
+        widget = ValidNameEditWidget(placeholder="accept blank to unset alias.",
+                                     default=default,
+                                     blank_ok=True)
+        dialog = YesNoDialog(widget, parent=self)
+        dialog.setWindowTitle("Set/Unset Alias")
+
+        def on_finished(result):
+            if result:
+                model = self.model()
+                model.setData(index, widget.get_name(), QtCore.Qt.EditRole)
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
+        widget.validate_default()
 
 
 class ContextToolTreeWidget(QtWidgets.QWidget):

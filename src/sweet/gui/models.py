@@ -286,11 +286,7 @@ class ToolTreeModel(BaseItemModel):
 
         if self._editable and index.column() == 0 and is_tool:
             if self.data(index, self.ToolEditRole):
-                return (
-                    base_flags
-                    | QtCore.Qt.ItemIsEditable
-                    | QtCore.Qt.ItemIsUserCheckable
-                )
+                return base_flags | QtCore.Qt.ItemIsUserCheckable
 
         return base_flags
 
