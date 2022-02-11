@@ -662,12 +662,20 @@ class ResolvedEnvironmentModel(JsonModel):
 
     def flags(self, index):
         """
-        :param index:
-        :type index: QtCore.QModelIndex
-        :return:
+        :param QtCore.QModelIndex index:
         :rtype: QtCore.Qt.ItemFlags
         """
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        if not index.isValid():
+            return
+
+        base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+        if index.column() == 1:
+            item = index.internalPointer()
+            if item.type is not list:
+                return base_flags | QtCore.Qt.ItemIsEditable
+
+        return base_flags
 
 
 class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
