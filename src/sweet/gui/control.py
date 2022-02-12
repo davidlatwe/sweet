@@ -95,11 +95,11 @@ def _thread(name, blocks=None):
             ]  # type: list[BusyWidget]
 
             for widget in busy_widgets:
-                widget.set_overwhelmed(True)
+                widget.set_overwhelmed(name)
 
             def on_finished():
                 for w in busy_widgets:
-                    w.set_overwhelmed(False)
+                    w.pop_overwhelmed(name)
                 thread.finished.disconnect(on_finished)
                 log.debug(f"Thread {name!r} finished {fn_name!r}.")
 
@@ -424,6 +424,8 @@ class Controller(QtCore.QObject):
     def _reset_suite(self):
         self._sop.reset()
         self._dirty = False
+        self._edited = set()
+        self._failed = set()
         self.suite_newed.emit()
 
     def _about_to_new(self, parent):

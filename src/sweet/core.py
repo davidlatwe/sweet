@@ -36,6 +36,7 @@ from .exceptions import (
 
 
 sweetconfig = rezconfig.plugins.command.sweet
+# todo: load rezconfig from suite-saving path
 
 
 __all__ = (
@@ -158,14 +159,11 @@ class SavedSuite:
         :param ascending: Iter contexts by priority in ascending order.
         :type ascending: bool or False
         :return: An context name, resolved-context tuple pair iterator
-        :rtype: collections.Iterator[tuple[str, ResolvedContext]]
+        :rtype: collections.Iterator[SuiteCtx]
         """
-        ctx_data = sorted(
-            self._suite.contexts.values(), key=lambda x: x["priority"],
-            reverse=not ascending
-        )
-        for d in ctx_data:
-            yield d["name"], self._suite.context(d["name"])
+        sop = SuiteOp()
+        sop._working_suite = self._suite
+        return sop.iter_contexts(ascending=ascending)
 
 
 def _warn(message, category=None):

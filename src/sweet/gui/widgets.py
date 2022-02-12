@@ -20,12 +20,13 @@ from .models import (
     ResolvedPackagesModel,
     ResolvedEnvironmentModel,
     ResolvedEnvironmentProxyModel,
+    ToolTreeModel,
     ContextToolTreeModelSingleton,
     ContextToolTreeSortProxyModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
     SuiteStorageModel,
-    SuiteToolTreeModel,
+    SuiteCtxToolTreeModel,
     CompleterProxyModel,
     ContextDataModel,
 )
@@ -62,7 +63,7 @@ class BusyWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(BusyWidget, self).__init__(*args, **kwargs)
-        self._is_busy = False
+        self._busy_works = set()
         self._entered = False
         self._filter = BusyEventFilterSingleton(self)
         self._instances.append(self)
@@ -71,23 +72,33 @@ class BusyWidget(QtWidgets.QWidget):
     def instances(cls):
         return cls._instances[:]
 
-    @QtCore.Slot(bool)  # noqa
-    def set_overwhelmed(self, busy):
-        if self._is_busy == busy:
-            return
-        self._is_busy = busy
-        if self._entered:
-            self._over_busy_cursor(busy)
-        self._block_children(busy)
+    @QtCore.Slot(str)  # noqa
+    def set_overwhelmed(self, worker: str):
+        if not self._busy_works:
+            if self._entered:
+                self._over_busy_cursor(True)
+            self._block_children(True)
+
+        self._busy_works.add(worker)
+
+    @QtCore.Slot(str)  # noqa
+    def pop_overwhelmed(self, worker: str):
+        if worker in self._busy_works:
+            self._busy_works.remove(worker)
+
+        if not self._busy_works:
+            if self._entered:
+                self._over_busy_cursor(False)
+            self._block_children(False)
 
     def enterEvent(self, event):
-        if self._is_busy:
+        if self._busy_works:
             self._over_busy_cursor(True)
         self._entered = True
         super(BusyWidget, self).enterEvent(event)
 
     def leaveEvent(self, event):
-        if self._is_busy:
+        if self._busy_works:
             self._over_busy_cursor(False)
         self._entered = False
         super(BusyWidget, self).leaveEvent(event)
@@ -264,7 +275,6 @@ class YesNoDialog(QtWidgets.QDialog):
         btn_reject.clicked.connect(lambda: self.done(self.Rejected))
         if hasattr(widget, "validated"):
             widget.validated.connect(btn_accept.setEnabled)
-            btn_accept.setEnabled(False)
 
         self._accept = btn_accept
         self._reject = btn_reject
@@ -455,6 +465,7 @@ class ContextListWidget(QtWidgets.QWidget):
     def on_request_edited(self, name, edited):
         font = QtGui.QFont()
         font.setBold(edited)
+        font.setItalic(edited)
         item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
         item.setFont(font)
 
@@ -506,7 +517,9 @@ class ContextListWidget(QtWidgets.QWidget):
 
     def add_context(self):
         existing = self.context_names()
-        widget = ContextNameEditWidget(existing=existing)
+        widget = ValidNameEditWidget(placeholder="Input context name..",
+                                     blacklist=existing,
+                                     blacked_msg="Duplicated Name.")
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Name New Context")
 
@@ -516,6 +529,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+        widget.validate_default()
 
     def rename_context(self, item):
         """
@@ -527,7 +541,10 @@ class ContextListWidget(QtWidgets.QWidget):
         existing = self.context_names()
         existing.remove(old_name)
 
-        widget = ContextNameEditWidget(existing=existing, default=old_name)
+        widget = ValidNameEditWidget(placeholder=f"old-name: {old_name}",
+                                     blacklist=existing,
+                                     blacked_msg="Duplicated Name.",
+                                     default=old_name)
         dialog = YesNoDialog(widget, parent=self)
         dialog.setWindowTitle("Rename Context")
 
@@ -539,6 +556,7 @@ class ContextListWidget(QtWidgets.QWidget):
 
         dialog.finished.connect(on_finished)
         dialog.open()
+        widget.validate_default()
 
     def drop_context(self):
         names = self.selected_contexts()
@@ -566,7 +584,8 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
     prompted = QtCore.Signal(str)
     validated = QtCore.Signal(bool)
 
-    def __init__(self, blacklist=None, default="", *args, **kwargs):
+    def __init__(self, blacklist=None, default="", blank_ok=False,
+                 *args, **kwargs):
         super(ValidNameLineEdit, self).__init__(*args, **kwargs)
 
         interval = 1000
@@ -595,13 +614,17 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         self._timer = timer
         self._color = None
         self._interval = interval
+        self._default = default
         self._blacklist = blacklist
+        self._blank_ok = blank_ok
         self.__block = False
 
         anim.setTargetObject(self)
         anim.setPropertyName(QtCore.QByteArray(b"_qproperty_color"))
-        # disabling yes-no-dialog's accept button on launch if no default
-        self.validated.emit(bool(default))
+
+    def validate_default(self):
+        """Emit validated signal with default value, call this on open"""
+        self.validated.emit(bool(self._default) or self._blank_ok)
 
     def _on_validator_validated(self, state):
         if state == QtGui.QValidator.Invalid:
@@ -617,7 +640,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
     def _on_changed_check_blacklist(self, value):
         is_blacked = value in self._blacklist
         self._blacked_hint(is_blacked)
-        self.validated.emit(not is_blacked and bool(value))
+        self.validated.emit(not is_blacked and (bool(value) or self._blank_ok))
 
     def _blacked_hint(self, show):
         self._setup_anim_colors()
@@ -658,27 +681,37 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
             self.__block = False
 
 
-class ContextNameEditWidget(QtWidgets.QWidget):
+class ValidNameEditWidget(QtWidgets.QWidget):
     validated = QtCore.Signal(bool)
 
-    def __init__(self, existing, default="", *args, **kwargs):
-        super(ContextNameEditWidget, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 placeholder="input name..",
+                 blacklist=None,
+                 blacked_msg="blacklisted name.",
+                 default="",
+                 blank_ok=False,
+                 *args,
+                 **kwargs):
+        super(ValidNameEditWidget, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
 
-        name = ValidNameLineEdit(blacklist=existing, default=default)
-        name.setPlaceholderText("Input context name..")
+        line = ValidNameLineEdit(blacklist=blacklist,
+                                 default=default,
+                                 blank_ok=blank_ok)
+        line.setPlaceholderText(placeholder)
         message = QtWidgets.QLabel()
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(name)
+        layout.addWidget(line)
         layout.addWidget(message)
 
-        name.prompted.connect(message.setText)
-        name.blacked.connect(lambda: message.setText("Duplicated Name."))
-        name.validated.connect(self.validated)
-        name.textChanged.connect(self._on_text_changed)
+        line.prompted.connect(message.setText)
+        line.blacked.connect(lambda: message.setText(blacked_msg))
+        line.validated.connect(self.validated)
+        line.textChanged.connect(self._on_text_changed)
 
         self._name = ""
+        self._line = line
         self._message = message
 
     def _on_text_changed(self, text):
@@ -686,6 +719,9 @@ class ContextNameEditWidget(QtWidgets.QWidget):
 
     def get_name(self):
         return self._name
+
+    def validate_default(self):
+        self._line.validate_default()
 
 
 class RegExpValidator(QtGui.QRegExpValidator):
@@ -702,12 +738,36 @@ class RegExpValidator(QtGui.QRegExpValidator):
 
 
 class ToolsView(TreeView):
-    alias_changed = QtCore.Signal(str, str, str)
-    hide_changed = QtCore.Signal(str, str, bool)
 
     def __init__(self, *args, **kwargs):
         super(ToolsView, self).__init__(*args, **kwargs)
         self.setObjectName("ToolsView")
+        self.activated.connect(self._on_item_activated)
+
+    def _on_item_activated(self, index):
+        if not (index.isValid() and index.column() == 0):
+            return
+
+        alias = index.data(QtCore.Qt.DisplayRole)
+        name = index.data(ToolTreeModel.ToolNameRole)
+        default = "" if alias == name else alias
+
+        # edit tool alias
+        #
+        widget = ValidNameEditWidget(placeholder="accept blank to unset alias.",
+                                     default=default,
+                                     blank_ok=True)
+        dialog = YesNoDialog(widget, parent=self)
+        dialog.setWindowTitle("Set/Unset Alias")
+
+        def on_finished(result):
+            if result:
+                model = self.model()
+                model.setData(index, widget.get_name(), QtCore.Qt.EditRole)
+
+        dialog.finished.connect(on_finished)
+        dialog.open()
+        widget.validate_default()
 
 
 class ContextToolTreeWidget(QtWidgets.QWidget):
@@ -1276,10 +1336,10 @@ class ContextRequestWidget(QtWidgets.QWidget):
 
         naming = QtWidgets.QWidget()
         prefix_label = QtWidgets.QLabel("prefix:")
-        prefix = QtWidgets.QLineEdit()
+        prefix = ValidNameLineEdit()
         prefix.setPlaceholderText("context prefix..")
         suffix_label = QtWidgets.QLabel("suffix:")
-        suffix = QtWidgets.QLineEdit()
+        suffix = ValidNameLineEdit()
         suffix.setPlaceholderText("context suffix..")
 
         request = RequestEditorWidget()
@@ -1525,7 +1585,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         :param ResolvedContext context:
         """
         self._solve_line.set_timestamp(context.created)
-        self._context.model().load(context)
+        self._context.load(context)
 
         if context.success:
             # note: maybe we could set `append_sys_path` to false for a bit
@@ -1576,12 +1636,12 @@ class ResolvedTools(QtWidgets.QWidget):
 
     def set_name(self, ctx_name):
         if ctx_name and not self._view_fixed:
-            index = self._model.find_root_index(ctx_name)
-            if index is None:
+            item = self._model.get_context_item(ctx_name)
+            if item is None:
                 log.critical("Unable to find context item index from model.")
                 # should not happen.
             else:
-                self._view.setRootIndex(index)
+                self._view.setRootIndex(item.index())
                 self._view_fixed = True
 
 
@@ -1762,26 +1822,74 @@ class ResolvedContextView(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ResolvedContextView, self).__init__(*args, **kwargs)
 
+        top_bar = QtWidgets.QWidget()
+        top_bar.setObjectName("ButtonBelt")
+        attr_toggle = QtWidgets.QPushButton()
+        attr_toggle.setCheckable(True)
+
+        body = QtWidgets.QScrollArea()
+
+        ctx_name = QtWidgets.QLineEdit()
+        ctx_status = None
+        ctx_date = None
+
+        # self.read("suite_context_name", context, "Context Name")
+        # self.read("status", context, "Context Status")
+        # self.read("created", context, "Creation Date")
+
+        # if field in ("created", "requested_timestamp"):
+        #     if value:
+        #         dt = datetime.fromtimestamp(value)
+        #         value = dt.strftime("%b %d %Y %H:%M:%S")
+        #     else:
+        #         value = "(no timestamp set)"
+
+        # resolved
+        # "Ignore Packages After"
+        # self.read("requested_timestamp", context, "Ignore Packages After")
+        # self.read("_package_requests", context, "Requests")
+        # self.read("resolved_packages", context)
+        # self.read("resolved_ephemerals", context)
+        # self.read("implicit_packages", context)
+        # self.read("package_paths", context)
+        # context.package_filter
+        # context.package_orderers
+
+        # other context details
+        #
         model = ContextDataModel()
-        view = TreeView()
+        view = QtWidgets.QTreeView()
         view.setModel(model)
-
-        delegate = delegates.OffsetIndentDelegate(view)
-        delegate.set_indent(view.indentation())
-        view.setItemDelegateForColumn(0, delegate)
-
+        view.setTextElideMode(QtCore.Qt.ElideMiddle)
+        view.setAllColumnsShowFocus(True)
+        view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         header = view.header()
-        header.setSectionResizeMode(0, header.Stretch)
         header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
+
+        # layout
+
+        layout = QtWidgets.QHBoxLayout(top_bar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(attr_toggle, alignment=QtCore.Qt.AlignLeft)
+
+        layout = QtWidgets.QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(ctx_name)
+        layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
-        layout.addWidget(view)
+        layout.addWidget(top_bar)
+        layout.addWidget(body)
 
         self._model = model
 
-    def model(self):
-        return self._model
+    def load(self, context):
+        self._model.load(context)
+
+    def reset(self):
+        self._model.reset()
 
 
 class ResolvedCode(QtWidgets.QWidget):
@@ -2206,12 +2314,12 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         name = QtWidgets.QLineEdit()
         desc = QtWidgets.QTextEdit()
         view = ToolsView()
-        model = SuiteToolTreeModel(editable=False)
+        model = SuiteCtxToolTreeModel(editable=False)
+        proxy = ContextToolTreeSortProxyModel()
         header = view.header()
 
-        # todo: tools are not ordered by contexts
-
-        view.setModel(model)
+        proxy.setSourceModel(model)
+        view.setModel(proxy)
         header.setSectionResizeMode(0, header.ResizeToContents)
         desc.setReadOnly(True)
         name.setReadOnly(True)
@@ -2246,12 +2354,15 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         layout.addWidget(name)
         layout.addWidget(splitter)
 
+        view.clicked.connect(self._on_item_activated)
+
         self._name = name
         self._desc = desc
         self._suite = suite
         self._error = error
         self._ctxs = contexts
         self._view = view
+        self._proxy = proxy
         self._model = model
 
     @QtCore.Slot()  # noqa
@@ -2277,7 +2388,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._suite.setCurrentIndex(0)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
-        self._view.setRootIndex(item.index())
+        index = self._proxy.mapFromSource(item.index())
+        self._view.setRootIndex(index)
 
         if added and not is_branch:
             if error_message:
@@ -2285,8 +2397,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._suite.setCurrentIndex(1)
                 self._error.set_message(error_message)
             else:
-                suite_tools = list(saved_suite.iter_saved_tools())
-                self._model.update_suite_tools(suite_tools, saved_suite)
+                self._model.update_suite_tools(saved_suite)
+                self._view.expandRecursively(index)
         else:
             error = self._model.is_bad_suite(item)
             if error:
@@ -2294,6 +2406,12 @@ class SuiteInsightWidget(QtWidgets.QWidget):
                 self._error.set_message(error)
 
         self._ctxs.load(saved_suite)
+
+    def _on_item_activated(self, index):
+        index = self._proxy.mapToSource(index)
+        priority = self._model.data(index, self._model.ContextSortRole)
+        if priority is not None:
+            self._ctxs.on_context_selected(priority)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
@@ -2329,45 +2447,29 @@ class SuiteContextsView(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         super(SuiteContextsView, self).__init__(*args, **kwargs)
-
-        ctx_list = ComboBox()
         ctx_view = ResolvedContextView()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(ctx_list)
         layout.addWidget(ctx_view)
 
-        ctx_list.currentIndexChanged.connect(self._on_context_selected)
-
-        self._list = ctx_list
         self._view = ctx_view
-        self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
-        self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
-        self._contexts = []
+        self._contexts = dict()
 
     def load(self, saved_suite: core.SavedSuite):
         self._contexts.clear()
-        self._view.model().reset()
+        self._view.reset()
 
-        self._list.blockSignals(True)
-        self._list.clear()
-        self._list.blockSignals(False)
+        for ctx in saved_suite.iter_contexts():
+            self._contexts[ctx.priority] = ctx.context
 
-        for name, context in saved_suite.iter_contexts():
-            icon = self._icon_ctx if context.success else self._icon_ctx_f
-            self._list.addItem(icon, name)
-            self._contexts.append(context)
-
-        self._on_context_selected(0)
-
-    def _on_context_selected(self, index: int):
-        index = index if len(self._contexts) else -1
-        if index < 0:
-            self._view.model().reset()
+    def on_context_selected(self, priority: int):
+        priority = priority if len(self._contexts) else -1
+        if priority < 0:
+            self._view.reset()
         else:
-            context = self._contexts[index]
-            self._view.model().load(context)
+            context = self._contexts[priority]
+            self._view.load(context)
 
 
 class RequestCompleter(QtWidgets.QCompleter):
