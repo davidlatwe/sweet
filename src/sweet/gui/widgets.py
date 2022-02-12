@@ -28,7 +28,6 @@ from .models import (
     SuiteStorageModel,
     SuiteCtxToolTreeModel,
     CompleterProxyModel,
-    ContextDataModel,
 )
 
 
@@ -1826,8 +1825,9 @@ class ResolvedContextView(QtWidgets.QWidget):
         top_bar.setObjectName("ButtonBelt")
         attr_toggle = QtWidgets.QPushButton()
         attr_toggle.setCheckable(True)
+        attr_toggle.setChecked(True)
 
-        body = QtWidgets.QScrollArea()
+        _body = QtWidgets.QWidget()
 
         attrs = [
             AttribLine("suite_context_name", "Context Name"),
@@ -1837,6 +1837,28 @@ class ResolvedContextView(QtWidgets.QWidget):
             # resolved
             #
             AttribLine("requested_timestamp", "Ignore Packages After")
+        ]
+
+        attrs_2 = [
+            AttribLine("load_time"),
+            AttribLine("solve_time"),
+            AttribLine("num_loaded_packages", "Packages Queried"),
+            AttribLine("caching", "MemCache Enabled"),
+            AttribLine("from_cache", "Is MemCached Resolve"),
+            AttribLine("building", "Is Building"),
+            AttribLine("package_caching", "Cached Package Allowed"),
+            AttribLine("append_sys_path"),
+
+            AttribLine("parent_suite_path", "Suite Path"),
+            AttribLine("load_path", ".RXT Path"),
+
+            AttribLine("rez_version"),
+            AttribLine("rez_path"),
+            AttribLine("os", "OS"),
+            AttribLine("arch"),
+            AttribLine("platform"),
+            AttribLine("host"),
+            AttribLine("user"),
         ]
 
         # resolved
@@ -1850,50 +1872,38 @@ class ResolvedContextView(QtWidgets.QWidget):
         # context.package_filter
         # context.package_orderers
 
-        # other context details
-        #
-        model = ContextDataModel()
-        view = QtWidgets.QTreeView()
-        view.setModel(model)
-        view.setTextElideMode(QtCore.Qt.ElideMiddle)
-        view.setAllColumnsShowFocus(True)
-        view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        header = view.header()
-        header.setSectionResizeMode(0, header.ResizeToContents)
-        header.setSectionResizeMode(1, header.Stretch)
-
         # layout
 
         layout = QtWidgets.QHBoxLayout(top_bar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(attr_toggle, alignment=QtCore.Qt.AlignLeft)
 
-        layout = QtWidgets.QVBoxLayout(body)
+        layout = QtWidgets.QVBoxLayout(_body)
         layout.setContentsMargins(0, 0, 0, 0)
-        for attr in attrs:
+        for attr in attrs + attrs_2:
             layout.addWidget(attr)
-        layout.addWidget(view)
+        layout.addStretch(True)
+
+        body_ = QtWidgets.QScrollArea()
+        body_.setWidget(_body)
+        body_.setWidgetResizable(True)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.addWidget(top_bar)
-        layout.addWidget(body)
+        layout.addWidget(body_)
 
-        attr_toggle.toggled.connect(model.on_pretty_shown)
-        for attr in attrs:
+        for attr in attrs + attrs_2:
             attr_toggle.toggled.connect(attr.on_pretty_shown)
 
-        self._model = model
-        self._attrs = attrs
+        self._attrs = attrs + attrs_2
 
-        attr = self.find("requested_timestamp")
-        attr.set_value_placeholder("no timestamp set.")
-
-    def find(self, attr) -> "AttribLine":
-        return self._attrs[self._attrs.index(attr)]
+        self.find("suite_context_name").set_placeholder("not saved/loaded")
+        self.find("requested_timestamp").set_placeholder("no timestamp set")
 
     def read(self, context, attr):
         value = getattr(context, attr)
+        icon = None
 
         if attr in ("created", "requested_timestamp"):
             if value:
@@ -1905,18 +1915,30 @@ class ResolvedContextView(QtWidgets.QWidget):
         elif attr == "status":
             value = value.name
 
+        elif attr == "load_time":
+            value = f"{value:.02} secs"
+
+        elif attr == "solve_time":
+            actual_solve_time = value - context.load_time
+            value = f"{actual_solve_time:.02} secs"
+
+        if isinstance(value, bool):
+            icon = "check-ok.svg" if value else "slash-lg.svg"
+            value = "yes" if value else "no"
+        else:
+            value = str(value or "")
+
         attr = self.find(attr)
-        attr.set_value(value)
+        attr.set_value(value, icon)
+
+    def find(self, attr) -> "AttribLine":
+        return self._attrs[self._attrs.index(attr)]
 
     def load(self, context):
-        self._model.load(context)
-        self.read(context, "suite_context_name")
-        self.read(context, "status")
-        self.read(context, "created")
-        self.read(context, "requested_timestamp")
+        for attr in self._attrs:
+            self.read(context, attr.attr)
 
     def reset(self):
-        self._model.reset()
         for attr in self._attrs:
             attr.set_value("")
 
@@ -2596,44 +2618,45 @@ class PrettyTimeLineEdit(QtWidgets.QLineEdit):
 
 class AttribLine(QtWidgets.QWidget):
 
-    def __init__(self, attr, pretty, icon=None, *args, **kwargs):
+    def __init__(self, attr, pretty=None, *args, **kwargs):
         super(AttribLine, self).__init__(*args, **kwargs)
-
-        icon = QtWidgets.QLabel() if icon else None
-        label = QtWidgets.QLabel(pretty)
-        name = QtWidgets.QLineEdit(attr)
-        name.setObjectName("AttrNameLine")
-        name.setReadOnly(True)
+        pretty = pretty or " ".join(w.capitalize() for w in attr.split("_"))
+        label = QtWidgets.QLineEdit(pretty)
+        label.setReadOnly(True)
+        label.setAlignment(QtCore.Qt.AlignRight)
+        icon_ = QtWidgets.QLabel()
+        icon_.setFixedWidth(24)
         value = QtWidgets.QLineEdit()
         value.setReadOnly(True)
+        value.setPlaceholderText("-")
 
-        layout = QtWidgets.QHBoxLayout(self)
+        layout = QtWidgets.QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
-        layout.addWidget(icon) if icon else None
-        layout.addWidget(label)
-        layout.addWidget(name)
-        layout.addWidget(value) if value else None
+        layout.addWidget(label, 0, 1, 1, 2)
+        layout.addWidget(icon_, 0, 3, 1, 1)
+        layout.addWidget(value, 0, 4, 1, 3)
 
-        name.setVisible(False)
-        self._name = name
         self._label = label
+        self._icon = icon_
         self._value = value
+        self._pretty = pretty
         self._attr = attr
 
     @QtCore.Slot(bool)  # noqa
     def on_pretty_shown(self, show: bool):
-        self._label.setVisible(show)
-        self._name.setVisible(not show)
+        self._label.setText(self._pretty if show else self._attr)
+        self._label.setStyleSheet('' if show else 'font-family: "JetBrains Mono";')
 
     @property
     def attr(self):
         return self._attr
 
-    def set_value(self, text):
+    def set_value(self, text, icon=None):
         self._value.setText(text)
+        self._icon.setStyleSheet(f'image: url(:/icons/{icon});' if icon else '')
 
-    def set_value_placeholder(self, text):
+    def set_placeholder(self, text):
         self._value.setPlaceholderText(text)
 
     def __eq__(self, other):
