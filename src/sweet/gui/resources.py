@@ -354,10 +354,13 @@ class BaseTheme(object):
         return f"""
         QComboBox {{
             border: 1px solid {self.palette.border};
-            padding: {px(2)};
+            padding: {px(5)};
+            border-radius: 3px;
         }}
+
         QComboBox::drop-down {{
             border: none;
+            border-left: 1px solid {self.palette.border};
             min-width: {px(36)};
         }}
         QComboBox::down-arrow,
@@ -368,6 +371,22 @@ class BaseTheme(object):
         QComboBox::down-arrow:hover {{
             image: url(:/icons/chevron_down.svg);
         }}
+        
+        QComboBox QAbstractItemView {{
+            padding: {px(8)} {px(2)};
+            border: 1px solid transparent;
+
+            color: {self.palette.on_surface};
+            background-color: {self.palette.surface};
+        
+            selection-color: {self.palette.on_primary};
+            selection-background-color: {self.palette.primary};
+        }}
+        QComboBox QAbstractItemView::item {{
+            padding: {px(5)} 1px;
+            border: 0px;
+        }}
+
         """
 
     def _q_check_box(self):

@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 import signal as py_signal
+from typing import Optional
 from importlib import reload
 from contextlib import contextmanager
 from ._vendor.Qt5 import QtCore, QtWidgets
@@ -36,6 +37,7 @@ class Session(object):
         app = QtWidgets.QApplication.instance()
         if app is None:
             app = QtWidgets.QApplication([])
+            app.setStyle(AppProxyStyle())
 
             # allow user to interrupt with Ctrl+C
             def sigint_handler(signals, frame):
@@ -311,3 +313,21 @@ class State(object):
             widget.setDirectory(self.retrieve("directory"))
 
         self._storage.endGroup()
+
+
+class AppProxyStyle(QtWidgets.QProxyStyle):
+    """For styling QComboBox
+    https://stackoverflow.com/a/21019371
+    """
+    def styleHint(
+            self,
+            hint: QtWidgets.QStyle.StyleHint,
+            option: Optional[QtWidgets.QStyleOption] = ...,
+            widget: Optional[QtWidgets.QWidget] = ...,
+            returnData: Optional[QtWidgets.QStyleHintReturn] = ...,) -> int:
+
+        if hint == QtWidgets.QStyle.SH_ComboBox_Popup:
+            return 0
+
+        return super(AppProxyStyle, self).styleHint(
+            hint, option, widget, returnData)

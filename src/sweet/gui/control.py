@@ -15,7 +15,7 @@ from ..core import (
     PkgVersion,
 )
 from ._vendor.Qt5 import QtCore, QtWidgets
-from .widgets import BusyWidget, YesNoDialog, MessageDialog
+from .widgets import BusyWidget, YesNoDialog, MessageDialog, ComboBox
 
 
 log = logging.getLogger("sweet")
@@ -473,7 +473,7 @@ class Controller(QtCore.QObject):
 
         widget = QtWidgets.QWidget()
         _hint = QtWidgets.QLabel("Where to save suite ?")
-        _box = QtWidgets.QComboBox()
+        _box = ComboBox()
         _box.addItems(branches)
         if loaded_branch and loaded_branch in branches:
             _box.setCurrentText(loaded_branch)

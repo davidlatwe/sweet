@@ -175,6 +175,16 @@ class JsonView(TreeView):
         menu.show()
 
 
+class ComboBox(QtWidgets.QComboBox):
+
+    def __init__(self, *args, **kwargs):
+        super(ComboBox, self).__init__(*args, **kwargs)
+        delegate = QtWidgets.QStyledItemDelegate(self)
+        self.setItemDelegate(delegate)
+        # https://stackoverflow.com/a/21019371
+        # also see `app.AppProxyStyle`
+
+
 class MessageDialog(QtWidgets.QDialog):
 
     def __init__(self, message, title=None, level=None, *args, **kwargs):
@@ -2320,7 +2330,7 @@ class SuiteContextsView(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(SuiteContextsView, self).__init__(*args, **kwargs)
 
-        ctx_list = QtWidgets.QComboBox()
+        ctx_list = ComboBox()
         ctx_view = ResolvedContextView()
 
         layout = QtWidgets.QVBoxLayout(self)
