@@ -939,9 +939,8 @@ class CompleterProxyModel(QtCore.QSortFilterProxyModel):
 
 
 class ContextDataModel(BaseItemModel):
-    FieldGroupRole = QtCore.Qt.UserRole + 10
-    FieldNameRole = QtCore.Qt.UserRole + 11
-    FieldValueRole = QtCore.Qt.UserRole + 12
+    FieldNameRole = QtCore.Qt.UserRole + 10
+    FieldValueRole = QtCore.Qt.UserRole + 11
     Headers = [
         "Field",
         "Value",
@@ -949,11 +948,11 @@ class ContextDataModel(BaseItemModel):
 
     def __init__(self, *args, **kwargs):
         super(ContextDataModel, self).__init__(*args, **kwargs)
-        self.__group = None  # type: QtGui.QStandardItem or None
         self._icons = {
             False: QtGui.QIcon(":/icons/slash-lg.svg"),
             True: QtGui.QIcon(":/icons/check-ok.svg"),
         }
+        self._show_attr = False
 
     def read(self, field, context, pretty=None):
         pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
@@ -965,7 +964,7 @@ class ContextDataModel(BaseItemModel):
             actual_solve_time = value - context.load_time
             value = f"{actual_solve_time:.02} secs"
 
-        item = QtGui.QStandardItem(pretty + ": ")  # add some spacing
+        item = QtGui.QStandardItem(pretty + "  ")  # add some spacing
         item.setData(field, self.FieldNameRole)
         item.setData(value, self.FieldValueRole)
         self.appendRow(item)
@@ -993,18 +992,30 @@ class ContextDataModel(BaseItemModel):
         self.read("host", context)
         self.read("user", context)
 
+    @QtCore.Slot(bool)  # noqa
+    def on_pretty_shown(self, show_pretty: bool):
+        self._show_attr = not show_pretty
+
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return
 
         if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
             column = index.column()
+            if column == 0 and self._show_attr:
+                return index.data(self.FieldNameRole)
+
             if column == 1:
                 item_index = self.index(index.row(), 0, index.parent())
                 value = item_index.data(self.FieldValueRole)
                 if isinstance(value, bool):
                     return "yes" if value else "no"
                 return value
+
+        if role == QtCore.Qt.FontRole:
+            column = index.column()
+            if column == 0 and self._show_attr:
+                return QtGui.QFont("JetBrains Mono")
 
         if role == QtCore.Qt.DecorationRole:
             column = index.column()
@@ -1016,7 +1027,7 @@ class ContextDataModel(BaseItemModel):
 
         if role == QtCore.Qt.TextAlignmentRole:
             column = index.column()
-            if column == 0 and not index.data(self.FieldGroupRole):
+            if column == 0:
                 return QtCore.Qt.AlignRight
 
         return super(ContextDataModel, self).data(index, role)

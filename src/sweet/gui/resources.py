@@ -1122,6 +1122,7 @@ class BaseTheme(object):
             font-family: "JetBrains Mono";
         }}
         
+        #AttrNameLine,
         #LogMessageText {{
             font-family: "JetBrains Mono";
         }}

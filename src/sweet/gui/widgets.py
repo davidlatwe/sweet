@@ -1829,23 +1829,18 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         body = QtWidgets.QScrollArea()
 
-        ctx_name = QtWidgets.QLineEdit()
-        ctx_status = None
-        ctx_date = None
+        attrs = [
+            AttribLine("suite_context_name", "Context Name"),
+            AttribLine("status", "Context Status"),
+            AttribLine("created", "Resolved Date"),
 
-        # self.read("suite_context_name", context, "Context Name")
-        # self.read("status", context, "Context Status")
-        # self.read("created", context, "Creation Date")
-
-        # if field in ("created", "requested_timestamp"):
-        #     if value:
-        #         dt = datetime.fromtimestamp(value)
-        #         value = dt.strftime("%b %d %Y %H:%M:%S")
-        #     else:
-        #         value = "(no timestamp set)"
+            # resolved
+            #
+            AttribLine("requested_timestamp", "Ignore Packages After")
+        ]
 
         # resolved
-        # "Ignore Packages After"
+        #
         # self.read("requested_timestamp", context, "Ignore Packages After")
         # self.read("_package_requests", context, "Requests")
         # self.read("resolved_packages", context)
@@ -1875,7 +1870,8 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(body)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(ctx_name)
+        for attr in attrs:
+            layout.addWidget(attr)
         layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -1883,13 +1879,46 @@ class ResolvedContextView(QtWidgets.QWidget):
         layout.addWidget(top_bar)
         layout.addWidget(body)
 
+        attr_toggle.toggled.connect(model.on_pretty_shown)
+        for attr in attrs:
+            attr_toggle.toggled.connect(attr.on_pretty_shown)
+
         self._model = model
+        self._attrs = attrs
+
+        attr = self.find("requested_timestamp")
+        attr.set_value_placeholder("no timestamp set.")
+
+    def find(self, attr) -> "AttribLine":
+        return self._attrs[self._attrs.index(attr)]
+
+    def read(self, context, attr):
+        value = getattr(context, attr)
+
+        if attr in ("created", "requested_timestamp"):
+            if value:
+                dt = datetime.fromtimestamp(value)
+                value = dt.strftime("%b %d %Y %H:%M:%S")
+            else:
+                value = ""
+
+        elif attr == "status":
+            value = value.name
+
+        attr = self.find(attr)
+        attr.set_value(value)
 
     def load(self, context):
         self._model.load(context)
+        self.read(context, "suite_context_name")
+        self.read(context, "status")
+        self.read(context, "created")
+        self.read(context, "requested_timestamp")
 
     def reset(self):
         self._model.reset()
+        for attr in self._attrs:
+            attr.set_value("")
 
 
 class ResolvedCode(QtWidgets.QWidget):
@@ -2563,6 +2592,54 @@ class PrettyTimeLineEdit(QtWidgets.QLineEdit):
             self._timer.setInterval(60000)  # change to update every 60 secs
 
         self.setText(delegates.pretty_date(self._dt))
+
+
+class AttribLine(QtWidgets.QWidget):
+
+    def __init__(self, attr, pretty, icon=None, *args, **kwargs):
+        super(AttribLine, self).__init__(*args, **kwargs)
+
+        icon = QtWidgets.QLabel() if icon else None
+        label = QtWidgets.QLabel(pretty)
+        name = QtWidgets.QLineEdit(attr)
+        name.setObjectName("AttrNameLine")
+        name.setReadOnly(True)
+        value = QtWidgets.QLineEdit()
+        value.setReadOnly(True)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(icon) if icon else None
+        layout.addWidget(label)
+        layout.addWidget(name)
+        layout.addWidget(value) if value else None
+
+        name.setVisible(False)
+        self._name = name
+        self._label = label
+        self._value = value
+        self._attr = attr
+
+    @QtCore.Slot(bool)  # noqa
+    def on_pretty_shown(self, show: bool):
+        self._label.setVisible(show)
+        self._name.setVisible(not show)
+
+    @property
+    def attr(self):
+        return self._attr
+
+    def set_value(self, text):
+        self._value.setText(text)
+
+    def set_value_placeholder(self, text):
+        self._value.setPlaceholderText(text)
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self._attr == other
+        return super(AttribLine, self).__eq__(other)
 
 
 class HtmlPrinter(colorize.Printer):
