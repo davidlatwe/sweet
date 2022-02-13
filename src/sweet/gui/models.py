@@ -621,11 +621,14 @@ class ResolvedEnvironmentModel(JsonModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 3
 
+    def _is_path_list(self, value):
+        return os.pathsep in value and any(s in value for s in ("/", "\\"))
+
     def load(self, data):
         # Convert PATH-like environment variables to lists
         # for improved viewing experience
         for key, value in data.copy().items():
-            if os.pathsep in value and any(s in value for s in ("/", "\\")):
+            if self._is_path_list(value):
                 value = value.split(os.pathsep)
             data[key] = value
 
@@ -637,7 +640,11 @@ class ResolvedEnvironmentModel(JsonModel):
         :type inspection: list[tuple[Variant or str or None, str, str]]
         """
         for scope, key, value in inspection:
-            self._inspected[f"{key}/{value}"] = scope
+            if self._is_path_list(str(value)):
+                for path in value.split(os.pathsep):
+                    self._inspected[f"{key}/{path}"] = scope
+            else:
+                self._inspected[f"{key}/{value}"] = scope
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
