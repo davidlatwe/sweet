@@ -1850,6 +1850,7 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         layout = QtWidgets.QHBoxLayout(top_bar)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.addWidget(attr_toggle, alignment=QtCore.Qt.AlignLeft)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -2303,6 +2304,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
         name = QtWidgets.QLineEdit()
         desc = QtWidgets.QTextEdit()
+
+        tools = QtWidgets.QWidget()
         view = ToolsView()
         model = SuiteCtxToolTreeModel(editable=False)
         proxy = ContextToolTreeSortProxyModel()
@@ -2320,7 +2323,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         contexts = SuiteContextsView()
         error = BadSuiteMessageBox()
         suite = QtWidgets.QStackedWidget()
-        suite.addWidget(view)
+        suite.addWidget(tools)
         suite.addWidget(error)
 
         overview = QtWidgets.QSplitter()
@@ -2338,6 +2341,10 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         splitter.addWidget(overview)
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
+
+        layout = QtWidgets.QVBoxLayout(tools)
+        layout.setContentsMargins(2, 11, 10, 0)
+        layout.addWidget(view)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(2, 4, 2, 4)
@@ -2440,7 +2447,7 @@ class SuiteContextsView(QtWidgets.QWidget):
         ctx_view = ResolvedContextView()
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(2, 0, 4, 8)
         layout.addWidget(ctx_view)
 
         self._view = ctx_view
