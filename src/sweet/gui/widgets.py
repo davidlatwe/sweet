@@ -1788,9 +1788,9 @@ class ResolvedEnvironment(QtWidgets.QWidget):
 
             if column == 1:
                 value = index.data()
-                scope = self._model.index(index.row(), 2).data()
+                scope = self._model.index(index.row(), 2, parent).data()
             else:
-                value = self._model.index(index.row(), 1).data()
+                value = self._model.index(index.row(), 1, parent).data()
                 scope = index.data()
 
             self.hovered.emit(f"{key} | {value} <- {scope}", 0)
