@@ -595,6 +595,7 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         self.setValidator(validator)
         self.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
                         "_, -, . are allowed.")
+        self.setClearButtonEnabled(True)
 
         timer = QtCore.QTimer(self)
         timer.setSingleShot(True)
@@ -996,6 +997,7 @@ class RequestTableItemDelegate(QtWidgets.QStyledItemDelegate):
             editor = QtWidgets.QLineEdit(parent)
             editor.setPlaceholderText("add one request..")
             editor.setObjectName("RequestTextEdit")
+            editor.setClearButtonEnabled(True)
 
             completer = RequestCompleter(editor)
             completer.setPopup(CompleterPopup())
@@ -1040,6 +1042,7 @@ class RequestTableEdit(QtWidgets.QTableWidget):
             return
         self.openPersistentEditor(self.item(row, 0))
         editor = self.cellWidget(row, 0)  # type: QtWidgets.QLineEdit
+        editor.setClearButtonEnabled(True)
 
         def on_editing_finished():
             _row = self.currentRow()
@@ -1720,6 +1723,7 @@ class ResolvedEnvironment(QtWidgets.QWidget):
 
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText("Search environ var..")
+        search.setClearButtonEnabled(True)
         switch = QtWidgets.QCheckBox()
         switch.setObjectName("EnvFilterSwitch")
         inverse = QtWidgets.QCheckBox("Inverse")
@@ -2090,6 +2094,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
         proxy.setSourceModel(model)
         view.setModel(proxy)
         search.setPlaceholderText(" Search by family, version or tool..")
+        search.setClearButtonEnabled(True)
 
         header = view.header()
         header.setSectionResizeMode(0, header.Stretch)
@@ -2249,6 +2254,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         refresh.setObjectName("RefreshButton")
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText("Search saved suites..")
+        search.setClearButtonEnabled(True)
 
         view = TreeView()
         proxy = QtCore.QSortFilterProxyModel()
