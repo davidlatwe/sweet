@@ -71,6 +71,10 @@ def get_style_sheet(name=None, dark=None):
     return theme.style_sheet()
 
 
+def icon(name):
+    return QtGui.QIcon(f":/icons/{name}")
+
+
 class Resources:
     fonts = (
         "opensans/OpenSans-Bold.ttf",

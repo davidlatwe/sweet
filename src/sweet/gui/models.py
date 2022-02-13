@@ -11,6 +11,7 @@ from rez.resolved_context import ResolvedContext
 from .. import util
 from ..core import \
     SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants
+from . import resources as res
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
 
@@ -741,103 +742,14 @@ class ContextDataModel(BaseItemModel):
         super(ContextDataModel, self).reset()
         self._context = None
 
-    def read(self, field, pretty=None):
-        pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
-
-        context = self._context
-        assert context is not None
-
-        # value
-        value = getattr(context, field)
-        icon = None
-
-        if field in ("created", "requested_timestamp"):
-            if value:
-                dt = datetime.fromtimestamp(value)
-                value = dt.strftime("%b %d %Y %H:%M:%S")
-            else:
-                value = ""
-
-        elif field == "status":
-            value = value.name
-
-        elif field == "load_time":
-            value = f"{value:.02} secs"
-
-        elif field == "solve_time":
-            actual_solve_time = value - context.load_time
-            value = f"{actual_solve_time:.02} secs"
-
-        elif field == "package_paths":
-            # todo: mark local/release path icon
-            icon = ["dash.svg" for v in value]
-
-        elif field == "resolved_packages":
-            # todo: add package icon
-            value = [pkg.qualified_name for pkg in value]
-
-        # placeholder
-        if field == "suite_context_name":
-            placeholder = "not saved/loaded"
-        elif field == "requested_timestamp":
-            placeholder = "no timestamp set"
-        else:
-            placeholder = None
-
-        # add row(s)
-
-        if isinstance(value, list):
-            value = [str(v) for v in value]
-            self.add_fields(pretty, field, value, icon)
-
-        else:
-            if isinstance(value, bool):
-                icon = "check-ok.svg" if value else "slash-lg.svg"
-                value = "yes" if value else "no"
-            else:
-                icon = "dot.svg"
-                value = str(value or "")
-
-            self.add_field(pretty, field, value, icon, placeholder)
-
-    def add_field(self, pretty, field, value, icon=None, placeholder=None):
-        field_item = QtGui.QStandardItem(pretty)
-        field_item.setData(field, self.FieldNameRole)
-
-        value_item = QtGui.QStandardItem()
-        value_item.setText(value or placeholder)
-        value_item.setData(not value, self.PlaceholderRole)
-        value_item.setIcon(QtGui.QIcon(f":/icons/{icon}")) if icon else None
-
-        self.appendRow([field_item, value_item])
-
-    def add_fields(self, pretty, field, values, icons=None, placeholder=None):
-        icons = icons or ["dash.svg"] * len(values)
-        field_item = QtGui.QStandardItem(pretty)
-        field_item.setData(field, self.FieldNameRole)
-
-        value_item = QtGui.QStandardItem()
-        value_item.setText("" if values else placeholder or "")
-        value_item.setData(not values, self.PlaceholderRole)
-        value_item.setIcon(QtGui.QIcon(f":/icons/plus.svg"))
-
-        self.appendRow([field_item, value_item])
-
-        for i, (value, icon) in enumerate(zip_longest(values, icons)):
-            field_item = QtGui.QStandardItem(f"#{i}")
-            value_item = QtGui.QStandardItem(value)
-            value_item.setIcon(QtGui.QIcon(f":/icons/{icon}")) if icon else None
-
-            self.appendRow([field_item, value_item])
-
     def load(self, context: ResolvedContext):
         self.reset()
         self._set_context(context)
 
-        self.read("suite_context_name", "Context Name"),
+        self.read("suite_context_name", "Context Name", "not saved/loaded"),
         self.read("status", "Context Status"),
         self.read("created", "Resolved Date"),
-        self.read("requested_timestamp", "Ignore Packages After"),
+        self.read("requested_timestamp", "Ignore Packages After", "no timestamp set"),
         self.read("package_paths"),
 
         self.read("_package_requests", "Requests")
@@ -867,6 +779,85 @@ class ContextDataModel(BaseItemModel):
         self.read("host")
         self.read("user")
 
+    def read(self, field, pretty=None, placeholder=None):
+        placeholder = placeholder or ""
+        pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
+        context = self._context
+        assert context is not None
+
+        # value
+        value = getattr(context, field)
+        icon = None
+
+        if field in ("created", "requested_timestamp"):
+            if value:
+                dt = datetime.fromtimestamp(value)
+                value = dt.strftime("%b %d %Y %H:%M:%S")
+            else:
+                value = ""
+
+        elif field == "status":
+            value = value.name
+
+        elif field == "load_time":
+            value = f"{value:.02} secs"
+
+        elif field == "solve_time":
+            actual_solve_time = value - context.load_time
+            value = f"{actual_solve_time:.02} secs"
+
+        elif field == "package_paths":
+            indicator = _LocationIndicator()
+            icon = [indicator.compute(v)[1] for v in value]
+
+        elif field == "resolved_packages":
+            indicator = _LocationIndicator()
+            icon = [indicator.compute(pkg.resource.location)[1] for pkg in value]
+            value = [pkg.qualified_name for pkg in value]
+
+        # add row(s)
+
+        if isinstance(value, list):
+            icon = icon or [res.icon("dot.svg")] * len(value)
+            value = [str(v) for v in value]
+
+            field_item = QtGui.QStandardItem(pretty)
+            field_item.setData(field, self.FieldNameRole)
+
+            value_item = QtGui.QStandardItem()
+            value_item.setText("" if value else placeholder or "")
+            value_item.setData(not value, self.PlaceholderRole)
+            value_item.setIcon(res.icon("plus.svg"))
+
+            self.appendRow([field_item, value_item])
+
+            for i, (value, ico_) in enumerate(zip_longest(value, icon)):
+                field_item = QtGui.QStandardItem(f"#{i}")
+                field_item.setData(True, self.PlaceholderRole)
+
+                value_item = QtGui.QStandardItem(value)
+                value_item.setIcon(ico_) if ico_ else None
+
+                self.appendRow([field_item, value_item])
+
+        else:
+            if isinstance(value, bool):
+                icon = icon or res.icon("check-ok.svg" if value else "slash-lg.svg")
+                value = "yes" if value else "no"
+            else:
+                icon = icon or res.icon("dash.svg")
+                value = str(value or "")
+
+            field_item = QtGui.QStandardItem(pretty)
+            field_item.setData(field, self.FieldNameRole)
+
+            value_item = QtGui.QStandardItem()
+            value_item.setText(value or placeholder)
+            value_item.setData(not value, self.PlaceholderRole)
+            value_item.setIcon(icon)
+
+            self.appendRow([field_item, value_item])
+
     @QtCore.Slot(bool)  # noqa
     def on_pretty_shown(self, show_pretty: bool):
         self._show_attr = not show_pretty
@@ -887,8 +878,7 @@ class ContextDataModel(BaseItemModel):
                     else super(ContextDataModel, self).data(index, role)
 
         if role == QtCore.Qt.ForegroundRole:
-            column = index.column()
-            if column == 1 and index.data(self.PlaceholderRole):
+            if index.data(self.PlaceholderRole):
                 return self._placeholder_color
 
         if role == QtCore.Qt.FontRole:

@@ -1869,9 +1869,11 @@ class ResolvedContextView(QtWidgets.QWidget):
 
     def load(self, context):
         self._model.load(context)
+        self._view.reset_extension()
 
     def reset(self):
         self._model.reset()
+        self._view.reset_extension()
 
     def changeEvent(self, event):
         super(ResolvedContextView, self).changeEvent(event)
