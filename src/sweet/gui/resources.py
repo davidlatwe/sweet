@@ -79,7 +79,7 @@ class Resources:
         "jetbrainsmono/JetBrainsMono-Regular.ttf"
     )
     icons_ext = ".png", ".svg"
-    qrc_updated = 1644355063  # !!<qrc-update-time>!! don't touch
+    qrc_updated = 1644760753  # !!<qrc-update-time>!! don't touch
 
     @classmethod
     def load(cls):
@@ -1166,6 +1166,10 @@ class BaseTheme(object):
         }}
         #StashCtxMenuBtn {{
             icon: url(:icons/list-ul.svg);
+        }}
+        
+        #ResolvedContextTreeView {{
+            border-top: 1px solid {self.palette.border};
         }}
 
         """

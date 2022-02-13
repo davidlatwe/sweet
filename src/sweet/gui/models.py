@@ -1,6 +1,8 @@
 
 import os
 import logging
+from datetime import datetime
+from itertools import zip_longest
 
 from rez.packages import Variant
 from rez.config import config as rezconfig
@@ -716,6 +718,203 @@ class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
         if self._inverse:
             return not accept
         return accept
+
+
+class ContextDataModel(BaseItemModel):
+    FieldNameRole = QtCore.Qt.UserRole + 10
+    PlaceholderRole = QtCore.Qt.UserRole + 11
+    Headers = [
+        "Field",
+        "Value",
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(ContextDataModel, self).__init__(*args, **kwargs)
+        self._show_attr = False  # don't reset this, for sticking toggle state
+        self._placeholder_color = None
+        self._context = None  # type: ResolvedContext or None
+
+    def _set_context(self, context):
+        self._context = context
+
+    def reset(self):
+        super(ContextDataModel, self).reset()
+        self._context = None
+
+    def read(self, field, pretty=None):
+        pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
+
+        context = self._context
+        assert context is not None
+
+        # value
+        value = getattr(context, field)
+        icon = None
+
+        if field in ("created", "requested_timestamp"):
+            if value:
+                dt = datetime.fromtimestamp(value)
+                value = dt.strftime("%b %d %Y %H:%M:%S")
+            else:
+                value = ""
+
+        elif field == "status":
+            value = value.name
+
+        elif field == "load_time":
+            value = f"{value:.02} secs"
+
+        elif field == "solve_time":
+            actual_solve_time = value - context.load_time
+            value = f"{actual_solve_time:.02} secs"
+
+        elif field == "package_paths":
+            # todo: mark local/release path icon
+            icon = ["dash.svg" for v in value]
+
+        elif field == "resolved_packages":
+            # todo: add package icon
+            value = [pkg.qualified_name for pkg in value]
+
+        # placeholder
+        if field == "suite_context_name":
+            placeholder = "not saved/loaded"
+        elif field == "requested_timestamp":
+            placeholder = "no timestamp set"
+        else:
+            placeholder = None
+
+        # add row(s)
+
+        if isinstance(value, list):
+            value = [str(v) for v in value]
+            self.add_fields(pretty, field, value, icon)
+
+        else:
+            if isinstance(value, bool):
+                icon = "check-ok.svg" if value else "slash-lg.svg"
+                value = "yes" if value else "no"
+            else:
+                icon = "dot.svg"
+                value = str(value or "")
+
+            self.add_field(pretty, field, value, icon, placeholder)
+
+    def add_field(self, pretty, field, value, icon=None, placeholder=None):
+        field_item = QtGui.QStandardItem(pretty)
+        field_item.setData(field, self.FieldNameRole)
+
+        value_item = QtGui.QStandardItem()
+        value_item.setText(value or placeholder)
+        value_item.setData(not value, self.PlaceholderRole)
+        value_item.setIcon(QtGui.QIcon(f":/icons/{icon}")) if icon else None
+
+        self.appendRow([field_item, value_item])
+
+    def add_fields(self, pretty, field, values, icons=None, placeholder=None):
+        icons = icons or ["dash.svg"] * len(values)
+        field_item = QtGui.QStandardItem(pretty)
+        field_item.setData(field, self.FieldNameRole)
+
+        value_item = QtGui.QStandardItem()
+        value_item.setText("" if values else placeholder or "")
+        value_item.setData(not values, self.PlaceholderRole)
+        value_item.setIcon(QtGui.QIcon(f":/icons/plus.svg"))
+
+        self.appendRow([field_item, value_item])
+
+        for i, (value, icon) in enumerate(zip_longest(values, icons)):
+            field_item = QtGui.QStandardItem(f"#{i}")
+            value_item = QtGui.QStandardItem(value)
+            value_item.setIcon(QtGui.QIcon(f":/icons/{icon}")) if icon else None
+
+            self.appendRow([field_item, value_item])
+
+    def load(self, context: ResolvedContext):
+        self.reset()
+        self._set_context(context)
+
+        self.read("suite_context_name", "Context Name"),
+        self.read("status", "Context Status"),
+        self.read("created", "Resolved Date"),
+        self.read("requested_timestamp", "Ignore Packages After"),
+        self.read("package_paths"),
+
+        self.read("_package_requests", "Requests")
+        self.read("resolved_packages")
+        self.read("resolved_ephemerals")
+        self.read("implicit_packages")
+        self.read("package_filter")
+        self.read("package_orderers")
+
+        self.read("load_time")
+        self.read("solve_time")
+        self.read("num_loaded_packages", "Packages Queried")
+        self.read("caching", "MemCache Enabled")
+        self.read("from_cache", "Is MemCached Resolve")
+        self.read("building", "Is Building")
+        self.read("package_caching", "Cached Package Allowed")
+        self.read("append_sys_path")
+
+        self.read("parent_suite_path", "Suite Path")
+        self.read("load_path", ".RXT Path")
+
+        self.read("rez_version")
+        self.read("rez_path")
+        self.read("os", "OS")
+        self.read("arch")
+        self.read("platform")
+        self.read("host")
+        self.read("user")
+
+    @QtCore.Slot(bool)  # noqa
+    def on_pretty_shown(self, show_pretty: bool):
+        self._show_attr = not show_pretty
+
+    def set_placeholder_color(self, color):
+        self._placeholder_color = color
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if not index.isValid():
+            return
+
+        if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+            column = index.column()
+            if column == 0 and self._show_attr:
+                return index.data(self.FieldNameRole)
+            if column == 1 and role == QtCore.Qt.EditRole:
+                return "" if index.data(self.PlaceholderRole) \
+                    else super(ContextDataModel, self).data(index, role)
+
+        if role == QtCore.Qt.ForegroundRole:
+            column = index.column()
+            if column == 1 and index.data(self.PlaceholderRole):
+                return self._placeholder_color
+
+        if role == QtCore.Qt.FontRole:
+            column = index.column()
+            if column == 0 and self._show_attr:
+                return QtGui.QFont("JetBrains Mono")
+
+        if role == QtCore.Qt.TextAlignmentRole:
+            column = index.column()
+            if column == 0:
+                return QtCore.Qt.AlignRight
+
+        return super(ContextDataModel, self).data(index, role)
+
+    def flags(self, index):
+        """
+        :param QtCore.QModelIndex index:
+        :rtype: QtCore.Qt.ItemFlags
+        """
+        if not index.isValid():
+            return
+
+        base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        if index.column() == 1:
+            return base_flags | QtCore.Qt.ItemIsEditable
+        return base_flags
 
 
 class InstalledPackagesModel(BaseItemModel, metaclass=QSingleton):

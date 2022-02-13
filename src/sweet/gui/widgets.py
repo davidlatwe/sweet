@@ -24,6 +24,7 @@ from .models import (
     ToolTreeModel,
     ContextToolTreeModelSingleton,
     ContextToolTreeSortProxyModel,
+    ContextDataModel,
     InstalledPackagesModel,
     InstalledPackagesProxyModel,
     SuiteStorageModel,
@@ -1836,124 +1837,47 @@ class ResolvedContextView(QtWidgets.QWidget):
         attr_toggle.setCheckable(True)
         attr_toggle.setChecked(True)
 
-        _body = QtWidgets.QWidget()
-        top_attrs = [
-            AttribLine("suite_context_name", "Context Name"),
-            AttribLine("status", "Context Status"),
-            AttribLine("created", "Resolved Date"),
-            AttribLine("requested_timestamp", "Ignore Packages After"),
-            AttribList("package_paths"),
-        ]
-        # self.read("_package_requests", context, "Requests")
-        # self.read("resolved_packages", context)
+        model = ContextDataModel()
+        view = TreeView()
+        view.setObjectName("ResolvedContextTreeView")
+        view.setModel(model)
+        view.setTextElideMode(QtCore.Qt.ElideMiddle)
+        view.setHeaderHidden(True)
 
-        # self.read("resolved_ephemerals", context)
-        # self.read("implicit_packages", context)
-
-        # self.read("package_paths", context)
-        # context.package_filter
-        # context.package_orderers
-        stat_attrs = [
-            AttribLine("load_time"),
-            AttribLine("solve_time"),
-            AttribLine("num_loaded_packages", "Packages Queried"),
-            AttribLine("caching", "MemCache Enabled"),
-            AttribLine("from_cache", "Is MemCached Resolve"),
-            AttribLine("building", "Is Building"),
-            AttribLine("package_caching", "Cached Package Allowed"),
-            AttribLine("append_sys_path"),
-        ]
-        suite_attrs = [
-            AttribLine("parent_suite_path", "Suite Path"),
-            AttribLine("load_path", ".RXT Path"),
-        ]
-        sys_attrs = [
-            AttribLine("rez_version"),
-            AttribLine("rez_path"),
-            AttribLine("os", "OS"),
-            AttribLine("arch"),
-            AttribLine("platform"),
-            AttribLine("host"),
-            AttribLine("user"),
-        ]
-        attrs = top_attrs + stat_attrs + suite_attrs + sys_attrs
-
-        # layout
+        header = view.header()
+        header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
 
         layout = QtWidgets.QHBoxLayout(top_bar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(attr_toggle, alignment=QtCore.Qt.AlignLeft)
 
-        layout = QtWidgets.QVBoxLayout(_body)
-        layout.setContentsMargins(0, 0, 0, 0)
-        for attr in attrs:
-            layout.addWidget(attr)
-        layout.addStretch(True)
-
-        body_ = QtWidgets.QScrollArea()
-        body_.setWidget(_body)
-        body_.setWidgetResizable(True)
-
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(top_bar)
-        layout.addWidget(body_)
+        layout.addWidget(view)
 
-        for attr in attrs:
-            attr_toggle.toggled.connect(attr.on_pretty_shown)
+        attr_toggle.toggled.connect(self._on_attr_toggled)
 
-        self._attrs = attrs
+        self._view = view
+        self._model = model
 
-        self.find("suite_context_name").set_placeholder("not saved/loaded")
-        self.find("requested_timestamp").set_placeholder("no timestamp set")
-
-    def read(self, context, attr):
-        value = getattr(context, attr)
-        icon = None
-
-        if attr in ("created", "requested_timestamp"):
-            if value:
-                dt = datetime.fromtimestamp(value)
-                value = dt.strftime("%b %d %Y %H:%M:%S")
-            else:
-                value = ""
-
-        elif attr == "status":
-            value = value.name
-
-        elif attr == "load_time":
-            value = f"{value:.02} secs"
-
-        elif attr == "solve_time":
-            actual_solve_time = value - context.load_time
-            value = f"{actual_solve_time:.02} secs"
-
-        elif attr == "package_paths":
-            # todo: mark local/release path icon
-            icon = [None for v in value]
-
-        if isinstance(value, bool):
-            icon = "check-ok.svg" if value else "slash-lg.svg"
-            value = "yes" if value else "no"
-        elif isinstance(value, list):
-            pass
-        else:
-            value = str(value or "")
-
-        attr = self.find(attr)
-        attr.set_value(value, icon)
-
-    def find(self, attr) -> "AttribBase":
-        name = f"Attrib_{attr}"
-        return next((w for w in self._attrs if w.objectName() == name), None)
+    def _on_attr_toggled(self, show_pretty):
+        self._model.on_pretty_shown(show_pretty)
+        self._view.update()
 
     def load(self, context):
-        for attr in self._attrs:
-            self.read(context, attr.attr)
+        self._model.load(context)
 
     def reset(self):
-        for attr in self._attrs:
-            attr.clear()
+        self._model.reset()
+
+    def changeEvent(self, event):
+        super(ResolvedContextView, self).changeEvent(event)
+        if event.type() == QtCore.QEvent.StyleChange:
+            # update color when theme changed
+            color = self._view.palette().color(QtGui.QPalette.PlaceholderText)
+            self._model.set_placeholder_color(color)
 
 
 class ResolvedCode(QtWidgets.QWidget):
