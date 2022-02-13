@@ -177,6 +177,8 @@ class PreferencePage(QtWidgets.QWidget):
 
             qargparse.Separator("Settings"),
 
+            # todo: disable amqp message
+
         ])
 
         scroll = QtWidgets.QScrollArea()

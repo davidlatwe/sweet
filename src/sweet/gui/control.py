@@ -316,6 +316,7 @@ class Controller(QtCore.QObject):
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def resolve_context(self, name, requests):
+        # todo: more args, and send a buffer in for verbose resolve logs.
         context = self._sop.resolve_context(requests)
         self.context_resolved.emit(name, context)
         if context.success:
