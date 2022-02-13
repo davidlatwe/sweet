@@ -183,6 +183,10 @@ class ToolTreeModel(BaseItemModel):
         self._ctx_items = dict()
         self._editable = editable
 
+    @property
+    def editable(self):
+        return self._editable
+
     def reset(self):
         self._ctx_items.clear()
         super(ToolTreeModel, self).reset()
