@@ -734,17 +734,23 @@ class ContextDataModel(BaseItemModel):
         self._show_attr = False  # don't reset this, for sticking toggle state
         self._placeholder_color = None
         self._context = None  # type: ResolvedContext or None
-
-    def _set_context(self, context):
-        self._context = context
+        self._in_diff = None  # type: ResolvedContext or None
 
     def reset(self):
         super(ContextDataModel, self).reset()
         self._context = None
+        self._in_diff = None
 
-    def load(self, context: ResolvedContext):
-        self.reset()
-        self._set_context(context)
+    def load(self, context: ResolvedContext, diff=False):
+        if diff and self._in_diff:
+            log.critical("Context model already in diff mode.")
+            return
+
+        if diff:
+            self._in_diff = context
+        else:
+            self.reset()
+            self._context = context
 
         self.read("suite_context_name", "Context Name", "not saved/loaded"),
         self.read("status", "Context Status"),
@@ -779,15 +785,24 @@ class ContextDataModel(BaseItemModel):
         self.read("host")
         self.read("user")
 
+    def find(self, field):
+        for row in range(self.rowCount()):
+            index = self.index(row, 0)
+            if field == index.data(self.FieldNameRole):
+                return index
+
     def read(self, field, pretty=None, placeholder=None):
         placeholder = placeholder or ""
         pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
-        context = self._context
+        context = self._in_diff or self._context
         assert context is not None
 
         # value
-        value = getattr(context, field)
         icon = None
+        value = getattr(context, field)
+
+        if self._in_diff and value == getattr(self._context, field):
+            return  # same value, no need to diff
 
         if field in ("created", "requested_timestamp"):
             if value:
