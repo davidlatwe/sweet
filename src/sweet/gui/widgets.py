@@ -4,6 +4,7 @@ import json
 import logging
 from io import StringIO
 from datetime import datetime
+from itertools import zip_longest
 from contextlib import contextmanager
 
 from rez.system import system
@@ -1836,18 +1837,23 @@ class ResolvedContextView(QtWidgets.QWidget):
         attr_toggle.setChecked(True)
 
         _body = QtWidgets.QWidget()
-
-        attrs = [
+        top_attrs = [
             AttribLine("suite_context_name", "Context Name"),
             AttribLine("status", "Context Status"),
             AttribLine("created", "Resolved Date"),
-
-            # resolved
-            #
-            AttribLine("requested_timestamp", "Ignore Packages After")
+            AttribLine("requested_timestamp", "Ignore Packages After"),
+            AttribList("package_paths"),
         ]
+        # self.read("_package_requests", context, "Requests")
+        # self.read("resolved_packages", context)
 
-        attrs_2 = [
+        # self.read("resolved_ephemerals", context)
+        # self.read("implicit_packages", context)
+
+        # self.read("package_paths", context)
+        # context.package_filter
+        # context.package_orderers
+        stat_attrs = [
             AttribLine("load_time"),
             AttribLine("solve_time"),
             AttribLine("num_loaded_packages", "Packages Queried"),
@@ -1856,10 +1862,12 @@ class ResolvedContextView(QtWidgets.QWidget):
             AttribLine("building", "Is Building"),
             AttribLine("package_caching", "Cached Package Allowed"),
             AttribLine("append_sys_path"),
-
+        ]
+        suite_attrs = [
             AttribLine("parent_suite_path", "Suite Path"),
             AttribLine("load_path", ".RXT Path"),
-
+        ]
+        sys_attrs = [
             AttribLine("rez_version"),
             AttribLine("rez_path"),
             AttribLine("os", "OS"),
@@ -1868,17 +1876,7 @@ class ResolvedContextView(QtWidgets.QWidget):
             AttribLine("host"),
             AttribLine("user"),
         ]
-
-        # resolved
-        #
-        # self.read("requested_timestamp", context, "Ignore Packages After")
-        # self.read("_package_requests", context, "Requests")
-        # self.read("resolved_packages", context)
-        # self.read("resolved_ephemerals", context)
-        # self.read("implicit_packages", context)
-        # self.read("package_paths", context)
-        # context.package_filter
-        # context.package_orderers
+        attrs = top_attrs + stat_attrs + suite_attrs + sys_attrs
 
         # layout
 
@@ -1888,7 +1886,7 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(_body)
         layout.setContentsMargins(0, 0, 0, 0)
-        for attr in attrs + attrs_2:
+        for attr in attrs:
             layout.addWidget(attr)
         layout.addStretch(True)
 
@@ -1901,10 +1899,10 @@ class ResolvedContextView(QtWidgets.QWidget):
         layout.addWidget(top_bar)
         layout.addWidget(body_)
 
-        for attr in attrs + attrs_2:
+        for attr in attrs:
             attr_toggle.toggled.connect(attr.on_pretty_shown)
 
-        self._attrs = attrs + attrs_2
+        self._attrs = attrs
 
         self.find("suite_context_name").set_placeholder("not saved/loaded")
         self.find("requested_timestamp").set_placeholder("no timestamp set")
@@ -1930,17 +1928,24 @@ class ResolvedContextView(QtWidgets.QWidget):
             actual_solve_time = value - context.load_time
             value = f"{actual_solve_time:.02} secs"
 
+        elif attr == "package_paths":
+            # todo: mark local/release path icon
+            icon = [None for v in value]
+
         if isinstance(value, bool):
             icon = "check-ok.svg" if value else "slash-lg.svg"
             value = "yes" if value else "no"
+        elif isinstance(value, list):
+            pass
         else:
             value = str(value or "")
 
         attr = self.find(attr)
         attr.set_value(value, icon)
 
-    def find(self, attr) -> "AttribLine":
-        return self._attrs[self._attrs.index(attr)]
+    def find(self, attr) -> "AttribBase":
+        name = f"Attrib_{attr}"
+        return next((w for w in self._attrs if w.objectName() == name), None)
 
     def load(self, context):
         for attr in self._attrs:
@@ -1948,7 +1953,7 @@ class ResolvedContextView(QtWidgets.QWidget):
 
     def reset(self):
         for attr in self._attrs:
-            attr.set_value("")
+            attr.clear()
 
 
 class ResolvedCode(QtWidgets.QWidget):
@@ -2626,32 +2631,23 @@ class PrettyTimeLineEdit(QtWidgets.QLineEdit):
         self.setText(delegates.pretty_date(self._dt))
 
 
-class AttribLine(QtWidgets.QWidget):
+class AttribBase(QtWidgets.QWidget):
 
     def __init__(self, attr, pretty=None, *args, **kwargs):
-        super(AttribLine, self).__init__(*args, **kwargs)
+        super(AttribBase, self).__init__(*args, **kwargs)
+        self.setObjectName(f"Attrib_{attr}")
+
         pretty = pretty or " ".join(w.capitalize() for w in attr.split("_"))
         label = QtWidgets.QLineEdit(pretty)
         label.setReadOnly(True)
         label.setAlignment(QtCore.Qt.AlignRight)
         icon_ = QtWidgets.QLabel()
         icon_.setFixedWidth(24)
-        value = QtWidgets.QLineEdit()
-        value.setReadOnly(True)
-        value.setPlaceholderText("-")
 
-        layout = QtWidgets.QGridLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
-        layout.addWidget(label, 0, 1, 1, 2)
-        layout.addWidget(icon_, 0, 3, 1, 1)
-        layout.addWidget(value, 0, 4, 1, 3)
-
-        self._label = label
-        self._icon = icon_
-        self._value = value
-        self._pretty = pretty
         self._attr = attr
+        self._pretty = pretty
+        self._label = label
+        self._icon_ = icon_
 
     @QtCore.Slot(bool)  # noqa
     def on_pretty_shown(self, show: bool):
@@ -2662,17 +2658,68 @@ class AttribLine(QtWidgets.QWidget):
     def attr(self):
         return self._attr
 
+    def set_value(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def clear(self):
+        raise NotImplementedError
+
+
+class AttribLine(AttribBase):
+
+    def __init__(self, attr, pretty=None, *args, **kwargs):
+        super(AttribLine, self).__init__(attr, pretty, *args, **kwargs)
+        value = QtWidgets.QLineEdit()
+        value.setReadOnly(True)
+        value.setPlaceholderText("-")
+        self._value = value
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(self._label, 0, 0, 1, 2)
+        layout.addWidget(self._icon_, 0, 3, 1, 1)
+        layout.addWidget(self._value, 0, 4, 1, 3)
+
+    def clear(self):
+        self.set_value("")
+
     def set_value(self, text, icon=None):
         self._value.setText(text)
-        self._icon.setStyleSheet(f'image: url(:/icons/{icon});' if icon else '')
+        self._icon_.setStyleSheet(f'image: url(:/icons/{icon});' if icon else '')
 
     def set_placeholder(self, text):
         self._value.setPlaceholderText(text)
 
-    def __eq__(self, other):
-        if isinstance(other, str):
-            return self._attr == other
-        return super(AttribLine, self).__eq__(other)
+
+class AttribList(AttribBase):
+
+    def __init__(self, attr, pretty=None, *args, **kwargs):
+        super(AttribList, self).__init__(attr, pretty, *args, **kwargs)
+        self._value = QtWidgets.QWidget()
+
+        layout = QtWidgets.QVBoxLayout(self._value)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        layout = QtWidgets.QGridLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(self._label, 0, 0, 1, 2)
+        layout.addWidget(self._icon_, 0, 3, 1, 1)
+        layout.addWidget(self._value, 1, 0, 1, 6)
+
+    def clear(self):
+        layout = self._value.layout()
+        for w in self._value.findChildren(AttribLine):
+            layout.removeWidget(w)
+
+    def set_value(self, value, icon):
+        self.clear()
+        layout = self._value.layout()
+        for i, (path, icon_) in enumerate(zip_longest(value, icon)):
+            line = AttribLine(f"#{i}")
+            line.set_value(path, icon)
+            layout.addWidget(line)
 
 
 class HtmlPrinter(colorize.Printer):
