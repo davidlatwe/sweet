@@ -364,6 +364,7 @@ class Controller(QtCore.QObject):
                 name=name,
                 branch=branch,
                 path=path,
+                archived=False,
                 suite=None,  # lazy load
             )
             self._dirty = False

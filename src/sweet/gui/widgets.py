@@ -2252,7 +2252,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
     def _on_current_changed(self, index):
         saved_suite = index.data(self._model.SavedSuiteRole)
         if saved_suite is None:  # possible root item (the branch)
-            saved_suite = core.SavedSuite("", "", "", core.SweetSuite())
+            saved_suite = core.SavedSuite("", "", "", False, core.SweetSuite())
         self.suite_selected.emit(saved_suite)
 
     def _on_searched(self, _):
@@ -2403,7 +2403,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()  # noqa
     def on_refreshed(self):
-        self.view_suite(core.SavedSuite("", "", "", core.SweetSuite()))
+        self.view_suite(core.SavedSuite("", "", "", False, core.SweetSuite()))
         self._model.reset()
 
     @QtCore.Slot(core.SavedSuite, str)  # noqa

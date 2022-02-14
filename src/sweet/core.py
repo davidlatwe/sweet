@@ -121,10 +121,11 @@ class PkgVersion:
 
 @dataclass
 class SavedSuite:
-    __slots__ = "name", "branch", "path", "suite"
+    __slots__ = "name", "branch", "path", "archived", "suite"
     name: str
     branch: str
     path: str
+    archived: bool
     suite: "SweetSuite" or None
 
     @property
@@ -236,11 +237,12 @@ class SuiteOp(object):
             suite.re_resolve_rxt_contexts()
         suite.load_path = None if as_import else os.path.realpath(path)
 
-    def save(self, path):
-        """
+    def save(self, path, as_archived=False):
+        """Save current working suite
 
-        :param str path:
-        :return:
+        :param str path: Path to save the suite
+        :param bool as_archived: Save suite as archived
+        :return: None
         """
         release_root = sweetconfig.suite_roots.get(sweetconfig.release_root)
         non_local_required = \
@@ -248,7 +250,7 @@ class SuiteOp(object):
 
         self.sanity_check(non_local=non_local_required)
         # note: cannot save over if load_path is None
-        self._suite.save(path)
+        self._suite.save(path, as_archived=as_archived)
         # run callback
         sweetconfig.on_suite_saved_callback(self._suite, path)
 
@@ -691,6 +693,7 @@ class BrokenContext(ResolvedContext):
 
 class Storage(object):
     """Suite storage"""
+    ArchivedFlag = ".archived"
 
     def __init__(self, roots=None):
         """
@@ -709,6 +712,23 @@ class Storage(object):
             self.__class__.__name__,
             ", ".join("%s=%s" % (b, path) for b, path in self._roots)
         )
+
+    @classmethod
+    def set_archived(cls, suite_path, state):
+        """Mark a saved-suite as archived or not
+
+        :param str suite_path: Path where suite is saved
+        :param bool state: Archive state
+        :return: None
+        """
+        archive_flag = os.path.join(suite_path, cls.ArchivedFlag)
+        is_archived = os.path.isfile(archive_flag)
+
+        if state and is_archived:
+            os.remove(archive_flag)
+        elif not state and not is_archived:
+            with open(archive_flag, "w") as f:
+                f.write("")
 
     def branches(self):
         """Get current suite storage branch names
@@ -735,17 +755,17 @@ class Storage(object):
 
         return os.path.join(root, name)
 
-    def iter_saved_suites(self, branch=None):
+    def iter_saved_suites(self, branch=None, archived=False):
         """Iter existing suites withing given roots
 
         :param branch: Suite storage branch. Iter all branches if not given.
+        :param bool archived: Iter archived suite. Default False.
         :type branch: str or None
         :return: A SavedSuite object iterator
         :rtype: collections.Iterator[SavedSuite]
         """
         # todo:
-        #   1. able to set suite as archived and omitted in view.
-        #   2. implement a package release hook that checks if tools consists.
+        #   implement a package release hook that checks if tools consists.
 
         for b, root in self._roots.items():
             if branch and b != branch:
@@ -759,12 +779,18 @@ class Storage(object):
                 filepath = os.path.join(path, "suite.yaml")
 
                 if os.path.isfile(filepath):
-                    yield SavedSuite(
+                    archive_flag = os.path.join(path, self.ArchivedFlag)
+                    is_archived = os.path.isfile(archive_flag)
+                    _keys = dict(
                         name=name,
                         branch=b,
                         path=path,
                         suite=None,  # lazy load
                     )
+                    if archived and is_archived:
+                        yield SavedSuite(archived=True, **_keys)
+                    elif not archived and not is_archived:
+                        yield SavedSuite(archived=False, **_keys)
 
 
 class InstalledPackages(object):
@@ -956,13 +982,14 @@ class SweetSuite(_Suite):
 
         return context
 
-    def save(self, path, verbose=False):
+    def save(self, path, as_archived=False, verbose=False):
         """Save the suite to disk.
 
         Args:
             path (str): Path to save the suite to. If a suite is already saved
                 at `path`, then it will be overwritten. Otherwise, if `path`
                 exists, an error is raised.
+            as_archived (bool): Save suite as archived
             verbose (bool): Show more messages.
         """
         if verbose and self._is_live:
@@ -986,6 +1013,8 @@ class SweetSuite(_Suite):
                 raise SuiteError("Cannot save, path exists: %r" % path)
 
         os.makedirs(path)
+        if as_archived:
+            Storage.set_archived(path, state=True)
 
         # write suite data
         data = self.to_dict()
