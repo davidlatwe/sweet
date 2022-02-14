@@ -101,6 +101,7 @@ class Session(object):
         stacked_resolve.stash_clicked.connect(ctrl.on_stash_clicked)
         storage_view.suite_selected.connect(ctrl.on_saved_suite_selected)
         storage_view.refresh_clicked.connect(ctrl.on_suite_storage_scan_clicked)
+        storage_suite.suites_archived.connect(ctrl.on_suites_archived)
 
         # control -> model
         ctrl.storage_scan_started.connect(storage_model.reset)
@@ -128,6 +129,7 @@ class Session(object):
         ctrl.suite_save_failed.connect(suite_head.on_suite_save_failed)
         ctrl.suite_loaded.connect(suite_head.on_suite_loaded)
         ctrl.suite_loaded.connect(lambda *_: view_.switch_tab(1))  # editor
+        ctrl.suite_archived.connect(storage_view.on_suite_archived)
         ctrl.suite_viewed.connect(storage_suite.on_suite_viewed)
         ctrl.context_added.connect(context_list.on_context_added)
         ctrl.context_added.connect(stacked_request.on_context_added)

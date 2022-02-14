@@ -121,6 +121,7 @@ class Controller(QtCore.QObject):
     suite_save_failed = QtCore.Signal(str)
     suite_loaded = QtCore.Signal(str, str, str, str)
     suite_viewed = QtCore.Signal(SavedSuite, str)
+    suite_archived = QtCore.Signal(SavedSuite, bool)
     context_added = QtCore.Signal(SuiteCtx)
     context_stashed = QtCore.Signal(str, ResolvedContext)
     context_resolved = QtCore.Signal(str, ResolvedContext)
@@ -245,6 +246,10 @@ class Controller(QtCore.QObject):
     @QtCore.Slot()  # noqa
     def on_suite_storage_scan_clicked(self):
         self.scan_suite_storage()
+
+    @QtCore.Slot(list, bool)  # noqa
+    def on_suites_archived(self, saved_suites, state):
+        self.set_suites_archived(saved_suites, state)
 
     def _mark_request_edited(self, name, edited):
         if edited:
@@ -422,6 +427,19 @@ class Controller(QtCore.QObject):
             error = ""
 
         self.suite_viewed.emit(saved_suite, error)
+
+    @_thread(name="suiteOp", blocks=("SuitePage", "StoragePage"))
+    def set_suites_archived(self, saved_suites, state):
+        """Mark a batch of saved suites as archived or not
+
+        :param list[SavedSuite] saved_suites:
+        :param bool state: Archive state
+        :return: None
+        """
+        for suite in saved_suites:
+            changed = self._sto.set_archived(suite.path, state=state)
+            if changed:
+                self.suite_archived.emit(suite, state)
 
     def _reset_suite(self):
         self._sop.reset()

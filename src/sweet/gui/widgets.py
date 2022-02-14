@@ -2189,11 +2189,14 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
 
         head = QtWidgets.QWidget()
+        head.setObjectName("ButtonBelt")
         refresh = QtWidgets.QPushButton()
         refresh.setObjectName("RefreshButton")
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText("Search saved suites..")
         search.setClearButtonEnabled(True)
+        archive = QtWidgets.QPushButton("A")  # todo: switch archive suites
+        archive.setCheckable(True)
 
         view = TreeView()
         proxy = QtCore.QSortFilterProxyModel()
@@ -2213,6 +2216,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         layout.setSpacing(8)
         layout.addWidget(refresh)
         layout.addWidget(search)
+        layout.addWidget(archive)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(8, 12, 8, 8)
@@ -2236,6 +2240,10 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self._model = model
         self._timer = timer
         self._search = search
+
+    @QtCore.Slot(core.SavedSuite, bool)  # noqa
+    def on_suite_archived(self, saved_suite, state):
+        pass  # todo: update suite view
 
     def model(self):
         return self._model
@@ -2307,6 +2315,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
 
 
 class SuiteInsightWidget(QtWidgets.QWidget):
+    suites_archived = QtCore.Signal(list, bool)
 
     def __init__(self, *args, **kwargs):
         super(SuiteInsightWidget, self).__init__(*args, **kwargs)
@@ -2324,7 +2333,8 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         action_bar = QtWidgets.QWidget()  # todo: feature incomplete
         action_bar.setObjectName("ButtonBelt")
         resolve_btn = QtWidgets.QPushButton("R")
-        archive_btn = QtWidgets.QPushButton("A")  # should be toggleable
+        archive_btn = QtWidgets.QPushButton("A")
+        archive_btn.setCheckable(True)
         stack_switch = QtWidgets.QPushButton("S")
         stack_switch.setCheckable(True)
         try_fix_btn = QtWidgets.QPushButton("F")
@@ -2388,6 +2398,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         layout.addWidget(splitter)
 
         tool_view.clicked.connect(self._on_item_activated)
+        archive_btn.toggled.connect(self._on_archive_toggled)
         stack_switch.toggled.connect(self._on_stack_toggled)
 
         self._name = name
@@ -2398,6 +2409,9 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._view = tool_view
         self._proxy = proxy
         self._model = model
+
+        self._current_suite = None
+        self._archive = archive_btn
         self._switch = stack_switch
         self._fix = try_fix_btn
 
@@ -2418,9 +2432,11 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         :type error_message: str or None
         :return:
         """
+        self._current_suite = None
         is_branch = saved_suite.name == saved_suite.branch == ""
         self._name.setText(saved_suite.name)
         self._desc.setPlainText(saved_suite.description)
+        self._archive.setChecked(saved_suite.archived)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
         index = self._proxy.mapFromSource(item.index())
@@ -2439,6 +2455,13 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
         self._update_action_buttons(bool(error_message))
         self._ctxs.load(saved_suite)
+        self._current_suite = saved_suite
+
+    def _on_archive_toggled(self, archive):
+        if self._current_suite is None:
+            log.debug("No current viewing suite.")
+            return
+        self.suites_archived.emit([self._current_suite], archive)
 
     def _on_stack_toggled(self, show_error):
         self._stack.setCurrentIndex(int(show_error))
