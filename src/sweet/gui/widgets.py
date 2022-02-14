@@ -2408,9 +2408,9 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
     def _on_item_activated(self, index):
         index = self._proxy.mapToSource(index)
-        priority = self._model.data(index, self._model.ContextSortRole)
-        if priority is not None:
-            self._ctxs.on_context_selected(priority)
+        ctx_name = self._model.data(index, self._model.ContextNameRole)
+        if ctx_name is not None:
+            self._ctxs.on_context_selected(ctx_name)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
@@ -2460,14 +2460,14 @@ class SuiteContextsView(QtWidgets.QWidget):
         self._view.reset()
 
         for ctx in saved_suite.iter_contexts():
-            self._contexts[ctx.priority] = ctx.context
+            self._contexts[ctx.name] = ctx.context
 
-    def on_context_selected(self, priority: int):
-        priority = priority if len(self._contexts) else -1
-        if priority < 0:
+    def on_context_selected(self, ctx_name: str):
+        if ctx_name not in self._contexts:
+            log.critical(f"Context {ctx_name} not loaded.")
             self._view.reset()
         else:
-            context = self._contexts[priority]
+            context = self._contexts[ctx_name]
             self._view.load(context)
 
 

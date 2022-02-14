@@ -464,6 +464,7 @@ class ContextToolTreeSortProxyModel(QtCore.QSortFilterProxyModel):
 
 class SuiteCtxToolTreeModel(ToolTreeModel):
     BadSuiteRole = QtCore.Qt.UserRole + 30
+    ContextNameRole = QtCore.Qt.UserRole + 31
     ContextSortRole = QtCore.Qt.UserRole + 20
 
     def __init__(self, editable=True, *args, **kwargs):
@@ -556,6 +557,7 @@ class SuiteCtxToolTreeModel(ToolTreeModel):
             icon = self._icon_ctx if ctx.context.success else self._icon_ctx_f
             c = QtGui.QStandardItem(ctx.name)
             c.setIcon(icon)
+            c.setData(ctx.name, self.ContextNameRole)
             c.setData(ctx.priority, self.ContextSortRole)
             suite_item.appendRow(c)
             self.add_context_item(ctx.name, c)
