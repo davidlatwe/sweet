@@ -10,7 +10,8 @@ from rez.resolved_context import ResolvedContext
 
 from .. import util
 from ..core import \
-    SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants
+    SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants, \
+    BrokenContext
 from . import resources as res
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
@@ -754,11 +755,13 @@ class ContextDataModel(BaseItemModel):
             self.reset()
             self._context = context
 
-        self.read("suite_context_name", "Context Name", "not saved/loaded"),
-        self.read("status", "Context Status"),
-        self.read("created", "Resolved Date"),
-        self.read("requested_timestamp", "Ignore Packages After", "no timestamp set"),
-        self.read("package_paths"),
+        self.read("suite_context_name", "Context Name", "not saved/loaded")
+        self.read("status", "Context Status")
+        if not context.success:
+            self.read("failure_description", "Why Failed")
+        self.read("created", "Resolved Date")
+        self.read("requested_timestamp", "Ignore Packages After", "no timestamp set")
+        self.read("package_paths")
 
         self.read("_package_requests", "Requests")
         self.read("resolved_packages")
@@ -814,7 +817,8 @@ class ContextDataModel(BaseItemModel):
                 value = ""
 
         elif field == "status":
-            value = value.name
+            value = "broken" if isinstance(context, BrokenContext) \
+                else value.name
 
         elif field == "load_time":
             value = f"{value:.02} secs"
