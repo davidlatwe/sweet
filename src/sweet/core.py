@@ -672,6 +672,10 @@ class BrokenContext(ResolvedContext):
         self.failure_description = failure_description
         self.graph_string = "{}"
 
+    @property
+    def resolved_packages(self):
+        return []
+
     def validate(self):
         raise ResolvedContextError(str(self))
 
