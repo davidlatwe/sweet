@@ -597,7 +597,6 @@ class ValidNameLineEdit(QtWidgets.QLineEdit):
         self.setValidator(validator)
         self.setToolTip("Only alphanumeric characters A-Z, a-z, 0-9 and "
                         "_, -, . are allowed.")
-        self.setClearButtonEnabled(True)
 
         timer = QtCore.QTimer(self)
         timer.setSingleShot(True)
@@ -700,6 +699,7 @@ class ValidNameEditWidget(QtWidgets.QWidget):
         line = ValidNameLineEdit(blacklist=blacklist,
                                  default=default,
                                  blank_ok=blank_ok)
+        line.setClearButtonEnabled(True)
         line.setPlaceholderText(placeholder)
         message = QtWidgets.QLabel()
 
@@ -1345,9 +1345,11 @@ class ContextRequestWidget(QtWidgets.QWidget):
         naming = QtWidgets.QWidget()
         prefix_label = QtWidgets.QLabel("prefix:")
         prefix = ValidNameLineEdit()
+        prefix.setClearButtonEnabled(True)
         prefix.setPlaceholderText("context prefix..")
         suffix_label = QtWidgets.QLabel("suffix:")
         suffix = ValidNameLineEdit()
+        suffix.setClearButtonEnabled(True)
         suffix.setPlaceholderText("context suffix..")
 
         request = RequestEditorWidget()
