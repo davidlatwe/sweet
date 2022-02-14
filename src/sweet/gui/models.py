@@ -897,6 +897,14 @@ class ContextDataModel(BaseItemModel):
     def set_placeholder_color(self, color):
         self._placeholder_color = color
 
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        # for viewing/copying context data (especially when the value is a
+        # long path), item-editable flag is given. We re-implementing this
+        # method is just to ensure the value unchanged after edit-mode ended.
+        #
+        self.dataChanged.emit(index, index, 1)  # trigger column width update
+        return True
+
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if not index.isValid():
             return
@@ -932,9 +940,10 @@ class ContextDataModel(BaseItemModel):
         """
         if not index.isValid():
             return
+        column = index.column()
 
         base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-        if index.column() == 1:
+        if (column == 0 and self._show_attr) or column == 1:
             return base_flags | QtCore.Qt.ItemIsEditable
         return base_flags
 
