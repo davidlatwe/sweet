@@ -1587,6 +1587,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         name = ctx if isinstance(ctx, str) else ctx.name
         self._name = name
         self._tools.set_name(name)
+        self._context.reset()
 
     def set_resolved(self, context):
         """
@@ -1872,15 +1873,19 @@ class ResolvedContextView(QtWidgets.QWidget):
         self._view.reset_extension()
 
     def reset(self):
-        self._model.reset()
+        self._update_placeholder_color()  # set color for new model instance
+        self._model.pending()
         self._view.reset_extension()
 
     def changeEvent(self, event):
         super(ResolvedContextView, self).changeEvent(event)
         if event.type() == QtCore.QEvent.StyleChange:
             # update color when theme changed
-            color = self._view.palette().color(QtGui.QPalette.PlaceholderText)
-            self._model.set_placeholder_color(color)
+            self._update_placeholder_color()
+
+    def _update_placeholder_color(self):
+        color = self._view.palette().color(QtGui.QPalette.PlaceholderText)
+        self._model.set_placeholder_color(color)
 
 
 class ResolvedCode(QtWidgets.QWidget):

@@ -724,6 +724,14 @@ class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
         return accept
 
 
+class _PendingContext:
+    __getattr__ = (lambda self, k: "")
+    success = True
+    package_paths = resolved_packages = resolved_ephemerals \
+        = _package_requests = implicit_packages = package_filter \
+        = package_orderers = []
+
+
 class ContextDataModel(BaseItemModel):
     FieldNameRole = QtCore.Qt.UserRole + 10
     PlaceholderRole = QtCore.Qt.UserRole + 11
@@ -744,6 +752,9 @@ class ContextDataModel(BaseItemModel):
         self._context = None
         self._in_diff = None
 
+    def pending(self):
+        self.load(_PendingContext())  # noqa
+
     def load(self, context: ResolvedContext, diff=False):
         if diff and self._in_diff:
             log.critical("Context model already in diff mode.")
@@ -756,7 +767,7 @@ class ContextDataModel(BaseItemModel):
             self._context = context
 
         self.read("suite_context_name", "Context Name", "not saved/loaded")
-        self.read("status", "Context Status")
+        self.read("status", "Context Status", "no data")
         if not context.success:
             self.read("failure_description", "Why Failed")
         self.read("created", "Resolved Date")
@@ -816,14 +827,14 @@ class ContextDataModel(BaseItemModel):
             else:
                 value = ""
 
-        elif field == "status":
+        elif field == "status" and value != "":
             value = "broken" if isinstance(context, BrokenContext) \
                 else value.name
 
-        elif field == "load_time":
+        elif field == "load_time" and value != "":
             value = f"{value:.02} secs"
 
-        elif field == "solve_time":
+        elif field == "solve_time" and value != "":
             actual_solve_time = value - context.load_time
             value = f"{actual_solve_time:.02} secs"
 
