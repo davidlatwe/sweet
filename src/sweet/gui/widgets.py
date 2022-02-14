@@ -1834,7 +1834,7 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         top_bar = QtWidgets.QWidget()
         top_bar.setObjectName("ButtonBelt")
-        attr_toggle = QtWidgets.QPushButton()
+        attr_toggle = QtWidgets.QPushButton("T")
         attr_toggle.setCheckable(True)
         attr_toggle.setChecked(True)
 
@@ -2311,36 +2311,67 @@ class SuiteInsightWidget(QtWidgets.QWidget):
 
         name = QtWidgets.QLineEdit()
         desc = QtWidgets.QTextEdit()
-
-        tools = QtWidgets.QWidget()
-        view = ToolsView()
-        model = SuiteCtxToolTreeModel(editable=False)
-        proxy = ContextToolTreeSortProxyModel()
-        header = view.header()
-
-        proxy.setSourceModel(model)
-        view.setModel(proxy)
-        header.setSectionResizeMode(0, header.ResizeToContents)
         desc.setReadOnly(True)
         name.setReadOnly(True)
         name.setObjectName("SuiteNameView")
         name.setPlaceholderText("Suite name")
         desc.setPlaceholderText("Suite description")
 
-        contexts = SuiteContextsView()
-        error = BadSuiteMessageBox()
-        suite = QtWidgets.QStackedWidget()
-        suite.addWidget(tools)
-        suite.addWidget(error)
+        overview = QtWidgets.QWidget()
 
-        overview = QtWidgets.QSplitter()
-        overview.addWidget(suite)
-        overview.addWidget(contexts)
-        overview.setOrientation(QtCore.Qt.Horizontal)
-        overview.setChildrenCollapsible(False)
-        overview.setContentsMargins(0, 0, 0, 0)
-        overview.setStretchFactor(0, 4)
-        overview.setStretchFactor(1, 6)
+        action_bar = QtWidgets.QWidget()  # todo: feature incomplete
+        action_bar.setObjectName("ButtonBelt")
+        resolve_btn = QtWidgets.QPushButton("R")
+        archive_btn = QtWidgets.QPushButton("A")  # should be toggleable
+        stack_switch = QtWidgets.QPushButton("S")
+        stack_switch.setCheckable(True)
+        try_fix_btn = QtWidgets.QPushButton("F")
+        delete_btn = QtWidgets.QPushButton("D")
+        delete_btn.setEnabled(False)  # enabled when the suite is archived
+
+        contexts = SuiteContextsView()
+        _tool_view = QtWidgets.QWidget()
+        model = SuiteCtxToolTreeModel(editable=False)
+        proxy = ContextToolTreeSortProxyModel()
+        proxy.setSourceModel(model)
+        tool_view = ToolsView()
+        tool_view.setModel(proxy)
+        header = tool_view.header()
+        header.setSectionResizeMode(0, header.ResizeToContents)
+
+        error_view = BadSuiteMessageBox()
+
+        layout = QtWidgets.QHBoxLayout(_tool_view)
+        layout.addWidget(tool_view)
+
+        info_view = QtWidgets.QSplitter()
+        info_view.addWidget(_tool_view)
+        info_view.addWidget(contexts)
+        info_view.setOrientation(QtCore.Qt.Horizontal)
+        info_view.setChildrenCollapsible(False)
+        info_view.setContentsMargins(0, 0, 0, 0)
+        info_view.setStretchFactor(0, 4)
+        info_view.setStretchFactor(1, 6)
+
+        view_stack = QtWidgets.QStackedWidget()
+        view_stack.addWidget(info_view)
+        view_stack.addWidget(error_view)
+
+        layout = QtWidgets.QVBoxLayout(action_bar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(resolve_btn)
+        layout.addWidget(archive_btn)
+        layout.addSpacing(10)
+        layout.addWidget(stack_switch)
+        layout.addWidget(try_fix_btn)
+        layout.addWidget(delete_btn)
+        layout.addStretch(True)
+
+        layout = QtWidgets.QHBoxLayout(overview)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(action_bar)
+        layout.addWidget(view_stack)
 
         splitter = QtWidgets.QSplitter()
         splitter.setOrientation(QtCore.Qt.Vertical)
@@ -2349,25 +2380,24 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 8)
 
-        layout = QtWidgets.QVBoxLayout(tools)
-        layout.setContentsMargins(2, 11, 10, 0)
-        layout.addWidget(view)
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(2, 4, 2, 4)
         layout.addWidget(name)
         layout.addWidget(splitter)
 
-        view.clicked.connect(self._on_item_activated)
+        tool_view.clicked.connect(self._on_item_activated)
+        stack_switch.toggled.connect(self._on_stack_toggled)
 
         self._name = name
         self._desc = desc
-        self._suite = suite
-        self._error = error
+        self._stack = view_stack
+        self._error = error_view
         self._ctxs = contexts
-        self._view = view
+        self._view = tool_view
         self._proxy = proxy
         self._model = model
+        self._switch = stack_switch
+        self._fix = try_fix_btn
 
     @QtCore.Slot()  # noqa
     def on_refreshed(self):
@@ -2389,7 +2419,6 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         is_branch = saved_suite.name == saved_suite.branch == ""
         self._name.setText(saved_suite.name)
         self._desc.setPlainText(saved_suite.description)
-        self._suite.setCurrentIndex(0)
         added = self._model.add_suite(saved_suite)
         item = self._model.find_suite(saved_suite)
         index = self._proxy.mapFromSource(item.index())
@@ -2398,24 +2427,30 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         if added and not is_branch:
             if error_message:
                 self._model.set_bad_suite(item, error_message)
-                self._suite.setCurrentIndex(1)
                 self._error.set_message(error_message)
-            else:
-                self._model.update_suite_tools(saved_suite)
-                self._view.expandRecursively(index)
+            self._model.update_suite_tools(saved_suite)
+            self._view.expandRecursively(index)
         else:
-            error = self._model.is_bad_suite(item)
-            if error:
-                self._suite.setCurrentIndex(1)
-                self._error.set_message(error)
+            error_message = self._model.is_bad_suite(item)
+            if error_message:
+                self._error.set_message(error_message)
 
+        self._update_action_buttons(bool(error_message))
         self._ctxs.load(saved_suite)
+
+    def _on_stack_toggled(self, show_error):
+        self._stack.setCurrentIndex(int(show_error))
 
     def _on_item_activated(self, index):
         index = self._proxy.mapToSource(index)
         ctx_name = self._model.data(index, self._model.ContextNameRole)
         if ctx_name is not None:
             self._ctxs.on_context_selected(ctx_name)
+
+    def _update_action_buttons(self, on_error):
+        self._fix.setEnabled(on_error)
+        self._switch.setEnabled(on_error)
+        self._switch.setChecked(on_error)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
