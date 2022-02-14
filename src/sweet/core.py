@@ -3,6 +3,7 @@ Main business logic, with event notification
 """
 import os
 import sys
+import logging
 import warnings
 from typing import List
 from dataclasses import dataclass
@@ -33,6 +34,8 @@ from .exceptions import (
     ContextNameWarning,
     ContextBrokenWarning,
 )
+
+log = logging.getLogger("sweet")
 
 
 sweetconfig = rezconfig.plugins.command.sweet
@@ -719,16 +722,30 @@ class Storage(object):
 
         :param str suite_path: Path where suite is saved
         :param bool state: Archive state
-        :return: None
+        :return: True if archive state changed or False if not
+        :rtype: bool
         """
         archive_flag = os.path.join(suite_path, cls.ArchivedFlag)
         is_archived = os.path.isfile(archive_flag)
 
-        if state and is_archived:
-            os.remove(archive_flag)
-        elif not state and not is_archived:
-            with open(archive_flag, "w") as f:
-                f.write("")
+        if not state and is_archived:
+            try:
+                os.remove(archive_flag)
+            except Exception as e:
+                log.critical(f"Unarchive suite failed: {str(e)}")
+            else:
+                return True
+
+        elif state and not is_archived:
+            try:
+                with open(archive_flag, "w") as f:
+                    f.write("")
+            except Exception as e:
+                log.critical(f"Archive suite failed: {str(e)}")
+            else:
+                return True
+
+        return False
 
     def branches(self):
         """Get current suite storage branch names
