@@ -4,9 +4,10 @@ import inspect
 import traceback
 import functools
 from itertools import groupby
-from rez.resolved_context import ResolvedContext
+
 from ..core import (
     SuiteOp,
+    RollingContext,
     InstalledPackages,
     Storage,
     SuiteCtx,
@@ -123,8 +124,8 @@ class Controller(QtCore.QObject):
     suite_viewed = QtCore.Signal(SavedSuite, str)
     suite_archived = QtCore.Signal(SavedSuite, bool)
     context_added = QtCore.Signal(SuiteCtx)
-    context_stashed = QtCore.Signal(str, ResolvedContext)
-    context_resolved = QtCore.Signal(str, ResolvedContext)
+    context_stashed = QtCore.Signal(str, RollingContext)
+    context_resolved = QtCore.Signal(str, RollingContext)
     context_dropped = QtCore.Signal(str)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
@@ -415,7 +416,7 @@ class Controller(QtCore.QObject):
         _ = list(saved_suite.iter_contexts())
         #   shouldn't raise any error while iterating contexts, because
         #   SweetSuite.contexts() already handled all exceptions with
-        #   BrokenContext yielded.
+        #   RollingContext yielded.
 
         try:
             # update tools into suite

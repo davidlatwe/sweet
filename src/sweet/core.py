@@ -25,7 +25,6 @@ from rez.package_repository import package_repository_manager
 
 from . import util
 from .exceptions import (
-    RezError,
     ResolvedContextError,
     SuiteError,
     SuiteOpError,
@@ -75,7 +74,7 @@ class SuiteCtx:
     priority: int
     prefix: str
     suffix: str
-    context: ResolvedContext
+    context: "RollingContext"
     requests: List[PackageRequest]
     resolves: List[Variant]
     # Advance options
@@ -327,14 +326,10 @@ class SuiteOp(object):
         :param requests: List of strings or PackageRequest objects representing
             the request for resolving a context.
         :type requests: list[str or PackageRequest]
-        :return: A ResolvedContext object if succeed or BrokenContext if not.
-        :rtype: ResolvedContext or BrokenContext
+        :return: A RollingContext object
+        :rtype: RollingContext
         """
-        try:
-            context = ResolvedContext(requests)
-        except RezError as e:
-            context = BrokenContext(str(e), requests)
-        return context
+        return RollingContext(requests)
 
     def add_context(self, name, context):
         """Add one resolved context to suite
@@ -348,11 +343,12 @@ class SuiteOp(object):
 
         :param str name: Name to store the context under.
         :param context: Context to add. Must be a success resolved context.
-        :type context: ResolvedContext
+        :type context: RollingContext
         :return: None if failed, or a SuiteCtx that represents the context
             just being added.
         :rtype: None or SuiteCtx
         """
+        assert isinstance(context, RollingContext)
         if self._suite.has_context(name):
             _warn("Context already in suite: %r" % name)
             return
@@ -453,7 +449,7 @@ class SuiteOp(object):
         :param new_alias: Change tool alias, `tool_name` must be given.
         :param set_hidden: Change tool visibility, `tool_name` must be given.
         :type new_name: str or None
-        :type context: ResolvedContext or None
+        :type context: RollingContext or None
         :type prefix: str or None
         :type suffix: str or None
         :type tool_name: str or None
@@ -468,11 +464,13 @@ class SuiteOp(object):
             _warn("No such context in suite: %r" % ctx_name)
             return
 
-        if context is not None and not context.success:
-            _d = context.failure_description
-            _m = "Context %r not resolved: %s" % (name, _d)
-            _warn(_m, category=ContextBrokenWarning)
-            return
+        if context is not None:
+            assert isinstance(context, RollingContext)
+            if not context.success:
+                _d = context.failure_description
+                _m = "Context %r not resolved: %s" % (name, _d)
+                _warn(_m, category=ContextBrokenWarning)
+                return
 
         updating_tool = new_alias is not None or set_hidden is not None
         if updating_tool:
@@ -532,7 +530,7 @@ class SuiteOp(object):
 
         :param str name: context name
         :return: A copy of the context
-        :rtype: ResolvedContext
+        :rtype: RollingContext
         """
         return self._suite.context(name).copy()
 
@@ -672,30 +670,91 @@ class RollingContext(ResolvedContext):
     If error raised in ResolvedContext.get_tools(), it will be raised after
     Suite._update_tools() completed.
 
+    Also, a simple replacement for a failed context
+
+    By "failed", it means a context failed
+        1. when the resolve leads to non-existing package, or
+        2. when trying to load a non-existing .rxt file.
+
     """
 
     def __init__(self, *args, **kwargs):
-        super(RollingContext, self).__init__(*args, **kwargs)
-        self._tools_err = None
+        self._is_broken = False
+        self._err_on_get_tools = None
+        try:
+            super(RollingContext, self).__init__(*args, **kwargs)
+        except Exception as e:
+            r = self._get_broken(e, *args, **kwargs)
+            self.__dict__.update(r.__dict__)
+
+    @classmethod
+    def _get_broken(cls, e, *args, **kwargs):
+        r = cls.__new__(cls)
+        with _BrokenResolver.patch_resolver():
+            ResolvedContext.__init__(r, *args, **kwargs)
+        r._is_broken = True
+        r.failure_description = str(e)
+        r._resolved_packages = []
+        r.graph_string = "{}"
+        return r
 
     @classmethod
     def from_dict(cls, d, identifier_str=None):
         r = super(RollingContext, cls).from_dict(d, identifier_str)
-        r._tools_err = None
+        r._is_broken = False
+        r._err_on_get_tools = None
         return r
 
-    def get_tools_error(self):
-        return self._tools_err
+    @classmethod
+    def load(cls, path):
+        try:
+            return super(RollingContext, cls).load(path)
+        except Exception as e:
+            return cls._get_broken(e, package_requests=[])
 
     def get_tools(self, request_only=False):
-        self._tools_err = None
+        self._err_on_get_tools = None
         try:
             return super(RollingContext, self).get_tools(request_only)
         except Exception as e:
-            self._tools_err = e
+            self._err_on_get_tools = e
             name = self.suite_context_name or ""
             log.error(f"Failed to get tools from context {name!r}: {str(e)}")
             return {}
+
+    @ResolvedContext._on_success
+    def validate(self):
+        if self._is_broken:
+            raise ResolvedContextError(
+                f"This is a broken context: {self.failure_description}")
+        super(RollingContext, self).validate()
+
+    @property
+    def usable(self):
+        return self.success and self._err_on_get_tools is None
+
+    @property
+    def broken(self):
+        return self._is_broken
+
+    @property
+    def err_on_get_tools(self):
+        return self._err_on_get_tools
+
+    def print_info(self, buf=sys.stdout, *args, **kwargs):
+        if self._is_broken:
+            self._print_broken_info(buf=buf, *args, **kwargs)
+        else:
+            super(RollingContext, self).print_info(buf=buf, *args, **kwargs)
+
+    def _print_broken_info(self, buf=sys.stdout, *args, **kwargs):
+        from rez.utils.colorize import warning
+        from rez.resolved_context import Printer
+        super(RollingContext, self).print_info(buf, *args, **kwargs)
+        # the Printer may gets patched in GUI for writing HTML formatted log
+        _pr = Printer(buf)
+        _pr("This is a broken context:", warning)
+        _pr("A context that error out during the resolve.", warning)
 
     @classmethod
     @contextmanager
@@ -706,39 +765,6 @@ class RollingContext(ResolvedContext):
         yield
         setattr(suite, "ResolvedContext", ResolvedContext)
         setattr(resolved_context, "ResolvedContext", ResolvedContext)
-
-
-class BrokenContext(RollingContext):
-    """A simple replacement for a failed context
-
-    By "failed", it means a context failed
-        1. when the resolve leads to non-existing package, or
-        2. when trying to load a non-existing .rxt file.
-
-    """
-    def __init__(self, failure_description, package_requests=None,
-                 *args, **kwargs):
-        _requests = package_requests or []
-        with _BrokenResolver.patch_resolver():
-            super(BrokenContext, self).__init__(_requests, *args, **kwargs)
-        self.failure_description = failure_description
-        self.graph_string = "{}"
-
-    @property
-    def resolved_packages(self):
-        return []
-
-    def validate(self):
-        raise ResolvedContextError(str(self))
-
-    def print_info(self, buf=sys.stdout, *args, **kwargs):
-        from rez.utils.colorize import warning
-        from rez.resolved_context import Printer
-        super(BrokenContext, self).print_info(buf, *args, **kwargs)
-        # the Printer may gets patched in GUI for writing HTML formatted log
-        _pr = Printer(buf)
-        _pr("This is a broken context:", warning)
-        _pr("A context that error out during the resolve.", warning)
 
 
 class Storage(object):
@@ -969,12 +995,12 @@ def re_resolve_rxt(context):
     :param context: .rxt loaded context
     :type context: ResolvedContext
     :return: new resolved context
-    :rtype: ResolvedContext
+    :rtype: RollingContext
     :raises AssertionError: If no context.load_path (not loaded from .rxt)
     """
     assert context.load_path, "Not a loaded context."
     rxt = context
-    return ResolvedContext(
+    return RollingContext(
         package_requests=rxt.requested_packages(),
         timestamp=rxt.requested_timestamp,
         package_paths=rxt.package_paths,
@@ -1036,16 +1062,7 @@ class SweetSuite(_Suite):
         :return:
         """
         with RollingContext.patch_rolling_context():
-            try:
-                context = super(SweetSuite, self).context(name)
-            except AssertionError:
-                raise
-            except FileNotFoundError as e:
-                context = BrokenContext(str(e))
-                data = self._context(name)
-                data["context"] = context
-
-        return context
+            return super(SweetSuite, self).context(name)
 
     def save(self, path, as_archived=False, verbose=False):
         """Save the suite to disk.
@@ -1158,6 +1175,7 @@ class SweetSuite(_Suite):
         return s
 
     def add_context(self, name, context, prefix_char=None):
+        assert isinstance(context, RollingContext)
         if not name:
             # todo: implement filesystem valid name check and push the
             #   change into nerdvegas/rez.
@@ -1234,9 +1252,10 @@ class SweetSuite(_Suite):
 
         Args:
             name (str): Name to store the context under.
-            context (ResolvedContext): Context to add/update.
+            context (RollingContext): Context to add/update.
 
         """
+        assert isinstance(context, RollingContext)
         if not context.success:
             raise SuiteError("Context is not resolved: %r" % name)
 
@@ -1288,9 +1307,8 @@ class SweetSuite(_Suite):
             if context is None:
                 continue  # possibly not yet loaded
             if context.success:
-                if isinstance(context, RollingContext) \
-                        and context.get_tools_error() is not None:
-                    raise context.get_tools_error()
+                if not context.usable:
+                    raise context.err_on_get_tools
             else:
                 raise ResolvedContextError(context.failure_description)
 

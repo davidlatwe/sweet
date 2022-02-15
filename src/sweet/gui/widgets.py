@@ -8,7 +8,6 @@ from itertools import zip_longest
 from contextlib import contextmanager
 
 from rez.system import system
-from rez.resolved_context import ResolvedContext
 from rez.utils import colorize
 
 from .. import lib, core
@@ -884,28 +883,28 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self._callbacks.insert(0, getattr(panel, "callbacks", {}))
         self.run_panel_callback(0, op_name, ctx)
 
-    @QtCore.Slot(str, ResolvedContext)  # noqa
+    @QtCore.Slot(str, core.RollingContext)  # noqa
     def on_context_stashed(self, name, context):
         """
 
         :param name:
         :param context:
         :type name: str
-        :type context: ResolvedContext or core.BrokenContext
+        :type context: core.RollingContext
         :return:
         """
         op_name = ":stashed:"
         index = self._names.index(name)
         self.run_panel_callback(index, op_name, context)
 
-    @QtCore.Slot(str, ResolvedContext)  # noqa
+    @QtCore.Slot(str, core.RollingContext)  # noqa
     def on_context_resolved(self, name, context):
         """
 
         :param name:
         :param context:
         :type name: str
-        :type context: ResolvedContext or core.BrokenContext
+        :type context: core.RollingContext
         :return:
         """
         op_name = ":resolved:"
@@ -1511,8 +1510,8 @@ class ContextResolveWidget(QtWidgets.QWidget):
 
         self._solve_line = solve_line
         self._stash_line = stash_line
-        self._stashes = []  # type: list[ResolvedContext]
-        self._staged = None  # type: ResolvedContext or None
+        self._stashes = []  # type: list[core.RollingContext]
+        self._staged = None  # type: core.RollingContext or None
 
         self._icon_re = QtGui.QIcon(":/icons/lightning-fill-mono.svg")
         self._icon_rx = QtGui.QIcon(":/icons/file-earmark-code-fill.svg")
@@ -1593,7 +1592,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
 
     def set_resolved(self, context):
         """
-        :param ResolvedContext context:
+        :param core.RollingContext context:
         """
         self._solve_line.set_timestamp(context.created)
         self._context.load(context)

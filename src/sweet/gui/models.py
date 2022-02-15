@@ -6,12 +6,11 @@ from itertools import zip_longest
 
 from rez.packages import Variant
 from rez.config import config as rezconfig
-from rez.resolved_context import ResolvedContext
 
 from .. import util
 from ..core import \
     SuiteCtx, SuiteTool, SavedSuite, PkgFamily, PkgVersion, Constants, \
-    BrokenContext
+    RollingContext
 from . import resources as res
 from ._vendor.Qt5 import QtCore, QtGui
 from ._vendor import qjsonmodel
@@ -555,7 +554,7 @@ class SuiteCtxToolTreeModel(ToolTreeModel):
         self._suite_namespace = key
 
         for ctx in saved_suite.iter_contexts():
-            icon = self._icon_ctx if ctx.context.success else self._icon_ctx_f
+            icon = self._icon_ctx if ctx.context.usable else self._icon_ctx_f
             c = QtGui.QStandardItem(ctx.name)
             c.setIcon(icon)
             c.setData(ctx.name, self.ContextNameRole)
@@ -726,7 +725,7 @@ class ResolvedEnvironmentProxyModel(QtCore.QSortFilterProxyModel):
 
 class _PendingContext:
     __getattr__ = (lambda self, k: "")
-    success = True
+    success = usable = True
     package_paths = resolved_packages = resolved_ephemerals \
         = _package_requests = implicit_packages = package_filter \
         = package_orderers = []
@@ -744,8 +743,8 @@ class ContextDataModel(BaseItemModel):
         super(ContextDataModel, self).__init__(*args, **kwargs)
         self._show_attr = False  # don't reset this, for sticking toggle state
         self._placeholder_color = None
-        self._context = None  # type: ResolvedContext or None
-        self._in_diff = None  # type: ResolvedContext or None
+        self._context = None  # type: RollingContext or None
+        self._in_diff = None  # type: RollingContext or None
 
     def reset(self):
         super(ContextDataModel, self).reset()
@@ -755,7 +754,7 @@ class ContextDataModel(BaseItemModel):
     def pending(self):
         self.load(_PendingContext())  # noqa
 
-    def load(self, context: ResolvedContext, diff=False):
+    def load(self, context: RollingContext, diff=False):
         if diff and self._in_diff:
             log.critical("Context model already in diff mode.")
             return
@@ -770,6 +769,8 @@ class ContextDataModel(BaseItemModel):
         self.read("status", "Context Status", "no data")
         if not context.success:
             self.read("failure_description", "Why Failed")
+        if not context.usable:
+            self.read("err_on_get_tools", "Why Not Usable")
         self.read("created", "Resolved Date")
         self.read("requested_timestamp", "Ignore Packages After", "no timestamp set")
         self.read("package_paths")
@@ -810,7 +811,7 @@ class ContextDataModel(BaseItemModel):
     def read(self, field, pretty=None, placeholder=None):
         placeholder = placeholder or ""
         pretty = pretty or " ".join(w.capitalize() for w in field.split("_"))
-        context = self._in_diff or self._context
+        context = self._in_diff or self._context  # type: RollingContext
         assert context is not None
 
         # value
@@ -828,8 +829,8 @@ class ContextDataModel(BaseItemModel):
                 value = ""
 
         elif field == "status" and value != "":
-            value = "broken" if isinstance(context, BrokenContext) \
-                else value.name
+            value = "broken" if context.broken else value.name
+            value += "" if context.usable else " (but not usable)"
 
         elif field == "load_time" and value != "":
             value = f"{value:.02} secs"
@@ -846,6 +847,9 @@ class ContextDataModel(BaseItemModel):
             indicator = _LocationIndicator()
             icon = [indicator.compute(pkg.resource.location)[1] for pkg in value]
             value = [pkg.qualified_name for pkg in value]
+
+        elif field == "err_on_get_tools":
+            field = ""
 
         # add row(s)
 
