@@ -342,7 +342,6 @@ class ToolTreeModel(BaseItemModel):
         if role == QtCore.Qt.EditRole:
             is_tool = bool(index.data(self.ToolItemRole))
             if index.column() == 0 and is_tool:
-                # todo: need a alias name validator
                 ctx_name = self.data(index.parent(), QtCore.Qt.DisplayRole)
                 tool_name = self.data(index, self.ToolNameRole)
                 item = self.itemFromIndex(index)
