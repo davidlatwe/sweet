@@ -631,10 +631,7 @@ class SuiteOp(object):
         return False
 
     def _ctx_data_to_tuple(self, d):
-        try:
-            context = self._suite.context(d["name"])
-        except FileNotFoundError as e:
-            context = BrokenContext(str(e))
+        context = self._suite.context(d["name"])
         rq = [r for r in context.requested_packages()]
         rs = [r for r in context.resolved_packages]
         return SuiteCtx(
@@ -666,8 +663,58 @@ class SuiteOp(object):
         )
 
 
-class BrokenContext(ResolvedContext):
+class RollingContext(ResolvedContext):
+    """A ResolvedContext subclass that suppress error in get_tools()
+
+    This allows suite to bypass invalid context (a context loaded from a .rxt
+    which becomes invalid) and continue to get tools from other contexts.
+
+    If error raised in ResolvedContext.get_tools(), it will be raised after
+    Suite._update_tools() completed.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(RollingContext, self).__init__(*args, **kwargs)
+        self._tools_err = None
+
+    @classmethod
+    def from_dict(cls, d, identifier_str=None):
+        r = super(RollingContext, cls).from_dict(d, identifier_str)
+        r._tools_err = None
+        return r
+
+    def get_tools_error(self):
+        return self._tools_err
+
+    def get_tools(self, request_only=False):
+        self._tools_err = None
+        try:
+            return super(RollingContext, self).get_tools(request_only)
+        except Exception as e:
+            self._tools_err = e
+            name = self.suite_context_name or ""
+            log.error(f"Failed to get tools from context {name!r}: {str(e)}")
+            return {}
+
+    @classmethod
+    @contextmanager
+    def patch_rolling_context(cls):
+        from rez import suite, resolved_context
+        setattr(suite, "ResolvedContext", cls)
+        setattr(resolved_context, "ResolvedContext", cls)
+        yield
+        setattr(suite, "ResolvedContext", ResolvedContext)
+        setattr(resolved_context, "ResolvedContext", ResolvedContext)
+
+
+class BrokenContext(RollingContext):
     """A simple replacement for a failed context
+
+    By "failed", it means a context failed
+        1. when the resolve leads to non-existing package, or
+        2. when trying to load a non-existing .rxt file.
+
     """
     def __init__(self, failure_description, package_requests=None,
                  *args, **kwargs):
@@ -988,14 +1035,15 @@ class SweetSuite(_Suite):
         :param name:
         :return:
         """
-        try:
-            context = super(SweetSuite, self).context(name)
-        except AssertionError:
-            raise
-        except Exception as e:
-            context = BrokenContext(str(e))
-            data = self._context(name)
-            data["context"] = context
+        with RollingContext.patch_rolling_context():
+            try:
+                context = super(SweetSuite, self).context(name)
+            except AssertionError:
+                raise
+            except FileNotFoundError as e:
+                context = BrokenContext(str(e))
+                data = self._context(name)
+                data["context"] = context
 
         return context
 
@@ -1229,17 +1277,22 @@ class SweetSuite(_Suite):
                 self.update_context(name, re_resolve_rxt(context))
 
     def _update_tools(self):
-        try:
-            super(SweetSuite, self)._update_tools()
-        except ResolvedContextError as e:
-            for data in self.contexts.values():
-                context = data.get("context")
-                if context is None:
-                    continue  # possibly not yet loaded
-                if not context.success and context.failure_description:
-                    raise ResolvedContextError(context.failure_description)
+        report_err = self.tools is None
+
+        super(SweetSuite, self)._update_tools()
+
+        if not report_err:
+            return
+        for data in self.contexts.values():
+            context = data.get("context")  # type: RollingContext
+            if context is None:
+                continue  # possibly not yet loaded
+            if context.success:
+                if isinstance(context, RollingContext) \
+                        and context.get_tools_error() is not None:
+                    raise context.get_tools_error()
             else:
-                raise e
+                raise ResolvedContextError(context.failure_description)
 
     # Exposing protected member that I'd like to use.
     update_tools = _update_tools
