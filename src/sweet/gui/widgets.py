@@ -2452,7 +2452,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
             if error_message:
                 self._error.set_message(error_message)
 
-        self._update_action_buttons(bool(error_message))
+        self._update_action_buttons(bool(error_message), show_error=added)
         self._ctxs.load(saved_suite)
         self._current_suite = saved_suite
 
@@ -2471,10 +2471,10 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         if ctx_name is not None:
             self._ctxs.on_context_selected(ctx_name)
 
-    def _update_action_buttons(self, on_error):
+    def _update_action_buttons(self, on_error, show_error):
         self._fix.setEnabled(on_error)
         self._switch.setEnabled(on_error)
-        self._switch.setChecked(on_error)
+        self._switch.setChecked(on_error and show_error)
 
 
 class BadSuiteMessageBox(QtWidgets.QWidget):
