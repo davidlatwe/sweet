@@ -51,7 +51,7 @@ __all__ = (
     "SavedSuite",
     "PkgFamily",
     "PkgVersion",
-    "BrokenContext",
+    "RollingContext",
 
     "Constants",
 )
