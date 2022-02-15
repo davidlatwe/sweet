@@ -386,7 +386,7 @@ class Controller(QtCore.QObject):
             # widgets.SuiteInsightWidget already took cared of this with
             # traceback shown in tool view, simply prompt error message
             # here should be fine.
-            message = f"Suite corrupted: {path}"
+            message = f"Unable to load, suite corrupted: {path}"
             log.error(str(e))
             log.error(message)
             return
@@ -421,7 +421,7 @@ class Controller(QtCore.QObject):
             # update tools into suite
             _ = list(saved_suite.iter_saved_tools())
         except Exception as e:
-            log.error(f"Suite corrupted: {saved_suite.path}")
+            log.error(f"Unable to view, suite corrupted: {saved_suite.path}")
             error = f"{str(e)}\n\n{traceback.format_exc()}"
         else:
             error = ""
