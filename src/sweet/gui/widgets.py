@@ -1852,6 +1852,7 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
         layout.addWidget(top_bar)
         layout.addWidget(view)
 
@@ -2342,13 +2343,10 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         action_bar = QtWidgets.QWidget()  # todo: feature incomplete
         action_bar.setObjectName("ButtonBelt")
         resolve_btn = QtWidgets.QPushButton("R")
-        archive_btn = QtWidgets.QPushButton("A")
-        archive_btn.setCheckable(True)
         stack_switch = QtWidgets.QPushButton("S")
         stack_switch.setCheckable(True)
-        try_fix_btn = QtWidgets.QPushButton("F")
-        delete_btn = QtWidgets.QPushButton("D")
-        delete_btn.setEnabled(False)  # enabled when the suite is archived
+        archive_btn = QtWidgets.QPushButton("A")
+        archive_btn.setCheckable(True)
 
         contexts = SuiteContextsView()
         _tool_view = QtWidgets.QWidget()
@@ -2363,6 +2361,7 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         error_view = BadSuiteMessageBox()
 
         layout = QtWidgets.QHBoxLayout(_tool_view)
+        layout.setContentsMargins(0, 10, 10, 8)
         layout.addWidget(tool_view)
 
         info_view = QtWidgets.QSplitter()
@@ -2382,15 +2381,13 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(resolve_btn)
-        layout.addWidget(archive_btn)
-        layout.addSpacing(10)
         layout.addWidget(stack_switch)
-        layout.addWidget(try_fix_btn)
-        layout.addWidget(delete_btn)
         layout.addStretch(True)
+        layout.addWidget(archive_btn)
 
         layout = QtWidgets.QHBoxLayout(overview)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
         layout.addWidget(action_bar)
         layout.addWidget(view_stack)
 
@@ -2422,7 +2419,6 @@ class SuiteInsightWidget(QtWidgets.QWidget):
         self._current_suite = None
         self._archive = archive_btn
         self._switch = stack_switch
-        self._fix = try_fix_btn
 
     @QtCore.Slot()  # noqa
     def on_refreshed(self):
@@ -2482,7 +2478,6 @@ class SuiteInsightWidget(QtWidgets.QWidget):
             self._ctxs.on_context_selected(ctx_name)
 
     def _update_action_buttons(self, on_error, show_error):
-        self._fix.setEnabled(on_error)
         self._switch.setEnabled(on_error)
         self._switch.setChecked(on_error and show_error)
 
