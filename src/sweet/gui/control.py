@@ -422,7 +422,8 @@ class Controller(QtCore.QObject):
             # update tools into suite
             _ = list(saved_suite.iter_saved_tools())
         except Exception as e:
-            log.error(f"Unable to view, suite corrupted: {saved_suite.path}")
+            log.warning("Error occurred in .rxt context (try re-resolve): "
+                        f"{saved_suite.path}")
             error = f"{str(e)}\n\n{traceback.format_exc()}"
         else:
             error = ""

@@ -233,8 +233,9 @@ class SuiteOp(object):
         suite.load_path = os.path.realpath(path)
 
         self._working_suite = suite
-        self._previous_tools = list(self.iter_tools(visible_only=True))
-
+        self._previous_tools = list(
+            self.iter_tools(visible_only=True, suppress_err=True)
+        )
         if re_resolve:
             suite.re_resolve_rxt_contexts()
         suite.load_path = None if as_import else os.path.realpath(path)
@@ -568,7 +569,12 @@ class SuiteOp(object):
         for d in ctx_data:
             yield self._ctx_data_to_tuple(d)
 
-    def iter_tools(self, context_name=None, visible_only=False):
+    def iter_tools(
+            self,
+            context_name=None,
+            visible_only=False,
+            suppress_err=False,
+    ):
         """Iterate all tools in suite
 
         Suite tools will be iterated in following order:
@@ -582,13 +588,13 @@ class SuiteOp(object):
 
         :param context_name: Only yield tools in this context.
         :type context_name: str or None
-        :param visible_only: If True, only yield tools that are not
+        :param bool visible_only: If True, only yield tools that are not
             hidden/shadowed/missing. Default False.
-        :type visible_only: bool
+        :param bool suppress_err: Ignore error raised in suite tool update.
         :return: An SuiteTool object iterator
         :rtype: collections.Iterator[SuiteTool]
         """
-        self._suite.update_tools()
+        self._suite.update_tools(suppress_err=suppress_err)
         _visible = set()
 
         def _match_context(d_):
@@ -719,7 +725,7 @@ class RollingContext(ResolvedContext):
         except Exception as e:
             self._err_on_get_tools = e
             name = self.suite_context_name or ""
-            log.error(f"Failed to get tools from context {name!r}: {str(e)}")
+            log.warning(f"Failed to get tools from context {name!r}: {str(e)}")
             return {}
 
     @ResolvedContext._on_success
@@ -1295,12 +1301,12 @@ class SweetSuite(_Suite):
             if context.load_path:
                 self.update_context(name, re_resolve_rxt(context))
 
-    def _update_tools(self):
+    def _update_tools(self, suppress_err=False):
         report_err = self.tools is None
 
         super(SweetSuite, self)._update_tools()
 
-        if not report_err:
+        if not report_err or suppress_err:
             return
         for data in self.contexts.values():
             context = data.get("context")  # type: RollingContext
