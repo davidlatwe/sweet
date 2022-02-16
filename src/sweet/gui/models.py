@@ -397,7 +397,7 @@ class ContextToolTreeModel(ToolTreeModel):
     def on_context_renamed(self, name, new_name):
         item = self.pop_context_item(name)
         if item is None:
-            log.critical(f"Context item {name!r} not exists.")
+            log.critical(f"Context item {name!r} not exists.(on renamed)")
         else:
             item.setText(new_name)
             self.add_context_item(new_name, item)
@@ -411,14 +411,14 @@ class ContextToolTreeModel(ToolTreeModel):
         for priority, name in enumerate(reversed(new_order)):
             c = self.get_context_item(name)
             if c is None:
-                log.critical(f"Context item {name!r} not exists.")
+                log.critical(f"Context item {name!r} not exists.(on reordered)")
             else:
                 c.setData(priority, self.ContextSortRole)
 
     def on_request_edited(self, name, edited):
         item = self.get_context_item(name)
         if item is None:
-            log.critical(f"Context item {name!r} not exists.")
+            log.critical(f"Context item {name!r} not exists.(on request edited)")
         else:
             font = QtGui.QFont()
             font.setBold(edited)

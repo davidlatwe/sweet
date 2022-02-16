@@ -928,6 +928,9 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         is_empty = len(self._names) == 0
 
         panel = self.widget(index)
+        panel.blockSignals(True)
+        # Avoid focusing related signal `RequestEditorWidget.edited` gets
+        #   emitted on removed.
         self.removeWidget(panel)
         if is_empty:
             self._add_panel_0()
