@@ -2190,7 +2190,7 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText("Search saved suites..")
         search.setClearButtonEnabled(True)
-        archive = QtWidgets.QPushButton("A")  # todo: switch archive suites
+        archive = QtWidgets.QPushButton("A")
         archive.setCheckable(True)
 
         view = TreeView()
