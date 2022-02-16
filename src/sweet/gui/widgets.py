@@ -2016,6 +2016,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 
         wrap = QtWidgets.QWidget()
         head = QtWidgets.QWidget()
+        head.setObjectName("ButtonBelt")
         body = QtWidgets.QWidget()
         body.setObjectName("PackagePage")
         side = QtWidgets.QWidget()

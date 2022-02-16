@@ -1072,16 +1072,9 @@ class BaseTheme(object):
         
         #RefreshButton {{
             icon: url(:/icons/arrow-clockwise.svg);
-            border: none;
-            width: {px(18)};
-            height: {px(18)};
         }}
-        
         #RefreshButton:hover {{
             icon: url(:/icons/arrow-clockwise-on.svg);
-            border: none;
-            width: {px(18)};
-            height: {px(18)};
         }}
         
         #ButtonBelt QPushButton {{
@@ -1097,6 +1090,9 @@ class BaseTheme(object):
         }}
         #ButtonBelt QPushButton:hover {{
             background-color: {self.palette.secondary.fade};
+        }}
+        #ButtonBelt QPushButton:pressed {{
+            background-color: {self.palette.primary};
         }}
         
         #DarkSwitch:checked {{
