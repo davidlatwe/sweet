@@ -2243,8 +2243,14 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self.refresh_clicked.emit(as_archived)
 
     @QtCore.Slot(core.SavedSuite, bool)  # noqa
-    def on_suite_archived(self, saved_suite, state):
-        pass  # todo: update suite view
+    def on_suite_archived(self, saved_suite, archive):
+        as_archived = self._archive.isChecked()
+        if archive == as_archived:
+            self._model.add_one_saved_suite(saved_suite)
+        else:
+            self._view.clearSelection()
+            self._view.selectionModel().clearCurrentIndex()
+            self._model.remove_one_saved_suite(saved_suite)
 
     def model(self):
         return self._model
@@ -2259,6 +2265,8 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self._model.mark_as_viewed(saved_suite)
 
     def _on_current_changed(self, index):
+        if not index.isValid():
+            return
         saved_suite = index.data(self._model.SavedSuiteRole)
         if saved_suite is None:  # possible root item (the branch)
             saved_suite = core.SavedSuite("", "", "", False, core.SweetSuite())

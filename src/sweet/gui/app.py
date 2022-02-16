@@ -117,7 +117,7 @@ class Session(object):
         ctrl.request_edited.connect(tool_stack_model.on_request_edited)
         ctrl.tools_updated.connect(tool_stack_model.update_tools)
         ctrl.suite_newed.connect(tool_stack_model.on_suite_newed)
-        ctrl.suite_saved.connect(storage_model.add_new_saved_suite)
+        ctrl.suite_saved.connect(storage_model.add_one_saved_suite)
 
         # control -> view
         ctrl.storage_scan_started.connect(storage_suite.on_refreshed)

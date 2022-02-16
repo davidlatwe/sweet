@@ -1128,7 +1128,7 @@ class SuiteStorageModel(BaseItemModel):
             suite_item.setData(False, self.ViewedRole)
             branches[suite.branch].appendRow(suite_item)
 
-    def add_new_saved_suite(self, suite):
+    def add_one_saved_suite(self, suite):
         suite_item = self.find_suite(suite)
         if suite_item is not None:
             return  # should be a loaded suite and just being saved over
@@ -1138,6 +1138,14 @@ class SuiteStorageModel(BaseItemModel):
         suite_item.setData(suite, self.SavedSuiteRole)
         suite_item.setData(False, self.ViewedRole)
         self.ensure_branch_item(suite.branch).appendRow(suite_item)
+
+    def remove_one_saved_suite(self, suite):
+        suite_item = self.find_suite(suite)
+        if suite_item is None:
+            log.critical(f"{suite.branch}/{suite.name} not found in model.")
+            return
+        index = suite_item.index()
+        self.removeRow(index.row(), index.parent())
 
     def find_branch(self, branch):
         """

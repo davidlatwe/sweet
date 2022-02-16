@@ -796,18 +796,18 @@ class Storage(object):
         )
 
     @classmethod
-    def set_archived(cls, suite_path, state):
+    def set_archived(cls, suite_path, archive):
         """Mark a saved-suite as archived or not
 
         :param str suite_path: Path where suite is saved
-        :param bool state: Archive state
+        :param bool archive: Archive state
         :return: True if archive state changed or False if not
         :rtype: bool
         """
         archive_flag = os.path.join(suite_path, cls.ArchivedFlag)
         is_archived = os.path.isfile(archive_flag)
 
-        if not state and is_archived:
+        if not archive and is_archived:
             try:
                 os.remove(archive_flag)
             except Exception as e:
@@ -815,7 +815,7 @@ class Storage(object):
             else:
                 return True
 
-        elif state and not is_archived:
+        elif archive and not is_archived:
             try:
                 with open(archive_flag, "w") as f:
                     f.write("")

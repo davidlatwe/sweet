@@ -249,8 +249,8 @@ class Controller(QtCore.QObject):
         self.scan_suite_storage(archived)
 
     @QtCore.Slot(list, bool)  # noqa
-    def on_suites_archived(self, saved_suites, state):
-        self.set_suites_archived(saved_suites, state)
+    def on_suites_archived(self, saved_suites, archive):
+        self.set_suites_archived(saved_suites, archive)
 
     def _mark_request_edited(self, name, edited):
         if edited:
@@ -431,17 +431,17 @@ class Controller(QtCore.QObject):
         self.suite_viewed.emit(saved_suite, error)
 
     @_thread(name="suiteOp", blocks=("SuitePage", "StoragePage"))
-    def set_suites_archived(self, saved_suites, state):
+    def set_suites_archived(self, saved_suites, archive):
         """Mark a batch of saved suites as archived or not
 
         :param list[SavedSuite] saved_suites:
-        :param bool state: Archive state
+        :param bool archive: Archive state
         :return: None
         """
         for suite in saved_suites:
-            changed = self._sto.set_archived(suite.path, state=state)
+            changed = self._sto.set_archived(suite.path, archive=archive)
             if changed:
-                self.suite_archived.emit(suite, state)
+                self.suite_archived.emit(suite, archive)
 
     def _reset_suite(self):
         self._sop.reset()
