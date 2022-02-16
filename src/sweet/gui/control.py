@@ -244,9 +244,9 @@ class Controller(QtCore.QObject):
     def on_installed_pkg_scan_clicked(self):
         self.scan_installed_packages()
 
-    @QtCore.Slot()  # noqa
-    def on_suite_storage_scan_clicked(self):
-        self.scan_suite_storage()
+    @QtCore.Slot(bool)  # noqa
+    def on_suite_storage_scan_clicked(self, archived):
+        self.scan_suite_storage(archived)
 
     @QtCore.Slot(list, bool)  # noqa
     def on_suites_archived(self, saved_suites, state):
@@ -579,7 +579,7 @@ class Controller(QtCore.QObject):
         log.info("All installed packages scanned.")
 
     @_thread(name="scanSuite", blocks=("StoragePage",))
-    def scan_suite_storage(self):
+    def scan_suite_storage(self, archived=False):
         ct = QtCore.QThread.currentThread()
         log.info("Start scanning saved suites...")
         self.storage_scan_started.emit()
@@ -588,7 +588,7 @@ class Controller(QtCore.QObject):
             if ct.isInterruptionRequested():  # could be long running proc
                 break
             self.storage_scanned.emit(
-                list(self._sto.iter_saved_suites(branch)),
+                list(self._sto.iter_saved_suites(branch, archived=archived)),
             )
 
         self.storage_scan_ended.emit()

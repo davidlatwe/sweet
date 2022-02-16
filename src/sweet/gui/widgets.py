@@ -2178,7 +2178,7 @@ class InstalledPackagesWidget(QtWidgets.QWidget):
 class SuiteBranchWidget(QtWidgets.QWidget):
     suite_selected = QtCore.Signal(core.SavedSuite)
     suite_load_clicked = QtCore.Signal(str, str, bool)
-    refresh_clicked = QtCore.Signal()
+    refresh_clicked = QtCore.Signal(bool)
 
     def __init__(self, *args, **kwargs):
         super(SuiteBranchWidget, self).__init__(*args, **kwargs)
@@ -2224,7 +2224,8 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         view.selectionModel().currentChanged.connect(self._on_current_changed)
         view.customContextMenuRequested.connect(self._on_right_click)
         search.textChanged.connect(self._on_searched)
-        refresh.clicked.connect(self.refresh_clicked)
+        refresh.clicked.connect(self._on_refresh_clicked)
+        archive.clicked.connect(self._on_refresh_clicked)
 
         timer = QtCore.QTimer(self)
         timer.setSingleShot(True)
@@ -2235,6 +2236,11 @@ class SuiteBranchWidget(QtWidgets.QWidget):
         self._model = model
         self._timer = timer
         self._search = search
+        self._archive = archive
+
+    def _on_refresh_clicked(self):
+        as_archived = self._archive.isChecked()
+        self.refresh_clicked.emit(as_archived)
 
     @QtCore.Slot(core.SavedSuite, bool)  # noqa
     def on_suite_archived(self, saved_suite, state):
