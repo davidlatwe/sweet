@@ -40,19 +40,22 @@ class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
             QtGui.QIcon(":/icons/person-circle.svg"),  # local
             QtGui.QIcon(":/icons/people-fill.svg"),  # non-local
             QtGui.QIcon(":/icons/people-fill-ok.svg"),  # released
+            QtGui.QIcon(":/icons/exclamation-circle-fill.svg")  # not exists
         ]
         self._location_text = [
-            "local", "non-local", "released"
+            "local", "non-local", "released", "not exist"
         ]
         self._non_local = util.normpaths(*rezconfig.nonlocal_packages_path)
         self._release = util.normpath(rezconfig.release_packages_path)
 
     def compute(self, location):
         norm_location = util.normpath(location)
+        is_not_dir = (not os.path.isdir(norm_location)) * 3
         is_released = int(norm_location == self._release) * 2
         is_nonlocal = int(norm_location in self._non_local)
-        location_text = self._location_text[is_released or is_nonlocal]
-        location_icon = self._location_icon[is_released or is_nonlocal]
+        index = is_not_dir or is_released or is_nonlocal
+        location_text = self._location_text[index]
+        location_icon = self._location_icon[index]
 
         return location_text, location_icon
 
