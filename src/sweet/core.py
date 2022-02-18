@@ -5,7 +5,7 @@ import os
 import sys
 import logging
 import warnings
-from typing import List
+from typing import List, Set, Union
 from dataclasses import dataclass
 from contextlib import contextmanager
 from collections import MutableMapping
@@ -87,15 +87,13 @@ class SuiteCtx:
 
 @dataclass
 class SuiteTool:
-    __slots__ = "name", "alias", "status", "ctx_name", "variant", \
-                "location", "uri"
+    __slots__ = "name", "alias", "status", "ctx_name", "variant", "variant_set"
     name: str
     alias: str
     status: int
     ctx_name: str
     variant: Variant
-    location: str
-    uri: str
+    variant_set: Union[Set[Variant], None]
 
 
 @dataclass
@@ -649,21 +647,28 @@ class SuiteOp(object):
         )
 
     def _tool_data_to_tuple(self, d, status=0):
+        # note:
+        #  A single tool could be given by multiple variants (same tool
+        #  name in their `tools` property).
+        #  When that happens, we can't for sure which actual executable
+        #  will be executed (depends on which come first in PATH), so
+        #  we must list them all out here.
+        #  See `TestCore.test_tool_by_multi_packages`.
+        #
+        if isinstance(d["variant"], set):
+            variant = next(iter(d["variant"]))
+            variant_set = d["variant"]
+        else:
+            variant = d["variant"]
+            variant_set = None
+
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
             status=status,
             ctx_name=d["context_name"],
-            # todo:
-            #  A single tool could be given by multiple variants (same tool
-            #  name in their `tools` property).
-            #  When that happens, we can't for sure which actual executable
-            #  will be executed (depends on which come first in PATH), so
-            #  we must list them all out here.
-            #  See `TestCore.test_tool_by_multi_packages`.
-            variant=d["variant"],
-            location=d["variant"].resource.location,
-            uri=d["variant"].uri,
+            variant=variant,
+            variant_set=variant_set,
         )
 
 
