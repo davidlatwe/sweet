@@ -272,9 +272,22 @@ class ToolTreeModel(BaseItemModel):
                     QtCore.Qt.CheckStateRole
                 )
 
-            _, loc_icon = indicator.compute(tool.location)
-            pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
-            pkg_item.setIcon(loc_icon)
+            if tool.variant_set is None:
+                _, loc_icon = indicator.compute(tool.variant.resource.location)
+                pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
+                pkg_item.setIcon(loc_icon)
+            else:
+                loc_icon = QtGui.QIcon(":/icons/question-circle-fill.svg")
+                tool_set = f"Vending from {len(tool.variant_set)} packages..."
+                tool_tip = (
+                    f"{tool.name!r} exists in following resolved packages:\n  "
+                    + "\n  ".join([v.qualified_name for v in tool.variant_set])
+                    + "\n\nAnd which will be used from, is unclear."
+                )
+                pkg_item = QtGui.QStandardItem()
+                pkg_item.setText(tool_set)
+                pkg_item.setIcon(loc_icon)
+                pkg_item.setToolTip(tool_tip)
 
             ctx_item.appendRow([name_item, pkg_item])
 
