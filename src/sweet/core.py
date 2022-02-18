@@ -1107,7 +1107,7 @@ class SweetSuite(_Suite):
 
         os.makedirs(path)
         if as_archived:
-            Storage.set_archived(path, state=True)
+            Storage.set_archived(path, archive=True)
 
         # write suite data
         data = self.to_dict()
