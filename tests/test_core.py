@@ -1,8 +1,8 @@
 
 import os
 from rez.packages import Variant
-from sweet.core import SuiteOp, Storage, BrokenContext, Constants
-from sweet.exceptions import SuiteError, SuiteOpError
+from sweet.core import SuiteOp, Storage, RollingContext, Constants
+from sweet.exceptions import SuiteOpError, ResolvedContextError
 from .util import TestBase, MemPkgRepo
 
 
@@ -165,9 +165,11 @@ class TestCore(TestBase):
         sop.add_context("F", sop.resolve_context(["foo"]))
 
         fruit, honey = sop.iter_tools()
-        self.assertTrue(type(fruit.variant) is Variant)
-        self.assertTrue(type(honey.variant) is set)
-        self.assertTrue(type(honey.variant.pop()) is Variant)
+        self.assertTrue(isinstance(fruit.variant, Variant))
+        self.assertTrue(isinstance(fruit.variant_set, type(None)))
+        self.assertTrue(isinstance(honey.variant, Variant))
+        self.assertTrue(isinstance(honey.variant_set, set))
+        self.assertTrue(isinstance(honey.variant_set.pop(), Variant))
 
     def test_suite_storage(self):
         tempdir = self.make_tempdir()
@@ -185,22 +187,20 @@ class TestCore(TestBase):
         self.assertEqual("my-foo", saved.name)
 
     def test_failed_context_loaded_1(self):
-        broken = BrokenContext(
-            "A fallback replacement when suite is loaded with bad .rxt file."
-        )
+        broken = RollingContext(["bad_rxt_loaded"])
         sop = SuiteOp()
         sop.add_context("BAD", sop.resolve_context([]))
         sop._suite.contexts["BAD"]["context"] = broken  # force it for testing
 
-        tools = list(sop.iter_tools())  # should not raise any error
+        self.assertRaises(ResolvedContextError, list, sop.iter_tools())
+        tools = list(sop.iter_tools())  # should not raise any error afterward
         self.assertEqual(0, len(tools))
 
         tempdir = self.make_tempdir()
         storage = Storage(roots={"test": tempdir})
 
         path = storage.suite_path("test", "my-bad")
-        self.assertRaises(SuiteOpError, sop.save, (path,))
-        self.assertRaises(SuiteError, sop._suite.save, path)
+        self.assertRaises(SuiteOpError, sop.save, path)
 
     def test_failed_context_loaded_2(self):
         tempdir = self.make_tempdir()
@@ -249,8 +249,20 @@ class TestCore(TestBase):
         path = storage.suite_path("test", "my-foo")
         sop.save(path)
 
+        # tool removed in version 2
         self.repo.add("foo", version=2, tools=[])
 
         sop.load(path)
         tool = next(sop.iter_tools())
+
+        self.assertEqual("1", str(tool.variant.version))
         self.assertEqual(Constants.TOOL_MISSING, tool.status)
+
+        # add back tool in version 3
+        self.repo.add("foo", version=3, tools=["fruit"])
+
+        sop.load(path)
+        tool = next(sop.iter_tools())
+
+        self.assertEqual("3", str(tool.variant.version))
+        self.assertEqual(Constants.TOOL_VALID, tool.status)
