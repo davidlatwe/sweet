@@ -146,6 +146,7 @@ class Controller(QtCore.QObject):
         # sending log messages to status-bar
         formatter = logging.Formatter(fmt="%(levelname)-8s %(message)s")
         handler = QtStatusBarHandler(self)
+        handler.set_name("gui")
         handler.setFormatter(formatter)
         handler.setLevel(logging.INFO)
         log.addHandler(handler)
