@@ -36,7 +36,7 @@ log = logging.getLogger("sweet")
 
 
 class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
-    overwhelmed = QtCore.Signal(str)
+    overwhelmed = QtCore.Signal(str, int)
 
     def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if event.type() in (
@@ -47,7 +47,7 @@ class BusyEventFilterSingleton(QtCore.QObject, metaclass=QSingleton):
             QtCore.QEvent.MouseButtonRelease,
             QtCore.QEvent.MouseButtonDblClick,
         ):
-            self.overwhelmed.emit("Not allowed at this moment.")
+            self.overwhelmed.emit("Not allowed at this moment.", 5000)
             return True
         return False
 

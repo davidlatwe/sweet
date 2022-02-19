@@ -138,7 +138,7 @@ class Controller(QtCore.QObject):
     storage_scan_started = QtCore.Signal()
     storage_scanned = QtCore.Signal(list)
     storage_scan_ended = QtCore.Signal()
-    status_message = QtCore.Signal(str)
+    status_message = QtCore.Signal(str, int)
 
     def __init__(self):
         super(Controller, self).__init__(parent=None)
@@ -621,4 +621,4 @@ class QtStatusBarHandler(logging.Handler):
 
     def emit(self, record):
         s = self.format(record)
-        self._ctrl.status_message.emit(s)
+        self._ctrl.status_message.emit(s, 5000)
