@@ -1067,6 +1067,33 @@ class BaseTheme(object):
 
         """
 
+    def _q_context_list(self):
+        return f"""
+
+        #ContextListView::item {{
+            padding-left: {px(4).floor};
+        }}
+        #ContextListView::indicator:unchecked {{
+            image: url(:icons/toggle-off.svg);
+        }}
+        #ContextListView::indicator:unchecked:hover {{
+            image: url(:icons/toggle-off-bright.svg);
+        }}
+        #ContextListView::indicator:unchecked:disabled {{
+            image: url(:icons/toggle-off-dim.svg);
+        }}
+        #ContextListView::indicator:checked {{
+            image: url(:icons/toggle-on.svg);
+        }}
+        #ContextListView::indicator:checked:hover {{
+            image: url(:icons/toggle-on-bright.svg);
+        }}
+        #ContextListView::indicator:checked:disabled {{
+            image: url(:icons/toggle-on-dim.svg);
+        }}
+
+        """
+
     def _q_others(self):
         return f"""
         
