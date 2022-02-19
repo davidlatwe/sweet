@@ -653,6 +653,7 @@ class ResolvedEnvironmentModel(JsonModel):
         super(ResolvedEnvironmentModel, self).__init__(parent)
         self._headers = ("Key", "Value", "From")
         self._inspected = dict()
+        self._sys_icon = QtGui.QIcon(":/icons/activity.svg")
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 3
@@ -692,15 +693,28 @@ class ResolvedEnvironmentModel(JsonModel):
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 2:
                 if parent.type is list:
-                    _id = f"{parent.key}/{item.value}"
+                    scope = self._inspected.get(f"{parent.key}/{item.value}")
                 else:
-                    _id = f"{item.key}/{item.value}"
-                scope = self._inspected.get(_id)
+                    scope = self._inspected.get(f"{item.key}/{item.value}")
 
                 if isinstance(scope, Variant):
                     return scope.qualified_name
                 elif isinstance(scope, str):
                     return f"({scope})"
+                return None
+
+        if role == QtCore.Qt.DecorationRole:
+            if index.column() == 2:
+                if parent.type is list:
+                    scope = self._inspected.get(f"{parent.key}/{item.value}")
+                else:
+                    scope = self._inspected.get(f"{item.key}/{item.value}")
+
+                if isinstance(scope, Variant):
+                    metadata = getattr(scope, "_data", {})
+                    return parse_icon(scope.root, metadata.get("icon"))
+                elif isinstance(scope, str):
+                    return self._sys_icon
                 return None
 
         return super(ResolvedEnvironmentModel, self).data(index, role)

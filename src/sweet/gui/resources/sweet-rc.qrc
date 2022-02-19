@@ -1,6 +1,7 @@
 
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>icons/activity.svg</file>
     <file>icons/arrow-clockwise-on.svg</file>
     <file>icons/arrow-clockwise.svg</file>
     <file>icons/backspace-dim.svg</file>
