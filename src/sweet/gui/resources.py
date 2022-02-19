@@ -1044,7 +1044,10 @@ class BaseTheme(object):
         return f"""
 
         #ToolsView::item {{
-            padding-left: {px(4).floor};
+            padding-left: {px(28).floor};
+        }}
+        #ToolsView::indicator {{
+            right: {px(12).floor};
         }}
         #ToolsView::indicator:unchecked {{
             image: url(:icons/toggle-off.svg);
@@ -1071,10 +1074,10 @@ class BaseTheme(object):
         return f"""
 
         #ContextListView::item {{
-            padding-left: {px(20).floor};
+            padding-left: {px(28).floor};
         }}
         #ContextListView::indicator {{
-            right: {px(8).floor};
+            right: {px(12).floor};
         }}
         #ContextListView::indicator:unchecked {{
             image: url(:icons/toggle-off.svg);
