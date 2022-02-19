@@ -589,7 +589,7 @@ class Controller(QtCore.QObject):
         _fm_count = len(grouped_families)
         _path_count = len(self._pkg.packages_path)
         log.info(f"Found {_fm_count} families from {_path_count} locations.")
-
+        log.info("Scanning versions...")
         _current = None
         for i, (key, same_families) in enumerate(grouped_families):
             # ensure versions that belongs to same family get emitted in one
@@ -605,9 +605,9 @@ class Controller(QtCore.QObject):
                 )  # type: list[PkgVersion]
 
             self.pkg_versions_scanned.emit(versions)
-            log.info(
+            self.status_message.emit(
                 f"Finding versions for {_fm_count} families from {_path_count} "
-                f"locations {'.' * (int(i / 50) % 5)}"
+                f"locations {'.' * (int(i / 50) % 5)}", 5000
             )  # animated dots that also reflects the speed of the process.
 
         self.pkg_scan_ended.emit()
