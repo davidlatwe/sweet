@@ -83,7 +83,7 @@ class Resources:
         "jetbrainsmono/JetBrainsMono-Regular.ttf"
     )
     icons_ext = ".png", ".svg"
-    qrc_updated = 1645205831  # !!<qrc-update-time>!! don't touch
+    qrc_updated = 1645287201  # !!<qrc-update-time>!! don't touch
 
     @classmethod
     def load(cls):
@@ -1071,7 +1071,10 @@ class BaseTheme(object):
         return f"""
 
         #ContextListView::item {{
-            padding-left: {px(4).floor};
+            padding-left: {px(20).floor};
+        }}
+        #ContextListView::indicator {{
+            right: {px(8).floor};
         }}
         #ContextListView::indicator:unchecked {{
             image: url(:icons/toggle-off.svg);
