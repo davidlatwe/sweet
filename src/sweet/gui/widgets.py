@@ -523,6 +523,12 @@ class ContextListWidget(QtWidgets.QWidget):
         for item in items:
             self._view.addItem(item)
 
+        if items:
+            last = items[-1]
+            last.setFont(QtGui.QFont("Open Sans", last.font().pointSize()))
+            # this is a fix for item being dragged out and lost it's font
+            #   family after append back to view. (both PyQt5 and PySide2)
+
         self._view.setCurrentRow(dropped_in)
 
     def on_context_renamed(self, name, new_name):
