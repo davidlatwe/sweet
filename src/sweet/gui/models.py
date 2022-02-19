@@ -651,12 +651,16 @@ class ResolvedEnvironmentModel(JsonModel):
 
     def __init__(self, parent=None):
         super(ResolvedEnvironmentModel, self).__init__(parent)
+        self._placeholder_color = None
         self._headers = ("Key", "Value", "From")
         self._inspected = dict()
         self._sys_icon = QtGui.QIcon(":/icons/activity.svg")
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 3
+
+    def set_placeholder_color(self, color):
+        self._placeholder_color = color
 
     def _is_path_list(self, value):
         return os.pathsep in value and any(s in value for s in ("/", "\\"))
@@ -717,6 +721,17 @@ class ResolvedEnvironmentModel(JsonModel):
                     return self._sys_icon
                 return None
 
+        if role == QtCore.Qt.ForegroundRole:
+            column = index.column()
+            if (column == 1 and item.type is list) \
+                    or (column == 0 and parent.type is list):
+                return self._placeholder_color
+
+        if role == QtCore.Qt.TextAlignmentRole:
+            column = index.column()
+            if column == 0 and parent.type is list:
+                return QtCore.Qt.AlignRight
+
         return super(ResolvedEnvironmentModel, self).data(index, role)
 
     def flags(self, index):
@@ -728,6 +743,11 @@ class ResolvedEnvironmentModel(JsonModel):
             return
 
         base_flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+        if index.column() == 0:
+            item = index.internalPointer()
+            if item.parent().type is not list:
+                return base_flags | QtCore.Qt.ItemIsEditable
 
         if index.column() == 1:
             item = index.internalPointer()

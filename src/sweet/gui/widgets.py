@@ -1633,6 +1633,7 @@ class ContextResolveWidget(QtWidgets.QWidget):
         self._name = name
         self._tools.set_name(name)
         self._context.reset()
+        self._update_placeholder_color()
 
     def set_resolved(self, context):
         """
@@ -1667,6 +1668,16 @@ class ContextResolveWidget(QtWidgets.QWidget):
             html = "<br>".join(stream.readlines())
             html = html.replace("\t", "&nbsp;" * 4)
             self._log.append_log(f'<p>{_sep}</p><p>{html}</p>')
+
+    def changeEvent(self, event):
+        super(ContextResolveWidget, self).changeEvent(event)
+        if event.type() == QtCore.QEvent.StyleChange:
+            # update color when theme changed
+            self._update_placeholder_color()
+
+    def _update_placeholder_color(self):
+        color = self._environ.palette().color(QtGui.QPalette.PlaceholderText)
+        self._environ.model().set_placeholder_color(color)
 
 
 class ResolvedTools(QtWidgets.QWidget):
