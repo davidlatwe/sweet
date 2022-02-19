@@ -261,8 +261,16 @@ class ToolTreeModel(BaseItemModel):
                 continue
 
             name_item = QtGui.QStandardItem(tool.alias)
-            name_item.setIcon(self._status_icon[tool.status])
-            name_item.setToolTip(self._status_tip[tool.status])
+            if tool.ambiguous and tool.status == Constants.TOOL_VALID:
+                _icon = QtGui.QIcon(":/icons/question-circle.svg")
+                _tip = "Same tool vended from multiple packages, unclear " \
+                       "which will be used. (depend on $PATH)"
+                name_item.setIcon(_icon)
+                name_item.setToolTip(_tip)
+            else:
+                name_item.setIcon(self._status_icon[tool.status])
+                name_item.setToolTip(self._status_tip[tool.status])
+
             name_item.setData(tool, self.ToolItemRole)
             name_item.setData(tool.name, self.ToolNameRole)
             name_item.setData(not is_missing, self.ToolEditRole)
@@ -272,22 +280,9 @@ class ToolTreeModel(BaseItemModel):
                     QtCore.Qt.CheckStateRole
                 )
 
-            if tool.variant_set is None:
-                _, loc_icon = indicator.compute(tool.variant.resource.location)
-                pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
-                pkg_item.setIcon(loc_icon)
-            else:
-                loc_icon = QtGui.QIcon(":/icons/question-circle-fill.svg")
-                tool_set = f"Vending from {len(tool.variant_set)} packages..."
-                tool_tip = (
-                    f"{tool.name!r} exists in following resolved packages:\n  "
-                    + "\n  ".join([v.qualified_name for v in tool.variant_set])
-                    + "\n\nAnd which will be used from, is unclear."
-                )
-                pkg_item = QtGui.QStandardItem()
-                pkg_item.setText(tool_set)
-                pkg_item.setIcon(loc_icon)
-                pkg_item.setToolTip(tool_tip)
+            _, loc_icon = indicator.compute(tool.location)
+            pkg_item = QtGui.QStandardItem(tool.variant.qualified_name)
+            pkg_item.setIcon(loc_icon)
 
             ctx_item.appendRow([name_item, pkg_item])
 

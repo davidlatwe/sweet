@@ -164,12 +164,14 @@ class TestCore(TestBase):
         sop.add_context("B", sop.resolve_context(["bee", "bez"]))
         sop.add_context("F", sop.resolve_context(["foo"]))
 
-        fruit, honey = sop.iter_tools()
+        fruit, honey_bee, honey_bez = sop.iter_tools()
+
         self.assertTrue(isinstance(fruit.variant, Variant))
-        self.assertTrue(isinstance(fruit.variant_set, type(None)))
-        self.assertTrue(isinstance(honey.variant, Variant))
-        self.assertTrue(isinstance(honey.variant_set, set))
-        self.assertTrue(isinstance(honey.variant_set.pop(), Variant))
+        self.assertTrue(fruit.ambiguous is False)
+        self.assertTrue(isinstance(honey_bee.variant, Variant))
+        self.assertTrue(honey_bee.ambiguous is True)
+        self.assertTrue(isinstance(honey_bez.variant, Variant))
+        self.assertTrue(honey_bez.ambiguous is True)
 
     def test_suite_storage(self):
         tempdir = self.make_tempdir()

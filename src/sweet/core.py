@@ -88,13 +88,21 @@ class SuiteCtx:
 
 @dataclass
 class SuiteTool:
-    __slots__ = "name", "alias", "status", "ctx_name", "variant", "variant_set"
+    __slots__ = "name", "alias", "status", "ctx_name", "variant", "ambiguous"
     name: str
     alias: str
     status: int
     ctx_name: str
     variant: Variant
-    variant_set: Union[Set[Variant], None]
+    ambiguous: bool
+
+    @property
+    def uri(self):
+        return self.variant.uri
+
+    @property
+    def location(self):
+        return self.variant.resource.location
 
 
 @dataclass
@@ -613,11 +621,26 @@ class SuiteOp(object):
         def _match_context(d_):
             return context_name is None or context_name == d_["context_name"]
 
+        def _ensure_unpacked(d_, s):
+            # note:
+            #  A single tool could be given by multiple variants (same tool
+            #  name in their `tools` property).
+            #  When that happens, we can't for sure which actual executable
+            #  will be executed (depends on which come first in PATH), so
+            #  we must list them all out here.
+            #  See `TestCore.test_tool_by_multi_packages`.
+            if isinstance(d_["variant"], set):
+                for variant in d_["variant"]:
+                    yield self._tool_data_to_tuple(d_, variant, status=s)
+            else:
+                yield self._tool_data_to_tuple(d_, status=s)
+
         status = Constants.TOOL_VALID
         for d in self._suite.tools.values():
             _visible.add(d["tool_alias"])
             if _match_context(d):
-                yield self._tool_data_to_tuple(d, status=status)
+                for t in _ensure_unpacked(d, status):
+                    yield t
 
         if visible_only:
             return
@@ -625,13 +648,15 @@ class SuiteOp(object):
         status = Constants.TOOL_HIDDEN
         for d in self._suite.hidden_tools:
             if _match_context(d):
-                yield self._tool_data_to_tuple(d, status=status)
+                for t in _ensure_unpacked(d, status):
+                    yield t
 
         status = Constants.TOOL_SHADOWED
         for entries in self._suite.tool_conflicts.values():
             for d in entries:
                 if _match_context(d):
-                    yield self._tool_data_to_tuple(d, status=status)
+                    for t in _ensure_unpacked(d, status):
+                        yield t
 
         status = Constants.TOOL_MISSING
         for _tool in self._previous_tools or []:
@@ -661,29 +686,14 @@ class SuiteOp(object):
             context=context,
         )
 
-    def _tool_data_to_tuple(self, d, status=0):
-        # note:
-        #  A single tool could be given by multiple variants (same tool
-        #  name in their `tools` property).
-        #  When that happens, we can't for sure which actual executable
-        #  will be executed (depends on which come first in PATH), so
-        #  we must list them all out here.
-        #  See `TestCore.test_tool_by_multi_packages`.
-        #
-        if isinstance(d["variant"], set):
-            variant = next(iter(d["variant"]))
-            variant_set = d["variant"]
-        else:
-            variant = d["variant"]
-            variant_set = None
-
+    def _tool_data_to_tuple(self, d, ambiguous=None, status=0):
         return SuiteTool(
             name=d["tool_name"],
             alias=d["tool_alias"],
             status=status,
             ctx_name=d["context_name"],
-            variant=variant,
-            variant_set=variant_set,
+            variant=ambiguous or d["variant"],
+            ambiguous=ambiguous is not None,
         )
 
 
