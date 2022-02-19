@@ -127,6 +127,7 @@ class Controller(QtCore.QObject):
     context_stashed = QtCore.Signal(str, RollingContext)
     context_resolved = QtCore.Signal(str, RollingContext)
     context_dropped = QtCore.Signal(str)
+    context_toggled = QtCore.Signal(str, QtCore.Qt.CheckState)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
     request_edited = QtCore.Signal(str, bool)
@@ -157,6 +158,7 @@ class Controller(QtCore.QObject):
         self._dirty = False
         self._edited = set()
         self._failed = set()
+        self._disabled = dict()
         self._timers = dict()
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
@@ -216,6 +218,11 @@ class Controller(QtCore.QObject):
     @QtCore.Slot(list)  # noqa
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
+
+    @QtCore.Slot(str, QtCore.Qt.CheckState, list)  # noqa
+    @_defer(on_time=50)
+    def on_context_item_toggled(self, name, check_state, order):
+        self.toggle_context(name, check_state, order)
 
     @QtCore.Slot(str, str)  # noqa
     @_defer(on_time=400)
@@ -282,6 +289,9 @@ class Controller(QtCore.QObject):
         if name in self._failed:
             self._failed.remove(name)
             self._failed.add(new_name)
+        if name in self._disabled:
+            self._disabled[new_name] = \
+                self._disabled.pop(name)
         self.context_renamed.emit(name, new_name)
         self._tools_updated()
 
@@ -292,13 +302,36 @@ class Controller(QtCore.QObject):
             self._edited.remove(name)
         if name in self._failed:
             self._failed.remove(name)
+        if name in self._disabled:
+            self._disabled.pop(name)
         self.context_dropped.emit(name)
         self._tools_updated()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
     def reorder_contexts(self, new_order):
-        self._sop.reorder_contexts(new_order)
+        enabled = [n for n in new_order if n not in self._disabled]
+        self._sop.reorder_contexts(enabled)
         self.context_reordered.emit(new_order)
+        self._tools_updated()
+
+    @_thread(name="suiteOp", blocks=("SuitePage",))
+    def toggle_context(self, name, check_state, order):
+        if check_state:
+            data = self._disabled.pop(name)
+            self._sop.add_context(name, data["context"])
+            self._sop.update_context(
+                name, prefix=data["prefix"], suffix=data["suffix"],
+            )
+            for _name, alias in (data["tool_aliases"] or {}).items():
+                self._sop.update_context(name, tool_name=name, new_alias=alias)
+            for _name in data["hidden_tools"] or []:
+                self._sop.update_context(name, tool_name=name, set_hidden=True)
+            self._sop.reorder_contexts(order)
+        else:
+            self._disabled[name] = self._sop.get_context_data(name)
+            self._sop.drop_context(name)
+
+        self.context_toggled.emit(name, check_state)
         self._tools_updated()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
@@ -449,6 +482,7 @@ class Controller(QtCore.QObject):
         self._dirty = False
         self._edited = set()
         self._failed = set()
+        self._disabled = dict()
         self.suite_newed.emit()
 
     def _about_to_new(self, parent):

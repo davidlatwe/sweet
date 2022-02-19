@@ -3,6 +3,7 @@ Main business logic, with event notification
 """
 import os
 import sys
+import copy
 import logging
 import warnings
 from typing import List, Set, Union
@@ -532,6 +533,19 @@ class SuiteOp(object):
         :rtype: RollingContext
         """
         return self._suite.context(name).copy()
+
+    def get_context_data(self, name):
+        data = self._suite.contexts.get(name)
+        if data is None:
+            return
+        return {
+            "context": copy.copy(data.get("context")),
+            "prefix": data.get("prefix"),
+            "suffix": data.get("suffix"),
+            "priority": data.get("priority"),
+            "tool_aliases": copy.copy(data.get("tool_aliases")),
+            "hidden_tools": copy.copy(data.get("hidden_tools")),
+        }
 
     def find_contexts(self, in_request=None, in_resolve=None):
         """Find contexts in the suite based on search criteria

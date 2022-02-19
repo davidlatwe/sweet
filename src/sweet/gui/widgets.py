@@ -417,8 +417,10 @@ class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
     renamed = QtCore.Signal(str, str)
     dropped = QtCore.Signal(str)
+    toggled = QtCore.Signal(str, QtCore.Qt.CheckState, list)
     reordered = QtCore.Signal(list)
     selected = QtCore.Signal(str)
+    ContextCheckedRole = QtCore.Qt.UserRole + 10
 
     def __init__(self, *args, **kwargs):
         super(ContextListWidget, self).__init__(*args, **kwargs)
@@ -427,6 +429,7 @@ class ContextListWidget(QtWidgets.QWidget):
         label = QtWidgets.QLabel("Context Stack")
 
         view = ContextDragDropList()
+        view.setObjectName("ContextListView")
 
         btn_add = QtWidgets.QPushButton("Add")
         btn_add.setObjectName("ContextAddOpBtn")
@@ -448,27 +451,49 @@ class ContextListWidget(QtWidgets.QWidget):
         btn_rm.clicked.connect(self.drop_context)
         view.currentTextChanged.connect(self.selected)
         view.dropped.connect(self.context_reordered)
-        view.itemDoubleClicked.connect(self.rename_context)
+        view.itemActivated.connect(self.rename_context)
+        view.itemClicked.connect(self._on_item_clicked)
 
         self._view = view
         self._icon_ctx = QtGui.QIcon(":/icons/layers-half.svg")
         self._icon_ctx_f = QtGui.QIcon(":/icons/exclamation-triangle-fill.svg")
 
+    def _on_item_clicked(self, item: QtWidgets.QListWidgetItem):
+        # note: we can't count on itemChanged signal for checkState change
+        #   because of drag-drop action also changes the checkState multiple
+        #   times in that moment.
+        check_state = item.checkState()
+        if item.data(self.ContextCheckedRole) != check_state:
+            ctx_name = item.text()
+            order = self.context_names()
+
+            if check_state:
+                disabled = self.context_names(enabled=False)
+                order = [
+                    name
+                    for name in order
+                    if name == ctx_name or name not in disabled
+                ]
+
+            self.toggled.emit(ctx_name, check_state, order)
+
     def on_request_edited(self, name, edited):
         font = QtGui.QFont()
         font.setBold(edited)
         font.setItalic(edited)
-        item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
+        item = self._find_item(name)
         item.setFont(font)
 
     def on_context_resolved(self, name, context):
         icon = self._icon_ctx if context.success else self._icon_ctx_f
-        item = self._find_item(name)  # type: QtWidgets.QListWidgetItem
+        item = self._find_item(name)
         item.setIcon(icon)
 
     def on_context_added(self, ctx):
         item = QtWidgets.QListWidgetItem(ctx.name)
         item.setIcon(self._icon_ctx)
+        item.setCheckState(QtCore.Qt.Checked)
+        item.setData(self.ContextCheckedRole, QtCore.Qt.Checked)
         self._view.insertItem(0, item)
         self._view.setCurrentRow(0)
 
@@ -477,6 +502,11 @@ class ContextListWidget(QtWidgets.QWidget):
         assert item is not None, f"{name!r} not exists, this is a bug."
         self._view.takeItem(self._view.row(item))
         self._view.removeItemWidget(item)
+
+    def on_context_toggled(self, name, check_state):
+        item = self._find_item(name)
+        assert item is not None, f"{name!r} not exists, this is a bug."
+        item.setData(self.ContextCheckedRole, check_state)
 
     def on_context_reordered(self, new_order):
         dragged = self._view.currentItem().text()
@@ -503,7 +533,7 @@ class ContextListWidget(QtWidgets.QWidget):
     def on_suite_newed(self):
         self._view.clear()
 
-    def _find_item(self, name):
+    def _find_item(self, name) -> QtWidgets.QListWidgetItem:
         match_flags = QtCore.Qt.MatchExactly
         return next(iter(self._view.findItems(name, match_flags)), None)
 
@@ -560,10 +590,13 @@ class ContextListWidget(QtWidgets.QWidget):
             item.text() for item in self._view.selectedItems()
         ]
 
-    def context_names(self):
+    def context_names(self, enabled=None):
+        checked_role = self.ContextCheckedRole
         return [
             self._view.item(row).text()
             for row in range(self._view.count())
+            if enabled is None
+            or bool(self._view.item(row).data(checked_role)) is enabled
         ]
 
     def context_reordered(self):
@@ -926,6 +959,12 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         self.removeWidget(panel)
         if is_empty:
             self._add_panel_0()
+
+    @QtCore.Slot(str, QtCore.Qt.CheckState)  # noqa
+    def on_context_toggled(self, name, check_state):
+        op_name = ":toggled:"
+        index = self._names.index(name)
+        self.run_panel_callback(index, op_name, check_state)
 
     @QtCore.Slot(str)  # noqa
     def on_context_selected(self, name):
@@ -1385,10 +1424,14 @@ class ContextRequestWidget(QtWidgets.QWidget):
             ":added:": ContextRequestWidget.set_context,
             ":renamed:": ContextRequestWidget.set_context,
             ":resolved:": ContextRequestWidget.set_resolved,
+            ":toggled:": ContextRequestWidget.on_toggled,
         }
 
     def name(self):
         return self._name
+
+    def on_toggled(self, check_state):
+        self.setEnabled(bool(check_state))
 
     def set_context(self, ctx):
         """
