@@ -2,8 +2,6 @@
 import logging
 from colorama import init, Fore
 
-init(autoreset=True)
-
 
 class ColorFormatter(logging.Formatter):
     Colors = {
@@ -20,6 +18,8 @@ class ColorFormatter(logging.Formatter):
 
 
 def init_logging():
+    init(autoreset=True)
+
     formatter = ColorFormatter(
         fmt="%(asctime)s %(levelname)-8s %(message)s",
         datefmt="%X"
@@ -33,6 +33,3 @@ def init_logging():
     logger = logging.getLogger("sweet")
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
-
-
-init_logging()
