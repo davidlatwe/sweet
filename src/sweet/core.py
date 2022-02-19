@@ -253,6 +253,7 @@ class SuiteOp(object):
         self.sanity_check(non_local=non_local_required)
         # note: cannot save over if load_path is None
         self._suite.save(path, as_archived=as_archived)
+        self._suite.load_path = os.path.realpath(path)
         # run callback
         sweetconfig.on_suite_saved_callback(self._suite, path)
 
