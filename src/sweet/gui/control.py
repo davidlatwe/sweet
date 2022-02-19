@@ -127,7 +127,7 @@ class Controller(QtCore.QObject):
     context_stashed = QtCore.Signal(str, RollingContext)
     context_resolved = QtCore.Signal(str, RollingContext)
     context_dropped = QtCore.Signal(str)
-    context_toggled = QtCore.Signal(str, QtCore.Qt.CheckState)
+    context_toggled = QtCore.Signal(str, int)
     context_renamed = QtCore.Signal(str, str)
     context_reordered = QtCore.Signal(list)
     request_edited = QtCore.Signal(str, bool)
@@ -219,7 +219,7 @@ class Controller(QtCore.QObject):
     def on_context_item_moved(self, names):
         self.reorder_contexts(names)
 
-    @QtCore.Slot(str, QtCore.Qt.CheckState, list)  # noqa
+    @QtCore.Slot(str, int, list)  # noqa
     @_defer(on_time=50)
     def on_context_item_toggled(self, name, check_state, order):
         self.toggle_context(name, check_state, order)

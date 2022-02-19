@@ -417,7 +417,7 @@ class ContextListWidget(QtWidgets.QWidget):
     added = QtCore.Signal(str)
     renamed = QtCore.Signal(str, str)
     dropped = QtCore.Signal(str)
-    toggled = QtCore.Signal(str, QtCore.Qt.CheckState, list)
+    toggled = QtCore.Signal(str, int, list)
     reordered = QtCore.Signal(list)
     selected = QtCore.Signal(str)
     ContextCheckedRole = QtCore.Qt.UserRole + 10
@@ -960,7 +960,7 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         if is_empty:
             self._add_panel_0()
 
-    @QtCore.Slot(str, QtCore.Qt.CheckState)  # noqa
+    @QtCore.Slot(str, int)  # noqa
     def on_context_toggled(self, name, check_state):
         op_name = ":toggled:"
         index = self._names.index(name)
