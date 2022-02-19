@@ -32,6 +32,23 @@ class QSingleton(type(QtCore.QObject), type):
         return cls._instances[cls]
 
 
+def parse_icon(pkg_root, pkg_icon_path, default_icon=None):
+    pkg_icon_path = pkg_icon_path or ""
+    try:
+        fname = pkg_icon_path.format(
+            root=pkg_root,
+            width=32,
+            height=32,
+            w=32,
+            h=32
+        )
+
+    except KeyError:
+        fname = ""
+
+    return QtGui.QIcon(fname or default_icon or ":/icons/box-seam.svg")
+
+
 class _LocationIndicator(QtCore.QObject, metaclass=QSingleton):
 
     def __init__(self, *args, **kwargs):
@@ -596,9 +613,13 @@ class ResolvedPackagesModel(BaseItemModel):
         indicator = _LocationIndicator()
 
         for pkg in packages:
+            metadata = getattr(pkg, "_data", {})
+            pkg_icon = parse_icon(pkg.root, metadata.get("icon"))
+
             loc_text, loc_icon = indicator.compute(pkg.resource.location)
 
             name_item = QtGui.QStandardItem(pkg.name)
+            name_item.setIcon(pkg_icon)
             name_item.setData(pkg, self.PackageRole)
 
             version_item = QtGui.QStandardItem(str(pkg.version))
