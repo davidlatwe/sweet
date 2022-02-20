@@ -1890,7 +1890,8 @@ class ResolvedContextView(QtWidgets.QWidget):
 
         top_bar = QtWidgets.QWidget()
         top_bar.setObjectName("ButtonBelt")
-        attr_toggle = QtWidgets.QPushButton("T")
+        attr_toggle = QtWidgets.QPushButton()
+        attr_toggle.setObjectName("ContextAttrToggle")
         attr_toggle.setCheckable(True)
         attr_toggle.setChecked(True)
 

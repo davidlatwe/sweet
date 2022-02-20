@@ -83,7 +83,7 @@ class Resources:
         "jetbrainsmono/JetBrainsMono-Regular.ttf"
     )
     icons_ext = ".png", ".svg"
-    qrc_updated = 1645312679  # !!<qrc-update-time>!! don't touch
+    qrc_updated = 1645315485  # !!<qrc-update-time>!! don't touch
 
     @classmethod
     def load(cls):
@@ -1133,6 +1133,13 @@ class BaseTheme(object):
         }}
         #DarkSwitch:!checked {{
             icon: url(:/icons/brightness-low-fill.svg);
+        }}
+        
+        #ContextAttrToggle {{
+            icon: url(:/icons/code-slash.svg);
+        }}
+        #ContextAttrToggle:!checked {{
+            background-color: {self.palette.primary.fade};
         }}
         
         #DocStrings {{
