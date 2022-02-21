@@ -2,6 +2,7 @@
 import re
 import json
 import logging
+import traceback
 from io import StringIO
 from datetime import datetime
 from itertools import zip_longest
@@ -890,7 +891,12 @@ class NameStackedBase(QtWidgets.QStackedWidget):
         callback = self._callbacks[index].get(op_name)
         if callable(callback):
             _self = self.widget(index)  # get instance from correct thread
-            callback(_self, *args, **kwargs)
+            try:
+                callback(_self, *args, **kwargs)
+            except Exception as e:
+                # e.g. package command error
+                message = f"\n{traceback.format_exc()}\n{str(e)}"
+                log.critical(message)
 
     @QtCore.Slot(core.SuiteCtx)  # noqa
     def on_context_added(self, ctx):

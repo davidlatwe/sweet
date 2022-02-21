@@ -644,7 +644,11 @@ class Thread(QtCore.QThread):
         self._kwargs = kwargs
 
     def run(self):
-        self._func(*self._args, **self._kwargs)
+        try:
+            self._func(*self._args, **self._kwargs)
+        except Exception as e:
+            message = f"\n{traceback.format_exc()}\n{str(e)}"
+            log.critical(message)
 
 
 # https://docs.python.org/3/howto/logging-cookbook.html#a-qt-gui-for-logging
