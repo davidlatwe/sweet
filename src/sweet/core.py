@@ -1332,21 +1332,34 @@ class SweetSuite(_Suite):
                 self.update_context(name, re_resolve_rxt(context))
 
     def _update_tools(self, suppress_err=False):
-        report_err = self.tools is None
+        report_err = self.tools is None  # only after tools were flushed
 
         super(SweetSuite, self)._update_tools()
 
-        if not report_err or suppress_err:
+        if not report_err:
             return
+
+        err = None
         for data in self.contexts.values():
             context = data.get("context")  # type: RollingContext
             if context is None:
                 continue  # possibly not yet loaded
             if context.success:
                 if not context.usable:
-                    raise context.err_on_get_tools
+                    err = context.err_on_get_tools
+                    break
             else:
-                raise ResolvedContextError(context.failure_description)
+                err = ResolvedContextError(context.failure_description)
+                break
+
+        if err is None:
+            return  # no error
+
+        if suppress_err:
+            log.warning(f"Could not update tools: {err}")
+            return
+        else:
+            raise err
 
     # Exposing protected member that I'd like to use.
     update_tools = _update_tools
