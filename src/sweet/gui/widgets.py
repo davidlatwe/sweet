@@ -780,9 +780,12 @@ class ToolsView(TreeView):
     def _on_item_activated(self, index):
         if not (index.isValid() and index.column() == 0):
             return
-        # assume proxy is used
-        source = self.model().sourceModel()  # type: ToolTreeModel
-        if not source.editable:
+
+        source_model = self.model()
+        if hasattr(source_model, "sourceModel"):
+            source_model = self.model().sourceModel()
+        # should be an instance of ToolTreeModel
+        if not source_model.editable:
             return
 
         alias = index.data(QtCore.Qt.DisplayRole)
