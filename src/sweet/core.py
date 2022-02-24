@@ -30,6 +30,7 @@ from .exceptions import (
     SuiteError,
     SuiteOpError,
     SuiteIOError,
+    SuiteReleaseError,
     SuiteOpWarning,
     ContextNameWarning,
     ContextBrokenWarning,
@@ -302,7 +303,7 @@ class SuiteOp(object):
                 for variant in ctx.resolves:
                     norm_location = util.normpath(variant.resource.location)
                     if norm_location not in non_local_paths:
-                        raise SuiteOpError(
+                        raise SuiteReleaseError(
                             "Non-local packages check has enabled, and found "
                             f"local package {variant.qualified_name!r} in "
                             f"context {ctx.name!r}."

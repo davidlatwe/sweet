@@ -9,6 +9,7 @@ __all__ = (
     "SweetError",
     "SuiteOpError",
     "SuiteIOError",
+    "SuiteReleaseError",
     "ResolvedContextError",
 
     "SweetWarning",
@@ -30,6 +31,10 @@ class SuiteOpError(SweetError):
 
 class SuiteIOError(SweetError):
     """Suite save/load related error"""
+
+
+class SuiteReleaseError(SweetError):
+    """Suite using local packages while releasing"""
 
 
 # warnings

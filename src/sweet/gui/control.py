@@ -6,6 +6,7 @@ import functools
 from itertools import groupby
 from rez.config import config as rezconfig
 
+from ..exceptions import SuiteReleaseError
 from ..core import (
     SuiteOp,
     RollingContext,
@@ -425,12 +426,21 @@ class Controller(QtCore.QObject):
         #   yet resolved requests, before asking controller to save suite.
         path = self._sto.suite_path(branch, name)
         self._sop.set_description(description)
+
         try:
             self._sop.save(path)
+
+        except SuiteReleaseError as e:
+            message = f"{str(e)}\n" \
+                      f"Check 'Exclude Local Packages' checkbox to fix this."
+            log.error(message)
+            self.suite_save_failed.emit(message)
+
         except Exception as e:
             message = f"\n{traceback.format_exc()}\n{str(e)}"
             log.error(message)
             self.suite_save_failed.emit(message)
+
         else:
             saved_suite = SavedSuite(
                 name=name,
