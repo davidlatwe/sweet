@@ -94,6 +94,7 @@ class Session(object):
         stacked_request.requested.connect(ctrl.on_resolve_context_clicked)
         stacked_request.prefix_changed.connect(ctrl.on_context_prefix_changed)
         stacked_request.suffix_changed.connect(ctrl.on_context_suffix_changed)
+        tool_stack.non_local_changed.connect(ctrl.on_non_local_changed)
         installed_pkg.refreshed.connect(ctrl.on_installed_pkg_scan_clicked)
         suite_head.new_clicked.connect(ctrl.on_suite_new_clicked)
         suite_head.save_clicked.connect(ctrl.on_suite_save_clicked)

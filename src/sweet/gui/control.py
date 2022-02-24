@@ -4,6 +4,7 @@ import inspect
 import traceback
 import functools
 from itertools import groupby
+from rez.config import config as rezconfig
 
 from ..core import (
     SuiteOp,
@@ -14,6 +15,7 @@ from ..core import (
     SavedSuite,
     PkgFamily,
     PkgVersion,
+    re_resolve_rxt,
 )
 from ._vendor.Qt5 import QtCore, QtWidgets
 from .widgets import BusyWidget, YesNoDialog, MessageDialog, ComboBox
@@ -163,6 +165,11 @@ class Controller(QtCore.QObject):
         self._sender = dict()
         self._thread = dict()  # type: dict[str, Thread]
 
+        self._resolve_param = {
+            # exclude local packages by default
+            "package_paths": rezconfig.nonlocal_packages_path,
+        }
+
         _defer(on_time=500)(Controller.scan_suite_storage)(self)
         _defer(on_time=500)(Controller.scan_installed_packages)(self)
         _defer(on_time=600)(Controller.new_suite)(self)
@@ -194,6 +201,11 @@ class Controller(QtCore.QObject):
         else:
             self.view_suite(saved_suite)
             suite_branch.mark_as_viewed(saved_suite)
+
+    @QtCore.Slot(bool)  # noqa
+    @_defer(on_time=100)
+    def on_non_local_changed(self, state):
+        self.set_non_local(state)
 
     @QtCore.Slot(str, bool)  # noqa
     def on_request_edited(self, name, edited):
@@ -355,9 +367,29 @@ class Controller(QtCore.QObject):
         self._tools_updated()
 
     @_thread(name="suiteOp", blocks=("SuitePage",))
+    def set_non_local(self, exclude):
+        package_paths = \
+            rezconfig.nonlocal_packages_path if exclude \
+            else rezconfig.packages_path
+
+        self._resolve_param["package_paths"] = package_paths
+
+        # update current suite
+        #
+        for ctx in self._sop.iter_contexts():
+            context = re_resolve_rxt(ctx.context, package_paths=package_paths)
+            self._context_resolved(ctx.name, context)
+
+    @_thread(name="suiteOp", blocks=("SuitePage",))
     def resolve_context(self, name, requests):
         # todo: more args, and send a buffer in for verbose resolve logs.
-        context = self._sop.resolve_context(requests)
+        context = self._sop.resolve_context(
+            requests,
+            **self._resolve_param,
+        )
+        self._context_resolved(name, context)
+
+    def _context_resolved(self, name, context):
         self.context_resolved.emit(name, context)
         if context.success:
             if name in self._failed:
@@ -436,7 +468,7 @@ class Controller(QtCore.QObject):
             self.context_stashed.emit(ctx.name, ctx.context)
 
         # re-resolve contexts
-        self._sop.re_resolve_rxt_contexts()
+        self._sop.re_resolve_rxt_contexts(**self._resolve_param)
         for ctx in self._sop.iter_contexts(ascending=True):
             self.context_resolved.emit(ctx.name, ctx.context)
 

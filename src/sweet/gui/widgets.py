@@ -811,12 +811,14 @@ class ToolsView(TreeView):
 
 
 class ContextToolTreeWidget(QtWidgets.QWidget):
+    non_local_changed = QtCore.Signal(bool)
 
     def __init__(self, *args, **kwargs):
         super(ContextToolTreeWidget, self).__init__(*args, **kwargs)
         self.setObjectName("ToolStack")
 
-        label = QtWidgets.QLabel("Tool Stack")
+        non_local = QtWidgets.QCheckBox("Exclude Local Packages")
+        non_local.setChecked(True)  # exclude local packages by default
 
         view = ToolsView()
         model = ContextToolTreeModelSingleton()
@@ -834,11 +836,12 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
         # layout
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(label)
+        layout.addWidget(non_local)
         layout.addWidget(view)
 
         # signals
         model.require_expanded.connect(self._on_model_require_expanded)
+        non_local.stateChanged.connect(self._on_non_local_changed)
 
         self._view = view
         self._proxy = proxy
@@ -846,6 +849,9 @@ class ContextToolTreeWidget(QtWidgets.QWidget):
 
     def model(self):
         return self._model
+
+    def _on_non_local_changed(self, state):
+        self.non_local_changed.emit(bool(state))
 
     def _on_model_require_expanded(self, indexes):
         for index in indexes:
