@@ -55,6 +55,8 @@ __all__ = (
     "RollingContext",
 
     "Constants",
+
+    "re_resolve_rxt",
 )
 
 
@@ -329,16 +331,17 @@ class SuiteOp(object):
         """
         self._suite.load_path = path
 
-    def resolve_context(self, requests):
+    def resolve_context(self, requests, package_paths=None):
         """Try resolving a context
 
         :param requests: List of strings or PackageRequest objects representing
             the request for resolving a context.
+        :param list package_paths: Package paths to resolve with, default None
         :type requests: list[str or PackageRequest]
         :return: A RollingContext object
         :rtype: RollingContext
         """
-        return RollingContext(requests)
+        return RollingContext(requests, package_paths=package_paths)
 
     def add_context(self, name, context):
         """Add one resolved context to suite
@@ -528,11 +531,11 @@ class SuiteOp(object):
         data = self._suite.contexts[ctx_name]
         return self._ctx_data_to_tuple(data)
 
-    def re_resolve_rxt_contexts(self):
+    def re_resolve_rxt_contexts(self, package_paths=None):
         """Re-resolve all contexts that loaded from .rxt files
         :return:
         """
-        self._suite.re_resolve_rxt_contexts()
+        self._suite.re_resolve_rxt_contexts(package_paths=package_paths)
 
     def get_context(self, name):
         """Get a copy of context in suite
@@ -1017,8 +1020,8 @@ class InstalledPackages(object):
             )
 
 
-def re_resolve_rxt(context):
-    """Re-resolve context loaded from .rxt file
+def re_resolve_rxt(context, package_paths=None):
+    """Re-resolve a resolved context
 
     This takes following entries from input context to resolve a new one:
         - package_requests
@@ -1028,18 +1031,16 @@ def re_resolve_rxt(context):
         - package_orderers
         - building
 
-    :param context: .rxt loaded context
-    :type context: ResolvedContext
+    :param ResolvedContext context: a resolved context
+    :param list package_paths: Package paths to resolve with, default None
     :return: new resolved context
     :rtype: RollingContext
-    :raises AssertionError: If no context.load_path (not loaded from .rxt)
     """
-    assert context.load_path, "Not a loaded context."
     rxt = context
     return RollingContext(
         package_requests=rxt.requested_packages(),
         timestamp=rxt.requested_timestamp,
-        package_paths=rxt.package_paths,
+        package_paths=package_paths or rxt.package_paths,
         package_filter=rxt.package_filter,
         package_orderers=rxt.package_orderers,
         building=rxt.building,
@@ -1322,14 +1323,17 @@ class SweetSuite(_Suite):
 
         self._flush_tools()
 
-    def re_resolve_rxt_contexts(self):
+    def re_resolve_rxt_contexts(self, package_paths=None):
         """Re-resolve all contexts that loaded from .rxt files
         :return:
         """
         for name in list(self.contexts.keys()):
             context = self.context(name)
             if context.load_path:
-                self.update_context(name, re_resolve_rxt(context))
+                self.update_context(
+                    name,
+                    re_resolve_rxt(context, package_paths=package_paths),
+                )
 
     def _update_tools(self, suppress_err=False):
         report_err = self.tools is None  # only after tools were flushed
