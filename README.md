@@ -20,6 +20,7 @@ The goal of this project is to make Rez suite authoring much easier, and optiona
 ```
 # in rez environment
 python -m sweet
+rez-sweet --gui
 ```
 
 ### Features
