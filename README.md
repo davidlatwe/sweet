@@ -4,7 +4,7 @@ Sweet
 
 Rez suite composing GUI.
 
-:construction: Not Ready For Prime Time :construction:
+![image](https://user-images.githubusercontent.com/3357009/169085973-e8e3e3f2-340f-4ba5-bf54-95f4d9f5fa27.png)
 
 ### Goal
 
