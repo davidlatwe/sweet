@@ -881,7 +881,7 @@ class ContextDataModel(BaseItemModel):
 
         # value
         icon = None
-        value = getattr(context, field)
+        value = getattr(context, field) or ""
 
         if self._in_diff and value == getattr(self._context, field):
             return  # same value, no need to diff
